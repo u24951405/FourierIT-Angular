@@ -1,0 +1,140 @@
+<div class="consent-wrapper" *ngIf="!checkingExisting">
+  <div class="consent-card">
+
+    <div class="consent-card__header">
+      <span class="consent-card__lock-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </span>
+      <h2 class="consent-card__title">POPIA Consent Required</h2>
+    </div>
+
+    <p class="consent-card__intro">
+      Before you can upload any documents, you must consent to the collection and processing of your
+      personal information as required by the Protection of Personal Information Act (POPIA) and the
+      Financial Intelligence Centre Act (FICA).
+    </p>
+
+    <div class="consent-disclosures">
+
+      <div class="disclosure-item">
+        <span class="disclosure-item__icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </span>
+        <div class="disclosure-item__content">
+          <p class="disclosure-item__heading">What documents are being collected</p>
+          <p class="disclosure-item__body">
+            Identity documents, proof of address, tax records, bank statements, and entity registration
+            documents as required for KYC and FICA compliance.
+          </p>
+        </div>
+      </div>
+
+      <div class="disclosure-item">
+        <span class="disclosure-item__icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </span>
+        <div class="disclosure-item__content">
+          <p class="disclosure-item__heading">Why they are being collected</p>
+          <p class="disclosure-item__body">
+            Regulatory compliance, identity verification, and financial due diligence as mandated by
+            FICA and the Financial Action Task Force (FATF) guidelines.
+          </p>
+        </div>
+      </div>
+
+      <div class="disclosure-item">
+        <span class="disclosure-item__icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </span>
+        <div class="disclosure-item__content">
+          <p class="disclosure-item__heading">Retention period</p>
+          <p class="disclosure-item__body">
+            Documents will be retained for a minimum of <strong>5 years</strong> as required by
+            Section 22 of FICA.
+          </p>
+        </div>
+      </div>
+
+      <div class="disclosure-item">
+        <span class="disclosure-item__icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </span>
+        <div class="disclosure-item__content">
+          <p class="disclosure-item__heading">Who has access</p>
+          <p class="disclosure-item__body">
+            Only authorised compliance officers and designated administrators. Documents will not be
+            shared with third parties except as required by law.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <p class="consent-card__footnote">
+      By consenting, you acknowledge that you have read and understood the above disclosure. You may
+      request access to your submitted documents or withdraw consent at any time subject to legal
+      retention obligations.
+      <a href="/privacy-policy" target="_blank" class="consent-card__link">View our full Privacy Policy</a>.
+    </p>
+
+    <label class="consent-checkbox">
+      <input
+        type="checkbox"
+        [(ngModel)]="checked"
+        class="consent-checkbox__input"
+      />
+      <span class="consent-checkbox__custom"></span>
+      <span class="consent-checkbox__label">
+        I confirm that I have read and understood the above disclosure and I consent to the
+        collection, processing, and storage of my personal information and documents for FICA and
+        KYC compliance purposes.
+      </span>
+    </label>
+
+    <div class="consent-card__error" *ngIf="error" role="alert">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+      {{ error }}
+    </div>
+
+    <button
+      class="btn-consent"
+      [disabled]="!canProceed"
+      [class.btn-consent--loading]="loading"
+      (click)="onConsent()"
+    >
+      <span *ngIf="!loading">I Consent — Continue</span>
+      <span *ngIf="loading" class="btn-consent__spinner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        Recording consent…
+      </span>
+    </button>
+
+  </div>
+</div>
+
+<div class="consent-checking" *ngIf="checkingExisting">
+  <p>Verifying consent status…</p>
+</div>
