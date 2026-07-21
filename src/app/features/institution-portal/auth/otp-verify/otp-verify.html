@@ -1,0 +1,161 @@
+<div class="portal-shell">
+  <div class="portal-card">
+
+    <!-- Header -->
+    <div class="portal-card__header">
+      <div class="portal-card__brand">
+        <span class="portal-card__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </span>
+        <div>
+          <span class="portal-card__brand-name">DocuVault</span>
+          <span class="portal-card__brand-sub">Institution Secure Portal</span>
+        </div>
+      </div>
+      <span class="portal-card__encrypted">
+        <span class="portal-card__encrypted-dot"></span>
+        Encrypted
+      </span>
+    </div>
+
+    <!-- Body -->
+    <div class="portal-card__body">
+
+      <!-- Locked state -->
+      <div class="otp-locked" *ngIf="isLocked">
+        <div class="otp-locked__icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2 class="otp-locked__title">Session Locked</h2>
+        <p class="otp-locked__desc">
+          Maximum OTP attempts exceeded. Your authentication session has been locked for security.
+        </p>
+        <button class="otp-btn otp-btn--primary" type="button" (click)="requestNewToken()">
+          Request New Access Link
+        </button>
+      </div>
+
+      <!-- Normal OTP entry -->
+      <ng-container *ngIf="!isLocked">
+        <div class="otp-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+        </div>
+
+        <h2 class="otp-title">Enter Verification Code</h2>
+        <p class="otp-subtitle">
+          A 6-digit code has been sent to<br />
+          <strong>{{ maskedEmail }}</strong>
+        </p>
+
+        <!-- Validation steps -->
+        <div class="validation-steps">
+          <div class="validation-step validation-step--done">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Institution registered and active
+          </div>
+          <div class="validation-step validation-step--done">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Access token verified
+          </div>
+          <div class="validation-step validation-step--done">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            OTP sent to registered email
+          </div>
+        </div>
+
+        <!--
+          FIX: Only (keydown) is bound — (input) and (keyup) removed entirely.
+          We call preventDefault() inside onKeydown so the browser never
+          writes the character into the input natively; we write it ourselves
+          via setBoxValue(), which stops the digit propagating across boxes.
+        -->
+        <div class="otp-inputs" (paste)="onPaste($event)">
+          <input
+            *ngFor="let digit of digits; let i = index"
+            #otpBox
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            class="otp-input"
+            [class.otp-input--filled]="digit !== ''"
+            [class.otp-input--error]="!!error"
+            [attr.value]="digit"
+            [disabled]="verifying"
+            (keydown)="onKeydown($event, i)"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            aria-label="OTP digit {{ i + 1 }}"
+          />
+        </div>
+
+        <!-- Error -->
+        <div class="otp-error" *ngIf="error" role="alert">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          {{ error }}
+        </div>
+
+        <!-- Verify button -->
+        <button
+          class="otp-btn otp-btn--primary"
+          type="button"
+          [disabled]="!canVerify"
+          [class.otp-btn--loading]="verifying"
+          (click)="verify()"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span *ngIf="!verifying">Verify &amp; Access Portal</span>
+          <span *ngIf="verifying" class="otp-btn__spinner">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            Verifying…
+          </span>
+        </button>
+
+        <!-- Resend -->
+        <div class="otp-resend">
+          <button
+            class="otp-resend__btn"
+            type="button"
+            [disabled]="!canResend"
+            (click)="resendOtp()"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            <span *ngIf="!canResend">Resend OTP in {{ resendCountdown }}s</span>
+            <span *ngIf="canResend">Resend OTP</span>
+          </button>
+        </div>
+
+      </ng-container>
+    </div>
+
+    <div class="portal-card__footer">
+      Powered by Fourier Group · FICA/KYC Compliance Platform
+    </div>
+  </div>
+</div>
