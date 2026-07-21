@@ -1,0 +1,56 @@
+<div class="entity-select">
+  <div class="entity-select__header">
+    <h2 class="entity-select__title">Select Entity Type</h2>
+    <p class="entity-select__subtitle">This determines your required document set</p>
+  </div>
+
+  <div class="entity-select__cards">
+
+    <button class="entity-card" (click)="select(EntityType.INDIVIDUAL)" type="button">
+      <span class="entity-card__icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </span>
+      <h3 class="entity-card__title">Document Owner</h3>
+      <p class="entity-card__description">Document owner uploading required KYC and FICA documents</p>
+      <ul class="entity-card__docs">
+        <li>SA ID or Passport</li>
+        <li>Proof of address</li>
+        <li>SARS tax number</li>
+        <li>Bank statement</li>
+      </ul>
+      <span class="entity-card__cta">
+        Select Document Owner
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </span>
+    </button>
+
+    <button class="entity-card" (click)="select(EntityType.COMPANY)" type="button">
+      <span class="entity-card__icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+        </svg>
+      </span>
+      <h3 class="entity-card__title">Department</h3>
+      <p class="entity-card__description">Department uploading required corporate documentation</p>
+      <ul class="entity-card__docs">
+        <li>CIPC registration</li>
+        <li>Memorandum of Incorporation</li>
+        <li>Director IDs</li>
+        <li>Company bank statement</li>
+      </ul>
+      <span class="entity-card__cta">
+        Select Department
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </span>
+    </button>
+
+  </div>
+</div>
