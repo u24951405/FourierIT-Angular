@@ -1,0 +1,32 @@
+<section class="status-panel">
+  <div class="status-panel__header">
+    <h2>Document Submission</h2>
+    <p>Review your uploaded documents and submit when ready.</p>
+  </div>
+
+  <div class="status-panel__summary">
+    <div class="status-panel__info">
+      <span class="status-panel__label">Uploaded</span>
+      <strong>{{ uploadedDocuments.length }}</strong>
+    </div>
+    <div class="status-panel__info">
+      <span class="status-panel__label">Remaining</span>
+      <strong>{{ remainingCount }}</strong>
+    </div>
+    <div class="status-panel__info">
+      <span class="status-panel__label">Submission</span>
+      <strong>{{ canSubmit ? 'Ready' : 'Locked' }}</strong>
+    </div>
+  </div>
+
+  <div class="status-panel__actions">
+    <button class="btn-primary" type="button" [disabled]="!canSubmit || submitting" (click)="onSubmit()">
+      {{ submitting ? 'Submitting…' : 'Submit for Compliance Review' }}
+    </button>
+  </div>
+
+  <div *ngIf="submitError" class="status-panel__error">{{ submitError }}</div>
+  <div *ngIf="submitSuccess" class="status-panel__success">
+    Submission successful. Your documents are now pending review.
+  </div>
+</section>
