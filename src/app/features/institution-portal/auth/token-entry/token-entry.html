@@ -1,0 +1,57 @@
+<div class="portal-shell">
+  <div class="portal-card">
+    <div class="portal-card__header">
+      <div class="portal-card__brand">
+        <span class="portal-card__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </span>
+        <div>
+          <span class="portal-card__brand-name">DocuVault</span>
+          <span class="portal-card__brand-sub">Institution Secure Portal</span>
+        </div>
+      </div>
+      <span class="portal-card__encrypted">
+        <span class="portal-card__encrypted-dot"></span>
+        Encrypted
+      </span>
+    </div>
+
+    <div class="portal-card__body">
+      <div class="token-validating">
+        <div class="token-validating__icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="spin">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+        </div>
+        <h2 class="token-validating__title">Validating Access</h2>
+        <p class="token-validating__subtitle">Please wait while we verify your invitation…</p>
+
+        <div class="validation-steps">
+          <div
+            class="validation-step"
+            *ngFor="let step of steps"
+            [class.validation-step--done]="step.done"
+          >
+            <span class="validation-step__icon">
+              <svg *ngIf="step.done" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span *ngIf="!step.done" class="validation-step__pending"></span>
+            </span>
+            {{ step.label }}
+          </div>
+        </div>
+
+        <div class="token-validating__error" *ngIf="error" role="alert">
+          {{ error }}
+        </div>
+      </div>
+    </div>
+
+    <div class="portal-card__footer">
+      Powered by Fourier Group · FICA/KYC Compliance Platform
+    </div>
+  </div>
+</div>
