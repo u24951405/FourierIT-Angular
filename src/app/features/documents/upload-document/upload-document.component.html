@@ -1,0 +1,63 @@
+<section class="upload-document-page">
+  <header class="upload-document-page__header">
+    <h1>Upload Documents</h1>
+    <p>Follow the compliance workflow to submit your documents.</p>
+  </header>
+
+  <div class="workflow-steps">
+    <span class="step-pill" [class.active]="step() === 1">1. Consent</span>
+    <span class="step-pill" [class.active]="step() === 2">2. Document Owner / Department</span>
+    <span class="step-pill" [class.active]="step() === 3">3. Upload Documents</span>
+    <span class="step-pill" [class.active]="step() === 4">4. Review & Submit</span>
+  </div>
+
+  <app-popia-consent
+    *ngIf="step() === 1"
+    [subjectId]="subjectId"
+    [currentUserId]="currentUserId"
+    [demoMode]="demoMode"
+    (consentConfirmed)="onConsentConfirmed()"
+  ></app-popia-consent>
+
+  <div *ngIf="step() === 2" class="workflow-panel">
+    <app-entity-select (entitySelected)="onEntitySelected($event)"></app-entity-select>
+  </div>
+
+  <div *ngIf="showChecklist" class="workflow-panel">
+    <div class="workflow-panel__header">
+      <div>
+        <h2>Upload Documents</h2>
+        <p>Selected: {{ selectedEntityLabel }}</p>
+      </div>
+      <button type="button" class="btn-secondary" (click)="step.set(2)">
+        Change Selection
+      </button>
+    </div>
+
+    <app-document-checklist
+      [entityType]="selectedEntityType() ?? EntityType.INDIVIDUAL"
+      [documentOwner]="documentOwner"
+    ></app-document-checklist>
+
+    <div class="workflow-actions">
+      <button type="button" class="btn-primary" (click)="onProceedToReview()">
+        Continue to Review
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="showStatusPanel" class="workflow-panel">
+    <div class="workflow-panel__header">
+      <div>
+        <h2>Review & Submit</h2>
+        <p>Confirm your document uploads and submit for compliance review.</p>
+      </div>
+      <button type="button" class="btn-secondary" (click)="step.set(3)">
+        Back to Uploads
+      </button>
+    </div>
+
+    <app-document-status-panel (submissionCompleted)="onSubmissionSuccess()"></app-document-status-panel>
+  </div>
+
+</section>
