@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-my-documents',
@@ -9,4 +10,12 @@ import { CommonModule } from '@angular/common';
   styleUrl: './my-documents.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class MyDocumentsComponent {}
+
+export class MyDocumentsComponent {
+  private router = inject(Router);
+
+  openTemporaryUploadPage(): void {
+    this.router.navigate(['/documents/upload']);
+  }
+}
+
