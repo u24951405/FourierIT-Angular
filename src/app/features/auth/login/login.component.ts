@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
+import { AuditEventType } from '../../../core/models/institution.models';
 
 @Component({
   selector: 'app-login',
@@ -39,7 +40,20 @@ export class LoginComponent {
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: () => this.router.navigate([this.auth.getDefaultAppPath()]),
-        error: (e) => this.errorMsg.set(e?.error?.message ?? 'Invalid credentials. Please try again.')
+        error: (e) => {
+          this.auth.logActivity(AuditEventType.LOGIN_FAILURE, 'Failed login attempt');
+          this.errorMsg.set(e?.error?.message ?? 'Invalid credentials. Please try again.');
+        }
       });
+  }
+
+  openInstitutionPortal(): void {
+    this.router.navigate(['/institution/auth/access'], {
+      queryParams: { token: 'demo-institution-token' }
+    });
+  }
+
+  openTemporaryUploadPage(): void {
+    this.router.navigate(['/temp/documents/upload']);
   }
 }
