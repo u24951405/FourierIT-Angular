@@ -1,0 +1,353 @@
+<!-- ── Breadcrumb ────────────────────────────────────────────────────────────── -->
+<div class="rd-breadcrumb">
+  <span class="rd-breadcrumb__item" (click)="goToDashboard()">{{ institutionName }}</span>
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <polyline points="9 18 15 12 9 6"></polyline>
+  </svg>
+  <span class="rd-breadcrumb__item rd-breadcrumb__item--active">Request Documents</span>
+</div>
+
+<!-- ── Page Header ───────────────────────────────────────────────────────────── -->
+<div class="rd-page">
+  <div class="rd-header">
+    <button class="rd-back" type="button" (click)="goBack()" aria-label="Back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+    </button>
+    <div>
+      <h1 class="rd-header__title">Request Documents</h1>
+      <p class="rd-header__subtitle">Submit a secure document access request</p>
+    </div>
+  </div>
+
+  <!-- ── Stepper ─────────────────────────────────────────────────────────────── -->
+  <div class="rd-stepper">
+    <div class="rd-step" *ngFor="let step of [
+      { n: 1, label: 'Purpose' },
+      { n: 2, label: 'Category' },
+      { n: 3, label: 'Documents' },
+      { n: 4, label: 'Request Info' },
+      { n: 5, label: 'Submitted' }
+    ]">
+      <div
+        class="rd-step__circle"
+        [class.rd-step__circle--active]="currentStep === step.n"
+        [class.rd-step__circle--done]="currentStep > step.n"
+      >
+        <svg *ngIf="currentStep > step.n" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span *ngIf="currentStep <= step.n">{{ step.n }}</span>
+      </div>
+      <span
+        class="rd-step__label"
+        [class.rd-step__label--active]="currentStep === step.n"
+        [class.rd-step__label--done]="currentStep > step.n"
+      >{{ step.label }}</span>
+      <div class="rd-step__line" *ngIf="step.n < 5"></div>
+    </div>
+  </div>
+
+  <!-- ── Step 1: Purpose ──────────────────────────────────────────────────────── -->
+  <div class="rd-card" *ngIf="currentStep === 1">
+    <h2 class="rd-card__title">Select Purpose of Request</h2>
+    <p class="rd-card__subtitle">Specify why you are requesting access to these documents.</p>
+
+    <div class="rd-purpose-grid">
+      <button
+        class="rd-purpose-option"
+        *ngFor="let p of purposes"
+        type="button"
+        [class.rd-purpose-option--selected]="wizard.purpose === p"
+        (click)="selectPurpose(p)"
+      >
+        <span class="rd-purpose-option__radio">
+          <span class="rd-purpose-option__dot" *ngIf="wizard.purpose === p"></span>
+        </span>
+        {{ PURPOSE_LABELS[p] }}
+      </button>
+    </div>
+
+    <div class="rd-card__footer">
+      <button
+        class="rd-btn rd-btn--primary"
+        type="button"
+        [disabled]="!canContinueStep1"
+        (click)="nextStep()"
+      >
+        Continue
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 2: Category ─────────────────────────────────────────────────────── -->
+  <div class="rd-card" *ngIf="currentStep === 2">
+    <h2 class="rd-card__title">Select Document Category</h2>
+    <p class="rd-card__subtitle">Choose the category that covers the documents you need.</p>
+
+    <div class="rd-category-grid">
+      <button
+        class="rd-category-card"
+        *ngFor="let c of categories"
+        type="button"
+        [class.rd-category-card--selected]="wizard.category === c"
+        (click)="selectCategory(c)"
+      >
+        <div class="rd-category-card__header">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <span class="rd-category-card__name">{{ CATEGORY_LABELS[c] }}</span>
+        </div>
+        <ul class="rd-category-card__docs">
+          <li *ngFor="let doc of getCategoryPreview(c)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            {{ doc }}
+          </li>
+        </ul>
+        <span class="rd-category-card__more" *ngIf="getCategoryMoreCount(c) > 0">
+          +{{ getCategoryMoreCount(c) }} more
+        </span>
+      </button>
+    </div>
+
+    <div class="rd-card__footer">
+      <button
+        class="rd-btn rd-btn--primary"
+        type="button"
+        [disabled]="!canContinueStep2"
+        (click)="nextStep()"
+      >
+        Continue
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Documents ────────────────────────────────────────────────────── -->
+  <div class="rd-card" *ngIf="currentStep === 3">
+    <h2 class="rd-card__title">Select Required Documents</h2>
+    <p class="rd-card__subtitle">
+      Category: <strong>{{ wizard.category ? CATEGORY_LABELS[wizard.category] : '' }}</strong>
+    </p>
+    <p class="rd-card__hint">Select one or more documents from the list below.</p>
+
+    <div class="rd-doc-list">
+      <label
+        class="rd-doc-item"
+        *ngFor="let doc of availableDocuments"
+        [class.rd-doc-item--selected]="isDocSelected(doc.documentId)"
+      >
+        <input
+          type="checkbox"
+          class="rd-doc-item__checkbox"
+          [checked]="isDocSelected(doc.documentId)"
+          (change)="toggleDocument(doc.documentId)"
+        />
+        <span class="rd-doc-item__custom"></span>
+        <span class="rd-doc-item__name">{{ doc.documentName }}</span>
+      </label>
+    </div>
+
+    <p class="rd-doc-validation" *ngIf="selectedCount === 0">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      At least one document must be selected.
+    </p>
+
+    <div class="rd-card__footer rd-card__footer--between">
+      <span class="rd-doc-count">{{ selectedCount }} document{{ selectedCount !== 1 ? 's' : '' }} selected</span>
+      <button
+        class="rd-btn rd-btn--primary"
+        type="button"
+        [disabled]="!canContinueStep3"
+        (click)="nextStep()"
+      >
+        Continue
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 4: Request Info ──────────────────────────────────────────────────── -->
+  <div class="rd-card" *ngIf="currentStep === 4">
+    <h2 class="rd-card__title">Enter Request Information</h2>
+    <p class="rd-card__subtitle">Provide the details required to process your request.</p>
+
+    <!-- Summary strip -->
+    <div class="rd-summary">
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Purpose</span>
+        <span class="rd-summary__val">{{ wizard.purpose ? PURPOSE_LABELS[wizard.purpose] : '' }}</span>
+      </div>
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Category</span>
+        <span class="rd-summary__val">{{ wizard.category ? CATEGORY_LABELS[wizard.category] : '' }}</span>
+      </div>
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Documents</span>
+        <span class="rd-summary__val">{{ selectedCount }} selected</span>
+      </div>
+    </div>
+
+    <div class="rd-form">
+      <!-- Submission Deadline -->
+      <div class="rd-field">
+        <label class="rd-field__label" for="deadline">
+          Submission Deadline <span class="rd-field__required">*</span>
+        </label>
+        <input
+          id="deadline"
+          type="date"
+          class="rd-field__input"
+          [min]="todayString"
+          [value]="wizard.submissionDeadline"
+          (change)="onDeadlineChange($any($event.target).value)"
+        />
+      </div>
+
+      <!-- Reference Number -->
+      <div class="rd-field">
+        <label class="rd-field__label" for="refnum">
+          Reference Number <span class="rd-field__required">*</span>
+        </label>
+        <input
+          id="refnum"
+          type="text"
+          class="rd-field__input"
+          placeholder="e.g. AUDIT-2026-0042"
+          [value]="wizard.referenceNumber"
+          (input)="onRefChange($any($event.target).value)"
+        />
+      </div>
+
+      <!-- Justification -->
+      <div class="rd-field">
+        <label class="rd-field__label" for="justification">
+          Request Justification <span class="rd-field__required">*</span>
+        </label>
+        <textarea
+          id="justification"
+          class="rd-field__textarea"
+          placeholder="Describe why you require access to these documents and how they will be used…"
+          rows="4"
+          [value]="wizard.justification"
+          (input)="onJustificationChange($any($event.target).value)"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="rd-error" *ngIf="submitError" role="alert">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      {{ submitError }}
+    </div>
+
+    <div class="rd-card__footer">
+      <button
+        class="rd-btn rd-btn--submit"
+        type="button"
+        [disabled]="!canSubmit || submitting"
+        [class.rd-btn--loading]="submitting"
+        (click)="submitRequest()"
+      >
+        <span *ngIf="!submitting">
+          Submit Request
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </span>
+        <span *ngIf="submitting" class="rd-btn__spinner">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          Submitting…
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Step 5: Submitted ─────────────────────────────────────────────────────── -->
+  <div class="rd-card rd-card--success" *ngIf="currentStep === 5">
+    <div class="rd-success-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+    </div>
+
+    <h2 class="rd-success__title">Request Submitted</h2>
+    <p class="rd-success__desc">
+      Your document access request has been submitted successfully. The FICA Compliance Officer will
+      review your request and notify you of the outcome.
+    </p>
+
+    <div class="rd-request-id" *ngIf="wizard.submittedRequestId">
+      <span class="rd-request-id__label">Your Request ID</span>
+      <div class="rd-request-id__value">
+        <strong>{{ wizard.submittedRequestId }}</strong>
+        <button class="rd-request-id__copy" type="button" (click)="copyRequestId()" aria-label="Copy request ID">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="rd-summary rd-summary--white">
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Purpose</span>
+        <span class="rd-summary__val">{{ wizard.purpose ? PURPOSE_LABELS[wizard.purpose] : '' }}</span>
+      </div>
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Category</span>
+        <span class="rd-summary__val">{{ wizard.category ? CATEGORY_LABELS[wizard.category] : '' }}</span>
+      </div>
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Documents Requested</span>
+        <span class="rd-summary__val">{{ selectedCount }}</span>
+      </div>
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Reference Number</span>
+        <span class="rd-summary__val">{{ wizard.referenceNumber }}</span>
+      </div>
+      <div class="rd-summary__row">
+        <span class="rd-summary__key">Status</span>
+        <span class="rd-summary__val rd-summary__val--pending">
+          <span class="rd-status-dot"></span>
+          Pending Review
+        </span>
+      </div>
+    </div>
+
+    <div class="rd-success__actions">
+      <button class="rd-btn rd-btn--outline" type="button" (click)="goToMyRequests()">
+        Track Request
+      </button>
+      <button class="rd-btn rd-btn--submit" type="button" (click)="goToDashboard()">
+        Back to Dashboard
+      </button>
+    </div>
+  </div>
+
+</div>
