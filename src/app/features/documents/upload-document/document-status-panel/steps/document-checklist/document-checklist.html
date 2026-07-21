@@ -1,0 +1,292 @@
+<div class="checklist-layout" *ngIf="state">
+
+  <!-- ── Declarations ──────────────────────────────────────────────────── -->
+  <div class="declarations">
+    <div class="declarations__header">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span class="declarations__label">Declarations</span>
+      <span class="declarations__hint">(adjusts your document list)</span>
+    </div>
+
+    <!-- Individual declarations -->
+    <ng-container *ngIf="!isCompany">
+      <label class="decl-checkbox">
+        <input
+          type="checkbox"
+          [checked]="state.declarations.isForeignNational"
+          (change)="onForeignNationalChange($any($event.target).checked)"
+        />
+        <span class="decl-checkbox__custom"></span>
+        <span class="decl-checkbox__label">I am a foreign national (passport required instead of SA ID)</span>
+      </label>
+      <label class="decl-checkbox">
+        <input
+          type="checkbox"
+          [checked]="state.declarations.hasNoPersonalProofOfAddress"
+          (change)="onNoAddressChange($any($event.target).checked)"
+        />
+        <span class="decl-checkbox__custom"></span>
+        <span class="decl-checkbox__label">I do not have proof of residential address in my own name</span>
+      </label>
+    </ng-container>
+
+    <!-- Company declarations -->
+    <ng-container *ngIf="isCompany">
+
+      <!-- Directors -->
+      <div class="decl-group">
+        <div class="decl-group__header">
+          <button class="decl-group__toggle" type="button" (click)="directorInputOpen = !directorInputOpen">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline [attr.points]="directorInputOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'"></polyline>
+            </svg>
+            Declare Directors ({{ state.declarations.directors.length }})
+          </button>
+        </div>
+
+        <div class="decl-group__body" *ngIf="directorInputOpen">
+          <div class="decl-tags" *ngIf="state.declarations.directors.length">
+            <span class="decl-tag" *ngFor="let d of state.declarations.directors">
+              {{ d.name }}
+              <button class="decl-tag__remove" type="button" (click)="removeDirector(d.id)" aria-label="Remove director">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </span>
+          </div>
+
+          <div class="decl-input-row">
+            <input
+              type="text"
+              class="decl-input"
+              placeholder="Director full name"
+              [(ngModel)]="newDirectorName"
+              (keydown.enter)="addDirector()"
+            />
+            <button class="decl-add-btn" type="button" (click)="addDirector()" [disabled]="!newDirectorName.trim()">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Beneficial Owners -->
+      <div class="decl-group">
+        <div class="decl-group__header">
+          <button class="decl-group__toggle" type="button" (click)="ownerInputOpen = !ownerInputOpen">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline [attr.points]="ownerInputOpen ? '18 15 12 9 6 15' : '6 9 12 15 18 9'"></polyline>
+            </svg>
+            Declare Beneficial Owners (≥25%) ({{ state.declarations.beneficialOwners.length }})
+          </button>
+        </div>
+
+        <div class="decl-group__body" *ngIf="ownerInputOpen">
+          <div class="decl-tags" *ngIf="state.declarations.beneficialOwners.length">
+            <span class="decl-tag" *ngFor="let o of state.declarations.beneficialOwners">
+              {{ o.name }} ({{ o.shareholdingPercentage }}%)
+              <button class="decl-tag__remove" type="button" (click)="removeOwner(o.id)" aria-label="Remove beneficial owner">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </span>
+          </div>
+
+          <div class="decl-input-row">
+            <input
+              type="text"
+              class="decl-input"
+              placeholder="Full name"
+              [(ngModel)]="newOwnerName"
+            />
+            <input
+              type="number"
+              class="decl-input decl-input--short"
+              placeholder="% share"
+              [(ngModel)]="newOwnerPercentage"
+              min="25"
+              max="100"
+            />
+            <button class="decl-add-btn" type="button" (click)="addOwner()" [disabled]="!newOwnerName.trim() || !newOwnerPercentage">
+              Add
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </ng-container>
+  </div>
+
+  <!-- ── Outstanding Documents ─────────────────────────────────────────── -->
+  <div class="doc-section">
+    <div class="doc-section__header">
+      <span class="doc-section__title">Outstanding Documents</span>
+      <span class="doc-section__count" [class.doc-section__count--done]="remainingCount === 0">
+        {{ remainingCount === 0 ? 'All uploaded' : remainingCount + ' remaining' }}
+      </span>
+    </div>
+
+    <!-- Empty state -->
+    <div class="doc-empty" *ngIf="remainingCount === 0">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <p>All documents uploaded. Awaiting compliance review.</p>
+    </div>
+
+    <!-- KYC Section -->
+    <ng-container *ngIf="kycItems.length">
+      <div class="doc-category">
+        <span class="doc-category__label">KYC — Know Your Customer</span>
+      </div>
+      <div class="doc-list">
+        <div
+          class="doc-item"
+          *ngFor="let item of kycItems"
+          [class.doc-item--uploading]="uploadingItemId === item.id"
+          (mouseenter)="hoveredItemId = item.id"
+          (mouseleave)="hoveredItemId = null"
+        >
+          <span class="doc-item__radio"></span>
+          <div class="doc-item__content">
+            <span class="doc-item__label">{{ item.label }}</span>
+            <span class="doc-item__conditional" *ngIf="item.conditional">Conditionally required</span>
+            <span class="doc-item__error" *ngIf="uploadError[item.id]">{{ uploadError[item.id] }}</span>
+          </div>
+          <div class="doc-item__actions" *ngIf="hoveredItemId === item.id || uploadingItemId === item.id">
+            <ng-container *ngIf="uploadingItemId !== item.id">
+              <input
+                type="file"
+                [id]="'file_' + item.id"
+                accept=".pdf,.jpg,.jpeg,.png"
+                class="file-input-hidden"
+                (change)="onFileSelected($event, item)"
+                #fileInput
+              />
+              <button
+                class="upload-btn"
+                type="button"
+                (click)="onUploadClick(item, fileInput)"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Upload
+              </button>
+            </ng-container>
+            <span class="doc-item__uploading-label" *ngIf="uploadingItemId === item.id">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              Uploading…
+            </span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- FICA Section -->
+    <ng-container *ngIf="ficaItems.length">
+      <div class="doc-category">
+        <span class="doc-category__label">FICA — Financial Intelligence Centre Act</span>
+      </div>
+      <div class="doc-list">
+        <div
+          class="doc-item"
+          *ngFor="let item of ficaItems"
+          [class.doc-item--uploading]="uploadingItemId === item.id"
+          (mouseenter)="hoveredItemId = item.id"
+          (mouseleave)="hoveredItemId = null"
+        >
+          <span class="doc-item__radio"></span>
+          <div class="doc-item__content">
+            <span class="doc-item__label">{{ item.label }}</span>
+            <span class="doc-item__date-tag" *ngIf="item.dateSensitive">Date-sensitive</span>
+            <span class="doc-item__conditional" *ngIf="item.conditional">Conditionally required</span>
+            <span class="doc-item__error" *ngIf="uploadError[item.id]">{{ uploadError[item.id] }}</span>
+          </div>
+          <div class="doc-item__actions" *ngIf="hoveredItemId === item.id || uploadingItemId === item.id">
+            <ng-container *ngIf="uploadingItemId !== item.id">
+              <input
+                type="file"
+                [id]="'file_' + item.id"
+                accept=".pdf,.jpg,.jpeg,.png"
+                class="file-input-hidden"
+                (change)="onFileSelected($event, item)"
+                #fileInput
+              />
+              <button
+                class="upload-btn"
+                type="button"
+                (click)="onUploadClick(item, fileInput)"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Upload
+              </button>
+            </ng-container>
+            <span class="doc-item__uploading-label" *ngIf="uploadingItemId === item.id">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+              Uploading…
+            </span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+</div>
+
+<!-- ── Date Confirmation Modal ────────────────────────────────────────────── -->
+<div class="modal-backdrop" *ngIf="showDateModal" (click)="cancelDateModal()">
+  <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal__header">
+      <h3 class="modal__title" id="modal-title">Confirm Document Date</h3>
+      <button class="modal__close" type="button" (click)="cancelDateModal()" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <p class="modal__desc">
+        This document must be dated within the last 3 months. Please enter the date shown on the document.
+      </p>
+      <div class="modal__field">
+        <label class="modal__label" for="doc-date">Document date</label>
+        <input
+          id="doc-date"
+          type="date"
+          class="modal__input"
+          [(ngModel)]="documentDateInput"
+          [max]="todayString"
+        />
+      </div>
+      <p class="modal__error" *ngIf="documentDateError" role="alert">{{ documentDateError }}</p>
+    </div>
+    <div class="modal__footer">
+      <button class="modal__btn modal__btn--secondary" type="button" (click)="cancelDateModal()">Cancel</button>
+      <button class="modal__btn modal__btn--primary" type="button" (click)="confirmDateAndUpload()" [disabled]="!documentDateInput">
+        Confirm & Upload
+      </button>
+    </div>
+  </div>
+</div>
