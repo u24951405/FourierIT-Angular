@@ -1,1 +1,149 @@
-<p>report-frame works!</p>
+<!-- ── Page Header (outside printable area) ─────────────────────────────────── -->
+<div class="rf-page-header">
+  <div class="rf-page-header__left">
+    <button class="rf-back-btn" type="button" (click)="goBack()" aria-label="Back">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+    </button>
+    <div>
+      <h1 class="rf-page-header__title">{{ title }}</h1>
+      <p class="rf-page-header__subtitle" *ngIf="subtitle">{{ subtitle }}</p>
+    </div>
+  </div>
+  <div class="rf-page-header__actions">
+    <button class="rf-action-btn rf-action-btn--outline" type="button" (click)="print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+      </svg>
+      Print
+    </button>
+    <button class="rf-action-btn rf-action-btn--primary" type="button" (click)="downloadPdf()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Download PDF
+    </button>
+  </div>
+</div>
+
+<!-- ── Printable Report Area ────────────────────────────────────────────────── -->
+<div class="rf-document-wrapper" id="report-printable-area">
+  <div class="rf-document">
+
+    <!-- Report Header Card -->
+    <div class="rf-doc-header">
+      <div class="rf-doc-header__brand">
+        <div class="rf-doc-header__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <div>
+          <p class="rf-doc-header__name">DocuVault</p>
+          <p class="rf-doc-header__sub">VERIFICATION & COMPLIANCE PLATFORM</p>
+        </div>
+      </div>
+
+      <div class="rf-doc-header__badge">
+        <!-- Bar icon -->
+        <svg *ngIf="config.badgeIcon === 'bar'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <!-- Lock icon -->
+        <svg *ngIf="config.badgeIcon === 'lock'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <!-- Trend icon -->
+        <svg *ngIf="config.badgeIcon === 'trend'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+        <!-- Check icon -->
+        <svg *ngIf="config.badgeIcon === 'check'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span class="rf-doc-header__badge-label">{{ config.badgeLabel }}</span>
+      </div>
+
+      <!-- Meta strip -->
+      <div class="rf-doc-header__meta">
+        <div class="rf-doc-header__meta-item">
+          <span class="rf-doc-header__meta-key">REPORT ID</span>
+          <span class="rf-doc-header__meta-val">{{ config.reportId }}</span>
+        </div>
+        <div class="rf-doc-header__meta-item">
+          <span class="rf-doc-header__meta-key">DATE GENERATED</span>
+          <span class="rf-doc-header__meta-val">{{ formattedDate }}</span>
+        </div>
+        <div class="rf-doc-header__meta-item">
+          <span class="rf-doc-header__meta-key">CREATED BY</span>
+          <span class="rf-doc-header__meta-val">{{ config.createdBy }}</span>
+        </div>
+        <div class="rf-doc-header__meta-item">
+          <span class="rf-doc-header__meta-key">REPORT TYPE</span>
+          <span class="rf-doc-header__meta-val">{{ config.reportType }}</span>
+        </div>
+        <div class="rf-doc-header__meta-item" *ngIf="config.framework">
+          <span class="rf-doc-header__meta-key">FRAMEWORK</span>
+          <span class="rf-doc-header__meta-val">{{ config.framework }}</span>
+        </div>
+      </div>
+
+      <!-- Accent bar -->
+      <div class="rf-doc-header__accent"
+        [style.background]="config.accentColors?.length ? 'linear-gradient(to right, ' + config.accentColors.join(', ') + ')' : '#10b981'">
+      </div>
+    </div>
+
+    <!-- Content slot -->
+    <div class="rf-doc-body">
+      <ng-content></ng-content>
+    </div>
+
+    <!-- Automated Engine Footer -->
+    <div class="rf-doc-engine">
+      <div class="rf-doc-engine__header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        DOCUVAULT AUTOMATED ENGINE
+      </div>
+      <div class="rf-doc-engine__grid">
+        <div class="rf-doc-engine__row">
+          <span class="rf-doc-engine__key">Report ID</span>
+          <span class="rf-doc-engine__val">{{ config.reportId }}</span>
+        </div>
+        <div class="rf-doc-engine__row">
+          <span class="rf-doc-engine__key">Generated</span>
+          <span class="rf-doc-engine__val">{{ formattedDate }}</span>
+        </div>
+        <div class="rf-doc-engine__row">
+          <span class="rf-doc-engine__key">Created By</span>
+          <span class="rf-doc-engine__val">{{ config.createdBy }}</span>
+        </div>
+        <div class="rf-doc-engine__row">
+          <span class="rf-doc-engine__key">Framework</span>
+          <span class="rf-doc-engine__val">{{ config.framework ?? 'FICA · POPIA · DocuVault v35' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Document Footer -->
+    <div class="rf-doc-footer">
+      <span>DocuVault | Verification and Compliance</span>
+      <span>Page 1 of 1 | {{ config.reportId }}</span>
+    </div>
+
+  </div>
+</div>
+
