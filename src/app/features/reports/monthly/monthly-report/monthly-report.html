@@ -1,1 +1,144 @@
-<p>monthly-report works!</p>
+<app-report-frame
+  [config]="frameConfig"
+  [title]="data.month + ' Operational Report'"
+  subtitle="Automatically generated monthly operational report"
+>
+
+  <!-- ── Report Title ──────────────────────────────────────────────────────── -->
+  <div class="monthly-title-block">
+    <p class="monthly-title-block__org">FOURIER GROUP — INTERNAL OPERATIONAL REPORT</p>
+    <h2 class="monthly-title-block__title">{{ data.month }} Operational Report</h2>
+    <div class="monthly-title-block__divider">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"></circle>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Document Processing Activity ─────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">DOCUMENT PROCESSING ACTIVITY</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="chart-card">
+    <p class="chart-card__desc">Total documents processed during the reporting period, broken down by verification outcome.</p>
+    <canvas #processingChart style="max-height: 180px;"></canvas>
+
+    <div class="monthly-stats-row">
+      <div class="monthly-stat">
+        <span class="monthly-stat__value monthly-stat__value--green">{{ data.processing.verified | number }}</span>
+        <span class="monthly-stat__label">Verified</span>
+      </div>
+      <div class="monthly-stat">
+        <span class="monthly-stat__value monthly-stat__value--amber">{{ data.processing.pendingVerification | number }}</span>
+        <span class="monthly-stat__label">Pending Verification</span>
+      </div>
+      <div class="monthly-stat">
+        <span class="monthly-stat__value monthly-stat__value--red">{{ data.processing.flaggedAnomalies | number }}</span>
+        <span class="monthly-stat__label">Flagged Anomalies</span>
+      </div>
+      <div class="monthly-stat">
+        <span class="monthly-stat__value monthly-stat__value--purple">{{ data.processing.partOfEnquiry | number }}</span>
+        <span class="monthly-stat__label">Part of Enquiry</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Security & Anomalies ──────────────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">SECURITY & ANOMALIES</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="chart-card">
+    <p class="chart-card__desc">Security events recorded across the reporting period. Plotted by day of month.</p>
+    <canvas #securityChart style="max-height: 220px;"></canvas>
+  </div>
+
+  <!-- ── Document Distribution & System Storage ────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">DOCUMENT DISTRIBUTION & SYSTEM STORAGE</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="monthly-two-col">
+
+    <!-- Distribution -->
+    <div class="chart-card">
+      <h3 class="chart-card__subtitle">Document Distribution by Category</h3>
+      <p class="chart-card__desc">Five core FICA material categories</p>
+      <div class="monthly-doughnut-wrap">
+        <canvas #distributionChart></canvas>
+      </div>
+      <div class="monthly-legend">
+        <div class="monthly-legend-item" *ngFor="let d of data.distribution">
+          <span class="monthly-legend-dot" [style.background]="d.color"></span>
+          <span class="monthly-legend-label">{{ d.label }}</span>
+          <span class="monthly-legend-count">{{ d.count }}</span>
+          <span class="monthly-legend-pct">({{ d.percentage }}%)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage -->
+    <div class="chart-card">
+      <h3 class="chart-card__subtitle">System Storage</h3>
+      <p class="chart-card__desc">Vault storage utilisation in GB (total: {{ data.storage.totalGb | number }} GB)</p>
+      <div class="monthly-doughnut-wrap">
+        <canvas #storageChart></canvas>
+      </div>
+      <div class="monthly-legend">
+        <div class="monthly-legend-item">
+          <span class="monthly-legend-dot" style="background:#1e2a3a"></span>
+          <span class="monthly-legend-label">Used Storage</span>
+          <span class="monthly-legend-count">{{ data.storage.usedGb }} GB</span>
+          <span class="monthly-legend-pct">({{ data.storage.usedPercentage }}%)</span>
+        </div>
+        <div class="monthly-legend-item">
+          <span class="monthly-legend-dot" style="background:#e5e7eb"></span>
+          <span class="monthly-legend-label">Available Storage</span>
+          <span class="monthly-legend-count">{{ data.storage.availableGb }} GB</span>
+          <span class="monthly-legend-pct">({{ 100 - data.storage.usedPercentage }}%)</span>
+        </div>
+      </div>
+      <div class="monthly-storage-bar">
+        <div class="monthly-storage-bar__fill" [style.width.%]="data.storage.usedPercentage"></div>
+      </div>
+      <p class="monthly-storage-pct">{{ data.storage.usedPercentage }}% used</p>
+    </div>
+
+  </div>
+
+  <!-- ── Document Upload Volume ─────────────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">DOCUMENT UPLOAD VOLUME</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="chart-card">
+    <p class="chart-card__desc">Total document uploads per day of the reporting month (31-day view).</p>
+    <canvas #uploadChart style="max-height: 200px;"></canvas>
+
+    <div class="monthly-upload-summary">
+      <div class="monthly-upload-stat">
+        <span class="monthly-upload-stat__value">{{ data.totalUploads | number }}</span>
+        <span class="monthly-upload-stat__label">Total Uploads</span>
+      </div>
+      <div class="monthly-upload-stat">
+        <span class="monthly-upload-stat__value">{{ data.dailyAverage }}</span>
+        <span class="monthly-upload-stat__label">Daily Average</span>
+      </div>
+      <div class="monthly-upload-stat">
+        <span class="monthly-upload-stat__value">Day {{ data.peakDay }}</span>
+        <span class="monthly-upload-stat__label">Peak Day</span>
+      </div>
+    </div>
+  </div>
+
+</app-report-frame>
+
