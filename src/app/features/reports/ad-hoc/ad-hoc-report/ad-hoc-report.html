@@ -1,1 +1,181 @@
-<p>ad-hoc-report works!</p>
+<div class="adhoc-layout">
+
+  <div class="adhoc-main">
+    <div class="adhoc-form-card">
+      <div class="adhoc-form-card__header">
+        <h2 class="adhoc-form-card__title">Report Configuration</h2>
+        <p class="adhoc-form-card__subtitle">All fields marked * are required</p>
+      </div>
+
+      <!-- Title -->
+      <div class="adhoc-field">
+        <label class="adhoc-field__label" for="report-title">Title <span class="adhoc-field__req">*</span></label>
+        <input
+          id="report-title"
+          type="text"
+          class="adhoc-field__input"
+          placeholder="e.g. Document Processing Activity — Q2 2026"
+          [(ngModel)]="config.title"
+        />
+      </div>
+
+      <!-- Date Range -->
+      <div class="adhoc-date-row">
+        <div class="adhoc-field">
+          <label class="adhoc-field__label" for="date-from">Date From <span class="adhoc-field__req">*</span></label>
+          <input
+            id="date-from"
+            type="date"
+            class="adhoc-field__input"
+            [max]="todayString"
+            [(ngModel)]="config.dateFrom"
+          />
+        </div>
+        <div class="adhoc-field">
+          <label class="adhoc-field__label" for="date-to">Date To <span class="adhoc-field__req">*</span></label>
+          <input
+            id="date-to"
+            type="date"
+            class="adhoc-field__input"
+            [min]="config.dateFrom"
+            [max]="todayString"
+            [(ngModel)]="config.dateTo"
+          />
+        </div>
+      </div>
+
+      <!-- Report Focus -->
+      <div class="adhoc-field">
+        <label class="adhoc-field__label">Report Focus <span class="adhoc-field__req">*</span></label>
+        <p class="adhoc-field__hint">Select one or more areas to include in the report</p>
+
+        <div class="adhoc-focus-list">
+          <label
+            class="adhoc-focus-item"
+            *ngFor="let f of focusAreas"
+            [class.adhoc-focus-item--selected]="isFocusSelected(f)"
+          >
+            <input
+              type="checkbox"
+              class="adhoc-focus-item__cb"
+              [checked]="isFocusSelected(f)"
+              (change)="toggleFocus(f)"
+            />
+            <span class="adhoc-focus-item__box"></span>
+            <div class="adhoc-focus-item__content">
+              <span class="adhoc-focus-item__label">{{ FOCUS_LABELS[f] }}</span>
+              <span class="adhoc-focus-item__desc">{{ FOCUS_DESCRIPTIONS[f] }}</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Export Format -->
+      <div class="adhoc-field">
+        <label class="adhoc-field__label">Export Format</label>
+        <div class="adhoc-format-btns">
+          <button
+            class="adhoc-format-btn"
+            type="button"
+            [class.adhoc-format-btn--selected]="config.exportFormat === ExportFormat.PDF"
+            (click)="setFormat(ExportFormat.PDF)"
+          >PDF Document</button>
+          <button
+            class="adhoc-format-btn"
+            type="button"
+            [class.adhoc-format-btn--selected]="config.exportFormat === ExportFormat.EXCEL"
+            (click)="setFormat(ExportFormat.EXCEL)"
+          >Excel Spreadsheet</button>
+          <button
+            class="adhoc-format-btn"
+            type="button"
+            [class.adhoc-format-btn--selected]="config.exportFormat === ExportFormat.CSV"
+            (click)="setFormat(ExportFormat.CSV)"
+          >CSV Data</button>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="adhoc-error" *ngIf="error" role="alert">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        {{ error }}
+      </div>
+
+      <!-- Actions -->
+      <div class="adhoc-actions">
+        <button
+          class="adhoc-btn adhoc-btn--primary"
+          type="button"
+          [disabled]="!canGenerate"
+          [class.adhoc-btn--loading]="generating"
+          (click)="generate()"
+        >
+          <svg *ngIf="!generating" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <span *ngIf="!generating">Generate Report</span>
+          <span *ngIf="generating" class="adhoc-btn__spinner">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            Generating…
+          </span>
+        </button>
+        <button class="adhoc-btn adhoc-btn--outline" type="button" (click)="reset()">Reset</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
+  <div class="adhoc-sidebar">
+
+    <!-- Recent Reports -->
+    <div class="adhoc-sidebar-card">
+      <h3 class="adhoc-sidebar-card__title">Recent Reports</h3>
+      <div class="adhoc-recent-list">
+        <div class="adhoc-recent-item" *ngFor="let r of recentReports">
+          <div class="adhoc-recent-item__info">
+            <span class="adhoc-recent-item__name">{{ r.title }}</span>
+            <span class="adhoc-recent-item__meta">{{ r.date }} · {{ r.sizeKb }} KB</span>
+          </div>
+          <button
+            class="adhoc-recent-item__dl"
+            type="button"
+            (click)="downloadRecent(r)"
+            [disabled]="r.status === 'generating'"
+            [title]="r.status === 'generating' ? 'Generating…' : 'Download'"
+            aria-label="Download report"
+          >
+            <svg *ngIf="r.status === 'ready'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <svg *ngIf="r.status === 'generating'" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Tips -->
+    <div class="adhoc-tips-card">
+      <h3 class="adhoc-tips-card__title">Report Tips</h3>
+      <ul class="adhoc-tips-list">
+        <li>Select a focused date range for faster generation.</li>
+        <li>Combine Document Processing + Upload Volume for a full throughput view.</li>
+        <li>Security & Anomalies reports are best run over shorter periods.</li>
+        <li>Export as Excel for further filtering and pivot analysis.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
