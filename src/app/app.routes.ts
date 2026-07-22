@@ -4,9 +4,15 @@ import { documentOwnerGuard } from './core/guards/document-owner.guard';
 import { restrictDocumentOwnerOnlyGuard } from './core/guards/restrict-document-owner-only.guard';
 import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.guard';
 import { documentUploadGuard } from './core/guards/document-upload.guard';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
+  {
+    path: 'temp/documents/upload',
+    loadComponent: () => import('./features/documents/upload-document/upload-document.component')
+      .then(m => m.UploadDocumentComponent)
+  },
   {
     path: 'auth/login',
     loadComponent: () => import('./features/auth/login/login.component')
@@ -18,13 +24,38 @@ export const routes: Routes = [
       .then(m => m.RegisterUserComponent)
   },
   {
+    path: 'institution/auth/access',
+    loadComponent: () => import('./features/institution-portal/auth/token-entry/token-entry').then(m => m.TokenEntryComponent)
+  },
+  {
+    path: 'institution/auth/verify',
+    loadComponent: () => import('./features/institution-portal/auth/otp-verify/otp-verify').then(m => m.OtpVerifyComponent)
+  },
+  {
+    path: 'institution/auth/expired',
+    loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
+  },
+  {
+    path: 'institution/dashboard',
+    loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
+  },
+  {
+    path: 'institution/request-documents',
+    loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
+  },
+  {
+    path: 'institution',
+    redirectTo: 'institution/auth/access',
+    pathMatch: 'full'
+  },
+  {
     path: '',
     loadComponent: () => import('./layout/main-layout/main-layout.component')
       .then(m => m.MainLayoutComponent),
     canActivate: [authGuard],
     children: [
       { path: 'dashboard',
-        canActivate: [restrictDocumentOwnerOnlyGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
       { path: 'my-documents',
@@ -32,15 +63,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
           .then(m => m.MyDocumentsComponent) },
       { path: 'users/management',
-        canActivate: [restrictDocumentOwnerOnlyGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/users/user-management/user-management.component')
           .then(m => m.UserManagementComponent) },
       { path: 'administration/institutions',
-        canActivate: [restrictDocumentOwnerOnlyGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/administration/institutions/institutions.component')
           .then(m => m.InstitutionsComponent) },
       { path: 'administration/roles',
-        canActivate: [restrictDocumentOwnerOnlyGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/administration/roles-management/roles-management.component')
           .then(m => m.RolesManagementComponent) },
       { path: 'stakeholders/all',
@@ -63,8 +94,8 @@ export const routes: Routes = [
       { path: 'documents/upload',
         canActivate: [restrictDocumentOwnerOnlyGuard, documentUploadGuard],
         data: { documentPageTitle: 'Upload Document' },
-        loadComponent: () => import('./features/documents/documents-placeholder/documents-placeholder.component')
-          .then(m => m.DocumentsPlaceholderComponent) },
+        loadComponent: () => import('./features/documents/upload-document/upload-document.component')
+          .then(m => m.UploadDocumentComponent) },
     ]
   },
   { path: '**', redirectTo: 'auth/login' }
