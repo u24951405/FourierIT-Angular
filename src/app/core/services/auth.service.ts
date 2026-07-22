@@ -116,6 +116,14 @@ export class AuthService {
     return this.hasRole('Document Owner') && !this.hasRole('Department Admin');
   }
 
+  canReviewDocuments(): boolean {
+    return this.hasRole('Compliance Officer') || this.hasRole('Department Admin');
+  }
+
+  logActivity(eventType: string, message: string): void {
+    console.info(`[auth] ${eventType}: ${message}`);
+  }
+
   /** Post-login home: My Documents for document-owner-only, otherwise dashboard. */
   getDefaultAppPath(): string {
     return this.isDocumentOwnerOnly() ? '/my-documents' : '/dashboard';

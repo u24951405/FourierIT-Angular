@@ -70,6 +70,10 @@ export class DocumentChecklistComponent implements OnInit, OnDestroy {
     return this.authService.currentUser();
   }
 
+  isItemUploaded(item: DocumentItem): boolean {
+    return this.uploadService.isItemUploaded(item);
+  }
+
   get kycItems(): DocumentItem[] {
     return this.uploadService.getTodoByCategory(DocumentCategory.KYC);
   }

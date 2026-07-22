@@ -285,6 +285,10 @@
     background: #f9fafb;
   }
 
+  &--uploaded {
+    background: #f0fdf4;
+  }
+
   &__radio {
     flex-shrink: 0;
     width: 18px;
@@ -292,6 +296,24 @@
     border: 2px solid #d1d5db;
     border-radius: 50%;
     background: #fff;
+    position: relative;
+
+    &--uploaded {
+      border-color: #10b981;
+      background: #10b981;
+
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 6px;
+        height: 3px;
+        border-left: 2px solid #fff;
+        border-bottom: 2px solid #fff;
+        transform: rotate(-45deg);
+      }
+    }
   }
 
   &__content {
