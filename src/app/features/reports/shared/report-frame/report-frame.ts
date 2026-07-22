@@ -30,6 +30,13 @@ export class ReportFrameComponent implements OnInit {
 
   formattedDate = '';
 
+  get accentGradientStyle(): string {
+    const accentColors = this.config?.accentColors ?? [];
+    return accentColors.length > 0
+      ? `linear-gradient(to right, ${accentColors.join(', ')})`
+      : '#10b981';
+  }
+
   ngOnInit(): void {
     this.formattedDate = this.config?.dateGenerated
       ? new Date(this.config.dateGenerated).toLocaleString('en-ZA', {

@@ -99,9 +99,7 @@
       </div>
 
       <!-- Accent bar -->
-      <div class="rf-doc-header__accent"
-        [style.background]="config.accentColors?.length ? 'linear-gradient(to right, ' + config.accentColors.join(', ') + ')' : '#10b981'">
-      </div>
+      <div class="rf-doc-header__accent" [style.background]="accentGradientStyle"></div>
     </div>
 
     <!-- Content slot -->
