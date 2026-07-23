@@ -52,8 +52,4 @@ export class LoginComponent {
       queryParams: { token: 'demo-institution-token' }
     });
   }
-
-  openTemporaryUploadPage(): void {
-    this.router.navigate(['/temp/documents/upload']);
-  }
 }
