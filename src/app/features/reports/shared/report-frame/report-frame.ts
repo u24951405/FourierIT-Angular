@@ -54,6 +54,11 @@ export class ReportFrameComponent implements OnInit {
     this.router.navigate([this.backPath]);
   }
 
+  get accentBackground(): string {
+    const colors = this.config?.accentColors;
+    return colors?.length ? `linear-gradient(to right, ${colors.join(', ')})` : '#10b981';
+  }
+
   print(): void {
     window.print();
   }

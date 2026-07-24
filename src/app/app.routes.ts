@@ -9,11 +9,6 @@ import { adminGuard } from './core/guards/admin.guard';
 export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
   {
-    path: 'temp/documents/upload',
-    loadComponent: () => import('./features/documents/upload-document/upload-document.component')
-      .then(m => m.UploadDocumentComponent)
-  },
-  {
     path: 'auth/login',
     loadComponent: () => import('./features/auth/login/login.component')
       .then(m => m.LoginComponent)
