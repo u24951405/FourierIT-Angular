@@ -1,0 +1,163 @@
+<!-- ── Page Header ──────────────────────────────────────────────────────────── -->
+<div class="cert-page-header">
+  <div class="cert-page-header__left">
+    <button class="cert-back-btn" type="button" (click)="goBack()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+    </button>
+    <div>
+      <h1 class="cert-page-header__title">FICA Compliance Certificate</h1>
+      <p class="cert-page-header__subtitle">Printable / downloadable compliance attestation</p>
+    </div>
+  </div>
+  <div class="cert-page-header__actions">
+    <button class="rf-action-btn rf-action-btn--outline" type="button" (click)="print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+        <rect x="6" y="14" width="12" height="8"></rect>
+      </svg>
+      Print
+    </button>
+    <button class="rf-action-btn rf-action-btn--primary" type="button" (click)="downloadPdf()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      Download PDF
+    </button>
+  </div>
+</div>
+
+<!-- ── Printable Certificate ────────────────────────────────────────────────── -->
+<div class="cert-wrapper">
+  <div class="cert-document" id="certificate-printable">
+
+    <!-- Header -->
+    <div class="cert-header">
+      <div class="cert-header__brand">
+        <div class="cert-header__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <div>
+          <p class="cert-header__name">DocuVault</p>
+          <p class="cert-header__sub">VERIFICATION & COMPLIANCE PLATFORM</p>
+        </div>
+      </div>
+
+      <div class="cert-header__verified">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <span>VERIFIED</span>
+      </div>
+
+      <!-- Meta -->
+      <div class="cert-header__meta">
+        <div class="cert-header__meta-item">
+          <span class="cert-header__meta-key">CERTIFICATE ID</span>
+          <span class="cert-header__meta-val">{{ certificateId }}</span>
+        </div>
+        <div class="cert-header__meta-item">
+          <span class="cert-header__meta-key">DATE GENERATED</span>
+          <span class="cert-header__meta-val">{{ dateGenerated }}</span>
+        </div>
+        <div class="cert-header__meta-item">
+          <span class="cert-header__meta-key">CREATED BY</span>
+          <span class="cert-header__meta-val">{{ createdBy }}</span>
+        </div>
+      </div>
+
+      <div class="cert-header__accent"></div>
+    </div>
+
+    <!-- Body -->
+    <div class="cert-body">
+      <p class="cert-body__org-label">OFFICIAL ATTESTATION DOCUMENT</p>
+      <h2 class="cert-body__title">Certificate of FICA Compliance</h2>
+      <div class="cert-body__divider">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"></circle>
+        </svg>
+      </div>
+
+      <!-- Score Box -->
+      <div class="cert-score">
+        <p class="cert-score__label">VALIDATION SCORE</p>
+        <p class="cert-score__value">{{ validationScore }}%</p>
+        <p class="cert-score__status">{{ complianceStatus }}</p>
+      </div>
+
+      <!-- Attestation Text -->
+      <div class="cert-attestation">
+        <p>
+          This document serves to formally attest that the enterprise infrastructure managed by
+          <strong>{{ entityName }}</strong> has successfully satisfied all required statutory document
+          ingestion and verification cycles, achieving a comprehensive validation score of
+          <strong>{{ validationScore }}% COMPLIANT</strong>.
+        </p>
+        <p>
+          This compliance standing remains valid until <strong>{{ validUntil }}</strong>, subject to
+          ongoing system constraints and statutory documentation renewal cycles.
+        </p>
+        <p class="cert-attestation__legal">
+          Enforced via DocuVault automated tracking architecture in accordance with the Financial
+          Intelligence Centre Act (FICA) and POPIA data frameworks.
+        </p>
+      </div>
+
+      <!-- Engine Block -->
+      <div class="cert-engine">
+        <div class="cert-engine__header">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          DOCUVAULT AUTOMATED ENGINE
+        </div>
+        <div class="cert-engine__rows">
+          <div class="cert-engine__row">
+            <span class="cert-engine__key">Verification Hash</span>
+            <span class="cert-engine__val">{{ verificationHash }}</span>
+          </div>
+          <div class="cert-engine__row">
+            <span class="cert-engine__key">Certificate ID</span>
+            <span class="cert-engine__val">{{ certificateId }}</span>
+          </div>
+          <div class="cert-engine__row">
+            <span class="cert-engine__key">Valid Until</span>
+            <span class="cert-engine__val">16 July 2027</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Signatures -->
+      <div class="cert-signatures">
+        <div class="cert-sig">
+          <div class="cert-sig__line"></div>
+          <p class="cert-sig__name">FICA Compliance Officer</p>
+          <p class="cert-sig__role">Authorised Signatory — Fourier Group</p>
+          <p class="cert-sig__date">Date: 16 July 2026</p>
+        </div>
+        <div class="cert-sig">
+          <div class="cert-sig__line"></div>
+          <p class="cert-sig__name">DocuVault System Administrator</p>
+          <p class="cert-sig__role">Admin User</p>
+          <p class="cert-sig__date">Date: 16 July 2026</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="cert-footer">
+      <span>DocuVault | Verification and Compliance</span>
+      <span>Page 1 of 1 | {{ certificateId }}</span>
+    </div>
+
+  </div>
+</div>

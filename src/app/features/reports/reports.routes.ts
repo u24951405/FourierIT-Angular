@@ -30,21 +30,21 @@ export const REPORTS_ROUTES: Routes = [
   {
     path: 'compliance',
     loadComponent: () =>
-      import('./compliance/compliance-report/compliance-report').then(m => m.ComplianceReport),
+      import('./compliance/compliance-report/compliance-report').then((m: any) => m.ComplianceReportComponent),
   },
   {
     path: 'activity',
     loadComponent: () =>
-      import('./activity/activity-report/activity-report').then(m => m.ActivityReport),
+      import('./activity/activity-report/activity-report').then((m: any) => m.ActivityReportComponent),
   },
   {
     path: 'system-audit',
     loadComponent: () =>
-      import('./system-audit/system-audit-report/system-audit-report').then(m => m.SystemAuditReport),
+      import('./system-audit/system-audit-report/system-audit-report').then((m: any) => m.SystemAuditReportComponent),
   },
   {
     path: 'client-risk-rating',
     loadComponent: () =>
-      import('./client-risk-rating/client-risk-rating/client-risk-rating').then(m => m.ClientRiskRating),
+      import('./client-risk-rating/client-risk-rating/client-risk-rating').then((m: any) => m.ClientRiskRatingComponent),
   },
 ];

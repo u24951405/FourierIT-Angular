@@ -1,4 +1,5 @@
-﻿export enum ReportType {
+ 
+export enum ReportType {
   AD_HOC = 'AD_HOC',
   MONTHLY = 'MONTHLY',
   COMPLIANCE = 'COMPLIANCE',
@@ -6,13 +7,13 @@
   SYSTEM_AUDIT = 'SYSTEM_AUDIT',
   CLIENT_RISK_RATING = 'CLIENT_RISK_RATING',
 }
-
+ 
 export enum ExportFormat {
   PDF = 'PDF',
   EXCEL = 'EXCEL',
   CSV = 'CSV',
 }
-
+ 
 export enum ReportFocus {
   DOCUMENT_PROCESSING = 'DOCUMENT_PROCESSING',
   SECURITY_ANOMALIES = 'SECURITY_ANOMALIES',
@@ -20,15 +21,15 @@ export enum ReportFocus {
   SYSTEM_STORAGE = 'SYSTEM_STORAGE',
   UPLOAD_VOLUME = 'UPLOAD_VOLUME',
 }
-
+ 
 export enum RiskLevel {
   HIGH = 'HIGH',
   MEDIUM = 'MEDIUM',
   LOW = 'LOW',
 }
-
+ 
 // ─── Ad Hoc ──────────────────────────────────────────────────────────────────
-
+ 
 export interface AdHocReportConfig {
   title: string;
   dateFrom: string;
@@ -36,7 +37,7 @@ export interface AdHocReportConfig {
   focusAreas: ReportFocus[];
   exportFormat: ExportFormat;
 }
-
+ 
 export interface RecentReport {
   id: string;
   title: string;
@@ -44,42 +45,42 @@ export interface RecentReport {
   sizeKb: number;
   status: 'ready' | 'generating';
 }
-
+ 
 // ─── Monthly ─────────────────────────────────────────────────────────────────
-
+ 
 export interface DocumentProcessingStats {
   verified: number;
   pendingVerification: number;
   flaggedAnomalies: number;
   partOfEnquiry: number;
 }
-
+ 
 export interface SecurityEvent {
   day: number;
   failedLogins: number;
   unusualAccessPattern: number;
   permissionElevationRequest: number;
 }
-
+ 
 export interface DocumentDistributionCategory {
   label: string;
   count: number;
   percentage: number;
   color: string;
 }
-
+ 
 export interface StorageStats {
   usedGb: number;
   availableGb: number;
   totalGb: number;
   usedPercentage: number;
 }
-
+ 
 export interface UploadVolumeDay {
   day: number;
   count: number;
 }
-
+ 
 export interface MonthlyReportData {
   reportId: string;
   month: string;
@@ -94,9 +95,9 @@ export interface MonthlyReportData {
   dailyAverage: number;
   peakDay: number;
 }
-
+ 
 // ─── Compliance ───────────────────────────────────────────────────────────────
-
+ 
 export interface ComplianceTransition {
   transitionDate: string;
   previousState: 'Compliant' | 'Non-Compliant';
@@ -104,7 +105,7 @@ export interface ComplianceTransition {
   triggeringEvent: string;
   downtime: string | null;
 }
-
+ 
 export interface ComplianceReportData {
   reportId: string;
   dateGenerated: string;
@@ -118,9 +119,9 @@ export interface ComplianceReportData {
   uptimePercentage: number;
   transitions: ComplianceTransition[];
 }
-
+ 
 // ─── Activity ────────────────────────────────────────────────────────────────
-
+ 
 export interface DocumentInventoryItem {
   documentName: string;
   category: string;
@@ -129,7 +130,7 @@ export interface DocumentInventoryItem {
   expiryDate: string | null;
   verificationStatus: 'Verified' | 'Expiring Soon' | 'Pending' | 'Expired';
 }
-
+ 
 export interface VaultAccessLogEntry {
   timestamp: string;
   accessorName: string;
@@ -137,13 +138,13 @@ export interface VaultAccessLogEntry {
   actionReason: string;
   organisation: string;
 }
-
+ 
 export interface ClientRelationship {
   organisation: string;
   documentsShared: number;
   status: 'Active' | 'Pending' | 'Expired';
 }
-
+ 
 export interface ActivityReportData {
   reportId: string;
   dateGenerated: string;
@@ -157,9 +158,9 @@ export interface ActivityReportData {
   vaultAccessLog: VaultAccessLogEntry[];
   clientRelationships: ClientRelationship[];
 }
-
+ 
 // ─── System Audit ─────────────────────────────────────────────────────────────
-
+ 
 export interface AuditLogRow {
   sessionId: string;
   sessionRole: string;
@@ -168,7 +169,7 @@ export interface AuditLogRow {
   timestamp: string;
   securityStatus: 'Clean' | 'Anomaly Detected' | 'Expired Token';
 }
-
+ 
 export interface InstitutionAuditBlock {
   institutionName: string;
   tokenWindow: string;
@@ -179,7 +180,7 @@ export interface InstitutionAuditBlock {
   totalInteractions: number;
   anomalies: number;
 }
-
+ 
 export interface SystemAuditReportData {
   reportId: string;
   dateGenerated: string;
@@ -190,9 +191,9 @@ export interface SystemAuditReportData {
   totalAnomalies: number;
   cleanInteractions: number;
 }
-
+ 
 // ─── Client Risk Rating ───────────────────────────────────────────────────────
-
+ 
 export interface ClientRiskProfile {
   name: string;
   referenceId: string;
@@ -205,14 +206,14 @@ export interface ClientRiskProfile {
   finalCompositeScore: number;
   riskLevel: RiskLevel;
 }
-
+ 
 export interface RiskStrataGroup {
   level: RiskLevel;
   profiles: ClientRiskProfile[];
   averageScore: number;
   pepElevatedCount: number;
 }
-
+ 
 export interface ClientRiskReportData {
   reportId: string;
   dateGenerated: string;
@@ -221,9 +222,9 @@ export interface ClientRiskReportData {
   portfolioAvgScore: number;
   strata: RiskStrataGroup[];
 }
-
+ 
 // ─── Shared ───────────────────────────────────────────────────────────────────
-
+ 
 export const REPORT_FOCUS_LABELS: Record<ReportFocus, string> = {
   [ReportFocus.DOCUMENT_PROCESSING]: 'Document Processing Activity',
   [ReportFocus.SECURITY_ANOMALIES]: 'Security & Anomalies',
@@ -231,7 +232,7 @@ export const REPORT_FOCUS_LABELS: Record<ReportFocus, string> = {
   [ReportFocus.SYSTEM_STORAGE]: 'System Storage',
   [ReportFocus.UPLOAD_VOLUME]: 'Document Upload Volume',
 };
-
+ 
 export const REPORT_FOCUS_DESCRIPTIONS: Record<ReportFocus, string> = {
   [ReportFocus.DOCUMENT_PROCESSING]: 'Uploads, verifications, rejections and re-submissions over the period',
   [ReportFocus.SECURITY_ANOMALIES]: 'Suspicious access events, failed logins and flagged activity',
