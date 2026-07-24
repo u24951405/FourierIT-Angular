@@ -2,29 +2,17 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { ReportFrameComponent, ReportFrameConfig } from '../../shared/report-frame/report-frame';
 import { ComplianceReportData, ComplianceTransition } from '../../reports.models';
 
 @Component({
   selector: 'app-compliance-report',
   standalone: true,
-  imports: [CommonModule, ReportFrameComponent],
+  imports: [CommonModule],
   templateUrl: './compliance-report.html',
   styleUrls: ['./compliance-report.scss'],
 })
 export class ComplianceReportComponent {
   private router = inject(Router);
-
-  frameConfig: ReportFrameConfig = {
-    reportId: 'DV-CMP-4163721330',
-    dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
-    reportType: 'Compliance History',
-    framework: 'FICA · POPIA · DocuVault v35',
-    badgeLabel: 'COMPLIANCE',
-    badgeIcon: 'check',
-    accentColors: ['#10b981', '#10b981'],
-  };
 
   data: ComplianceReportData = {
     reportId: 'DV-CMP-4163721330',

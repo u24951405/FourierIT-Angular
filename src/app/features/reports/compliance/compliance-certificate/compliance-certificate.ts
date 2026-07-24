@@ -7,8 +7,8 @@ import { inject } from '@angular/core';
   selector: 'app-compliance-certificate',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './compliance-certificate.component.html',
-  styleUrls: ['./compliance-certificate.component.scss'],
+  templateUrl: './compliance-certificate.html',
+  styleUrls: ['./compliance-certificate.scss'],
 })
 export class ComplianceCertificateComponent {
   private router = inject(Router);
