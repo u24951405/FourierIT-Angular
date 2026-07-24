@@ -1,0 +1,86 @@
+<div class="page-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <h1>Audit Log</h1>
+    <p class="subtitle">System activity records fetched from the AuditLog entity</p>
+  </header>
+
+  <div class="card">
+    <!-- Filter Control Bar -->
+    <div class="filter-bar">
+      <div class="filters-group">
+        <span class="filter-label">🔍 Filters</span>
+        
+        <div class="field-group">
+          <label>USER ID</label>
+          <select [(ngModel)]="selectedUserId" (change)="applyFilters()" class="form-select">
+            <option value="ALL">All Users</option>
+            <option *ngFor="let user of userOptions" [value]="user">{{ user }}</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label>ACTIONCODE ID</label>
+          <select [(ngModel)]="selectedActionCode" (change)="applyFilters()" class="form-select">
+            <option value="ALL">All Action Codes</option>
+            <option *ngFor="let action of actionCodeOptions" [value]="action">{{ action }}</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn btn-outline" (click)="exportToCsv()">
+        📥 Export to CSV
+      </button>
+    </div>
+
+    <!-- Data Table -->
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>TimeStamp</th>
+          <th>AuditID</th>
+          <th>UserID</th>
+          <th>ActionCode</th>
+          <th>Details</th>
+          <th>TableAffected</th>
+          <th>RecordID</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of paginatedLogs">
+          <td class="timestamp">{{ item.timeStamp | date:'yyyy/MM/dd, HH:mm:ss' }}</td>
+          <td>{{ item.auditLogId }}</td>
+          <td>{{ item.userId || 'System' }}</td>
+          <td>
+            <span class="badge action-badge">{{ item.actionCode }}</span>
+          </td>
+          <td class="description">{{ item.description }}</td>
+          <td>{{ item.tableAffected }}</td>
+          <td>{{ item.recordID ?? '-' }}</td>
+        </tr>
+        <tr *ngIf="paginatedLogs.length === 0 && !isLoading">
+          <td colspan="7" class="empty-state">No audit log records found matching the filter criteria.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination Footer -->
+    <div class="pagination-footer">
+      <span class="records-info">
+        Showing {{ pageRangeStart }}–{{ pageRangeEnd }} of {{ totalRecords }} records
+      </span>
+
+      <div class="pagination-controls" *ngIf="totalPages > 1">
+        <button class="btn-page" [disabled]="currentPage === 1" (click)="previousPage()">Previous</button>
+        <button 
+          *ngFor="let page of [].constructor(totalPages); let i = index" 
+          class="btn-page-number" 
+          [class.active]="currentPage === (i + 1)"
+          (click)="goToPage(i + 1)">
+          {{ i + 1 }}
+        </button>
+        <button class="btn-page" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>

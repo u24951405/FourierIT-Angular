@@ -130,7 +130,7 @@ export class AuthService {
   }
 
   getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
-  isLoggedIn(): boolean     { return !!this.getToken(); }
+  isLoggedIn(): boolean   { return !!this.getToken(); }
 
   getCurrentAccount(): Observable<CurrentAccount> {
     return this.http.get<CurrentAccount>(`${this.base}/me`);
