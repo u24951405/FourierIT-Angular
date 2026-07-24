@@ -1,87 +1,135 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { finalize } from 'rxjs';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { DocumentUploadService } from '../../../core/services/document-upload.service';
-import { EntityType } from '../../../core/models/document-upload.models';
-import { DocumentChecklistComponent } from './steps/document-checklist/document-checklist';
-import { PopiaConsentComponent } from './steps/popia-consent/popia-consent';
-import { EntitySelectComponent } from './steps/entity-select/entity-select';
-import { DocumentStatusPanelComponent } from './document-status-panel/document-status-panel';
+import { DocumentsApiService, DocumentTypeOption, RequiredDocumentsStatusResponse } from '../../../core/services/documents-api.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-upload-document-page',
   standalone: true,
-  imports: [CommonModule, PopiaConsentComponent, EntitySelectComponent, DocumentChecklistComponent, DocumentStatusPanelComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './upload-document.component.html',
   styleUrl: './upload-document.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UploadDocumentComponent implements OnInit {
   private auth = inject(AuthService);
-  private uploadService = inject(DocumentUploadService);
+  private fb = inject(FormBuilder);
+  private docsApi = inject(DocumentsApiService);
+  private toast = inject(ToastService);
   private router = inject(Router);
 
-  EntityType = EntityType;
+  readonly loading = signal(false);
+  readonly submitting = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly requiredStatus = signal<RequiredDocumentsStatusResponse | null>(null);
+  readonly documentTypes = signal<DocumentTypeOption[]>([]);
+  readonly selectedFile = signal<File | null>(null);
+  readonly uploadedDocumentTypeIds = signal<Set<number>>(new Set());
 
-  step = signal(1);
-  consentGiven = signal(false);
-  selectedEntityType = signal<EntityType | null>(null);
-  readonly documentOwner = this.getDocumentOwner();
-  readonly currentUserId = this.getCurrentUserId();
-  readonly subjectId = this.getSubjectId();
-  readonly demoMode = !this.auth.isLoggedIn();
+  readonly form = this.fb.group({
+    documentTypeId: [null as number | null, Validators.required],
+    isCertified: [false],
+    commissionerName: [''],
+    certificationDate: ['']
+  });
+
+  get documentTypeUploadError(): string | null {
+    const selectedTypeId = this.form.get('documentTypeId')?.value as number | null;
+    return selectedTypeId != null && this.uploadedDocumentTypeIds().has(selectedTypeId)
+      ? 'You have already uploaded this document type. Please choose a different type or update the existing document.'
+      : null;
+  }
+
+  isDocumentTypeUploaded(documentTypeId: number | null): boolean {
+    return documentTypeId != null && this.uploadedDocumentTypeIds().has(documentTypeId);
+  }
 
   ngOnInit(): void {
-    this.uploadService.resetState();
-    this.uploadService.getState().subscribe((state) => {
-      this.consentGiven.set(state.consentGiven);
-    });
+    this.loadDocumentContext();
   }
 
-  onConsentConfirmed(): void {
-    this.consentGiven.set(true);
-    this.step.set(2);
+  get canSubmit(): boolean {
+    return this.form.valid && !!this.selectedFile() && !this.submitting();
   }
 
-  onEntitySelected(type: EntityType): void {
-    this.selectedEntityType.set(type);
-    this.uploadService.setEntityType(type);
-    this.step.set(3);
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedFile.set(input.files?.[0] ?? null);
   }
 
-  onProceedToReview(): void {
-    this.step.set(4);
+  upload(): void {
+    if (!this.canSubmit) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const file = this.selectedFile();
+    const values = this.form.getRawValue();
+    if (!file || values.documentTypeId == null) return;
+
+    if (this.isDocumentTypeUploaded(values.documentTypeId)) {
+      const message = 'You have already uploaded this document type. Please choose a different type or update the existing document.';
+      this.error.set(message);
+      this.toast.show(message, 'error');
+      return;
+    }
+
+    this.submitting.set(true);
+    this.error.set(null);
+
+    this.docsApi.uploadDocument({
+      file,
+      documentTypeId: values.documentTypeId,
+      isCertified: !!values.isCertified,
+      commissionerName: (values.commissionerName ?? '').trim() || undefined,
+      certificationDate: values.certificationDate || null
+    })
+      .pipe(finalize(() => this.submitting.set(false)))
+      .subscribe({
+        next: () => {
+          this.toast.show('Document uploaded successfully.', 'success');
+          this.form.reset({ documentTypeId: null, isCertified: false, commissionerName: '', certificationDate: '' });
+          this.selectedFile.set(null);
+          this.loadDocumentContext();
+        },
+        error: err => {
+          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Upload failed.';
+          this.error.set(message);
+          this.toast.show(message, 'error');
+        }
+      });
   }
 
-  onSubmissionSuccess(): void {
+  openMyDocuments(): void {
     void this.router.navigate(['/my-documents']);
   }
 
-  get selectedEntityLabel(): string {
-    return this.selectedEntityType() === EntityType.COMPANY ? 'Department' : 'Document Owner';
-  }
+  private loadDocumentContext(): void {
+    this.loading.set(true);
+    this.error.set(null);
 
-  get showChecklist(): boolean {
-    return this.selectedEntityType() !== null && this.step() === 3;
-  }
+    this.docsApi.getMyRequiredDocumentsStatus()
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: status => {
+          this.requiredStatus.set(status);
+          this.uploadedDocumentTypeIds.set(new Set(status.documents?.filter(doc => doc.isUploaded).map(doc => doc.documentTypeId) ?? []));
+        },
+        error: err => {
+          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not load document requirements.';
+          this.requiredStatus.set(null);
+          this.uploadedDocumentTypeIds.set(new Set());
+          this.error.set(message);
+        }
+      });
 
-  get showStatusPanel(): boolean {
-    return this.step() === 4;
-  }
-
-  private getCurrentUserId(): string {
-    return this.auth.currentUser()?.id || 'unknown-subject';
-  }
-
-  private getSubjectId(): string {
-    const user = this.auth.currentUser();
-    return user?.id || user?.email || 'unknown-subject';
-  }
-
-  private getDocumentOwner(): string {
-    const user = this.auth.currentUser();
-    const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-    return fullName || user?.email || 'Unknown';
+    this.docsApi.getMyDocumentTypes().subscribe({
+      next: types => this.documentTypes.set(types?.documentTypes ?? []),
+      error: () => this.documentTypes.set([])
+    });
   }
 }

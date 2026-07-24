@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { InviteInstitutionResponse } from '../models/institution.models';
 
 export interface InstitutionDto {
   institutionId: number;
@@ -49,5 +50,12 @@ export class InstitutionService {
 
   delete(institutionId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${institutionId}`);
+  }
+
+  invite(institutionId: number, email: string): Observable<InviteInstitutionResponse> {
+    return this.http.post<InviteInstitutionResponse>(`${this.base}/auth/invite`, {
+      institutionId,
+      email,
+    });
   }
 }

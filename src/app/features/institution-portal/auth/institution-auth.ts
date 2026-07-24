@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap, throwError } from 'rxjs';
+import { Observable, of, tap, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import {
   InstitutionSession,
@@ -98,6 +98,29 @@ export class InstitutionAuthService {
     return this.pendingValidation;
   }
 
+  initializeDemoAccess(): void {
+    this.pendingValidation = {
+      valid: true,
+      institutionId: 'demo-institution',
+      institutionName: 'Demo Institution',
+      institutionCode: 'DEMO-001',
+      maskedEmail: 'demo@fourier.local',
+    };
+    this.pendingAccessToken = 'demo-institution-token';
+    this.otpAttempts.set(0);
+
+    this.logAuditEvent({
+      userId: this.pendingValidation.institutionId,
+      institutionId: this.pendingValidation.institutionId,
+      timestamp: new Date().toISOString(),
+      actionType: AuditEventType.OTP_SENT,
+    });
+  }
+
+  private isDemoSession(): boolean {
+    return this.pendingAccessToken === 'demo-institution-token';
+  }
+
   // ─── Step 2: OTP Verification ───────────────────────────────────────────────
 
   /**
@@ -110,6 +133,50 @@ export class InstitutionAuthService {
 
     if (!this.pendingValidation || !this.pendingAccessToken) {
       return throwError(() => new Error('No pending validation. Please restart the authentication process.'));
+    }
+
+    if (this.isDemoSession()) {
+      if (otp !== '123456') {
+        this.otpAttempts.update((n) => n + 1);
+        return throwError(() => new Error('Invalid or expired OTP.'));
+      }
+
+      const response: OtpVerifyResponse = {
+        success: true,
+        sessionToken: 'demo-session-token',
+        expiresAt: new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString(),
+      };
+
+      return of(response).pipe(
+        tap({
+          next: () => {
+            this.createSession(response);
+            this.logAuditEvent({
+              userId: this.pendingValidation!.institutionId,
+              institutionId: this.pendingValidation!.institutionId,
+              timestamp: new Date().toISOString(),
+              actionType: AuditEventType.OTP_VERIFIED,
+            });
+            this.logAuditEvent({
+              userId: this.pendingValidation!.institutionId,
+              institutionId: this.pendingValidation!.institutionId,
+              timestamp: new Date().toISOString(),
+              actionType: AuditEventType.LOGIN_SUCCESS,
+            });
+            this.pendingValidation = null;
+            this.pendingAccessToken = null;
+          },
+          error: () => {
+            const institutionId = this.pendingValidation?.institutionId ?? 'unknown';
+            this.logAuditEvent({
+              userId: institutionId,
+              institutionId,
+              timestamp: new Date().toISOString(),
+              actionType: AuditEventType.LOGIN_FAILURE,
+            });
+          },
+        })
+      );
     }
 
     const payload: OtpVerifyRequest = {

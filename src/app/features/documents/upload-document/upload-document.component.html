@@ -1,63 +1,113 @@
 <section class="upload-document-page">
-  <header class="upload-document-page__header">
-    <h1>Upload Documents</h1>
-    <p>Follow the compliance workflow to submit your documents.</p>
+  <header class="upload-document-page__hero">
+    <div>
+      <p class="eyebrow">Compliance workflow</p>
+      <h1>Upload Documents</h1>
+      <p>Submit your required documents for your account in one secure place.</p>
+    </div>
+    <button type="button" class="btn btn--outline" (click)="openMyDocuments()">View my documents</button>
   </header>
 
-  <div class="workflow-steps">
-    <span class="step-pill" [class.active]="step() === 1">1. Consent</span>
-    <span class="step-pill" [class.active]="step() === 2">2. Document Owner / Department</span>
-    <span class="step-pill" [class.active]="step() === 3">3. Upload Documents</span>
-    <span class="step-pill" [class.active]="step() === 4">4. Review & Submit</span>
-  </div>
-
-  <app-popia-consent
-    *ngIf="step() === 1"
-    [subjectId]="subjectId"
-    [currentUserId]="currentUserId"
-    [demoMode]="demoMode"
-    (consentConfirmed)="onConsentConfirmed()"
-  ></app-popia-consent>
-
-  <div *ngIf="step() === 2" class="workflow-panel">
-    <app-entity-select (entitySelected)="onEntitySelected($event)"></app-entity-select>
-  </div>
-
-  <div *ngIf="showChecklist" class="workflow-panel">
-    <div class="workflow-panel__header">
-      <div>
-        <h2>Upload Documents</h2>
-        <p>Selected: {{ selectedEntityLabel }}</p>
-      </div>
-      <button type="button" class="btn-secondary" (click)="step.set(2)">
-        Change Selection
-      </button>
+  @if (loading()) {
+    <section class="upload-document-page__state">Loading document requirements…</section>
+  } @else if (error()) {
+    <section class="upload-document-page__state upload-document-page__state--error">{{ error() }}</section>
+  } @else {
+    <div class="upload-document-page__summary">
+      <article>
+        <span>Entity type</span>
+        <strong>{{ requiredStatus()?.entityType || 'Assigned entity' }}</strong>
+      </article>
+      <article>
+        <span>Required documents</span>
+        <strong>{{ requiredStatus()?.documents?.length || 0 }}</strong>
+      </article>
+      <article>
+        <span>Missing</span>
+        <strong>{{ requiredStatus()?.missingCount || 0 }}</strong>
+      </article>
     </div>
 
-    <app-document-checklist
-      [entityType]="selectedEntityType() ?? EntityType.INDIVIDUAL"
-      [documentOwner]="documentOwner"
-    ></app-document-checklist>
+    <div class="upload-layout">
+      <form class="upload-card" [formGroup]="form" (ngSubmit)="upload()" novalidate>
+        <div class="upload-card__header">
+          <div>
+            <h2>Upload a file</h2>
+            <p>Choose one of the document types required for your entity.</p>
+          </div>
+        </div>
 
-    <div class="workflow-actions">
-      <button type="button" class="btn-primary" (click)="onProceedToReview()">
-        Continue to Review
-      </button>
+        <div class="field">
+          <label>Document Type <span class="req">*</span></label>
+          <select formControlName="documentTypeId">
+            <option [ngValue]="null">Select a document type</option>
+            @for (type of documentTypes(); track type.documentTypeId) {
+              <option
+                [ngValue]="type.documentTypeId"
+                [disabled]="isDocumentTypeUploaded(type.documentTypeId)">
+                {{ type.typeName }}{{ type.isMandatory ? ' (required)' : '' }}{{ isDocumentTypeUploaded(type.documentTypeId) ? ' - already uploaded' : '' }}
+              </option>
+            }
+          </select>
+          @if (form.get('documentTypeId')?.invalid && form.get('documentTypeId')?.touched) {
+            <span class="field__error">Select a document type.</span>
+          } @else if (documentTypeUploadError) {
+            <span class="field__error">{{ documentTypeUploadError }}</span>
+          }
+        </div>
+
+        <div class="field">
+          <label>File <span class="req">*</span></label>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" (change)="onFileSelected($event)">
+          @if (!selectedFile()) {
+            <span class="field__hint">Choose a file to upload.</span>
+          } @else {
+            <span class="field__hint">Selected: {{ selectedFile()?.name }}</span>
+          }
+        </div>
+
+        <div class="field-row">
+          <label class="check-row">
+            <input type="checkbox" formControlName="isCertified">
+            <span>Certified copy</span>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Commissioner Name</label>
+            <input type="text" formControlName="commissionerName" placeholder="Optional">
+          </div>
+          <div class="field">
+            <label>Certification Date</label>
+            <input type="date" formControlName="certificationDate">
+          </div>
+        </div>
+
+        <div class="upload-card__actions">
+          <button type="submit" class="btn btn--primary" [disabled]="!canSubmit">
+            {{ submitting() ? 'Uploading…' : 'Upload document' }}
+          </button>
+        </div>
+      </form>
+
+      <aside class="requirements-card">
+        <h2>Required documents</h2>
+        <p>These document types are required for your current entity.</p>
+        <div class="requirements-list">
+          @for (doc of requiredStatus()?.documents || []; track doc.documentTypeId) {
+            <article class="requirements-item">
+              <div>
+                <strong>{{ doc.documentTypeName }}</strong>
+                <span>{{ doc.description || (doc.isMandatory ? 'Mandatory' : 'Optional') }}</span>
+              </div>
+              <span class="badge badge--{{ doc.isUploaded ? 'approved' : 'rejected' }}">
+                {{ doc.isUploaded ? 'Uploaded' : 'Missing' }}
+              </span>
+            </article>
+          }
+        </div>
+      </aside>
     </div>
-  </div>
-
-  <div *ngIf="showStatusPanel" class="workflow-panel">
-    <div class="workflow-panel__header">
-      <div>
-        <h2>Review & Submit</h2>
-        <p>Confirm your document uploads and submit for compliance review.</p>
-      </div>
-      <button type="button" class="btn-secondary" (click)="step.set(3)">
-        Back to Uploads
-      </button>
-    </div>
-
-    <app-document-status-panel (submissionCompleted)="onSubmissionSuccess()"></app-document-status-panel>
-  </div>
-
+  }
 </section>

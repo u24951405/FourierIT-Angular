@@ -16,6 +16,22 @@ export interface ApiProfileDto {
   jobTitle: string;
 }
 
+export interface ManagedUserDto {
+  profileId: number | null;
+  id: string;
+  userName: string;
+  email: string;
+  phoneNumber: string;
+  accountStatus: string;
+  roles: string[];
+  profile: {
+    firstName: string;
+    lastName: string;
+    jobTitle: string;
+    dateOfBirth: string;
+  } | null;
+}
+
 export interface UpdateManagedUserPayload {
   firstName: string;
   lastName: string;
@@ -35,6 +51,16 @@ export class UserManagementService {
 
   getProfiles(): Observable<ApiProfileDto[]> {
     return this.http.get<ApiProfileDto[] | { value?: ApiProfileDto[] }>(this.profileBase).pipe(
+      map((response) => {
+        if (Array.isArray(response)) return response;
+        if (response && Array.isArray(response.value)) return response.value;
+        return [];
+      })
+    );
+  }
+
+  getAllUsers(): Observable<ManagedUserDto[]> {
+    return this.http.get<ManagedUserDto[] | { value?: ManagedUserDto[] }>(`${this.userBase}/all`).pipe(
       map((response) => {
         if (Array.isArray(response)) return response;
         if (response && Array.isArray(response.value)) return response.value;

@@ -44,6 +44,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
   },
   {
+    path: 'institution/my-requests',
+    loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
+  },
+  {
+    path: 'institution/approved-documents',
+    loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
+  },
+  {
     path: 'institution',
     redirectTo: 'institution/auth/access',
     pathMatch: 'full'

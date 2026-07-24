@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -18,7 +18,28 @@ export interface RegisterPayload {
   username: string;
   emailAddress: string;
   password: string;
+  entityTypeId: number;
+  entityIdentificationNumber: string;
   roles: string[];
+}
+
+export interface EntityVerificationResponse {
+  isValid: boolean;
+  message?: string;
+  providerUnavailable?: boolean;
+}
+
+export interface EntityTypeOption {
+  entityTypeId: number;
+  name: string;
+}
+
+export interface PasswordPolicy {
+  requireDigit: boolean;
+  requireLowercase: boolean;
+  requireUppercase: boolean;
+  requireNonAlphanumeric: boolean;
+  requiredLength: number;
 }
 
 /** Full account + profile from GET /api/user/me */
@@ -64,14 +85,44 @@ export class AuthService {
   login(payload: LoginPayload): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/login`, payload).pipe(
       tap(res => {
-        localStorage.setItem(TOKEN_KEY, res.token);
-        this.currentUser.set(this.userFromToken(res.token, res.email));
+        const token = (res as any).token ?? (res as any).Token;
+        const email = (res as any).email ?? (res as any).Email ?? '';
+        if (!token) {
+          throw new Error('Login response did not include a token.');
+        }
+
+        localStorage.setItem(TOKEN_KEY, token);
+        this.currentUser.set(this.userFromToken(token, email));
       })
     );
   }
 
   register(payload: RegisterPayload): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${this.base}/register`, payload);
+  }
+
+  verifyEntity(entityTypeId: number, identificationNumber: string): Observable<EntityVerificationResponse> {
+    return this.http.post<EntityVerificationResponse>(`${this.base}/verify-entity`, {
+      entityTypeId,
+      identificationNumber
+    });
+  }
+
+  getEntityTypes(): Observable<EntityTypeOption[]> {
+    return this.http.get<EntityTypeOption[] | { value?: EntityTypeOption[] }>(`${this.base}/entity-types`).pipe(
+      map((response) => {
+        if (Array.isArray(response)) return response;
+        if (response && Array.isArray(response.value)) return response.value;
+        return [];
+      })
+    );
+  }
+
+  /** Fetch password policy configured server-side (Identity options)
+   * Expected shape: { requireDigit, requireLowercase, requireUppercase, requireNonAlphanumeric, requiredLength }
+   */
+  getPasswordPolicy(): Observable<PasswordPolicy | null> {
+    return this.http.get<PasswordPolicy | null>(`${this.base}/password-policy`);
   }
 
 
@@ -82,8 +133,19 @@ export class AuthService {
   }
 
   hasRole(role: string): boolean {
+    if (this.isSuperAdmin()) return true;
     const roles = this.getRolesFromToken();
     return roles.some(r => r.toLowerCase() === role.toLowerCase());
+  }
+
+  isSuperAdmin(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    const claims = this.decodeTokenClaims(token);
+    if (!claims) return false;
+    const value = claims['superadmin'];
+    if (typeof value === 'boolean') return value;
+    return typeof value === 'string' && value.toLowerCase() === 'true';
   }
 
   /** Roles from the current JWT (order preserved). */
@@ -106,18 +168,25 @@ export class AuthService {
    * unless they are also Department Admin.
    */
   isStakeholderViewer(): boolean {
+    if (this.isSuperAdmin()) return false;
     return this.hasRole('Stakeholder') && !this.hasRole('Department Admin');
   }
 
   /**
-   * Upload is for Document Owners only; Department Admins must not upload (even if they also hold Document Owner).
+   * Upload is permitted only for users who actually hold the Document Owner role.
+   * Super Admin is not automatically allowed to upload documents.
    */
   canUploadDocuments(): boolean {
-    return this.hasRole('Document Owner') && !this.hasRole('Department Admin');
+    const roles = this.getRolesFromToken();
+    return roles.some(r => r.trim().toLowerCase() === 'document owner');
   }
 
   canReviewDocuments(): boolean {
     return this.hasRole('Compliance Officer') || this.hasRole('Department Admin');
+  }
+
+  hasDocumentOwnerRole(): boolean {
+    return this.getRolesFromToken().some(r => r.trim().toLowerCase() === 'document owner');
   }
 
   logActivity(eventType: string, message: string): void {
@@ -169,7 +238,11 @@ export class AuthService {
     try {
       const payload = token.split('.')[1];
       if (!payload) return null;
-      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      let normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padLength = 4 - (normalized.length % 4);
+      if (padLength > 0 && padLength < 4) {
+        normalized += '='.repeat(padLength);
+      }
       const decoded = atob(normalized);
       return JSON.parse(decoded) as Record<string, unknown>;
     } catch {
@@ -186,13 +259,24 @@ export class AuthService {
   }
 
   private extractRoles(claims: Record<string, unknown>): string[] {
-    const roleClaim = claims['role'];
-    if (Array.isArray(roleClaim)) {
-      return roleClaim.filter((r): r is string => typeof r === 'string');
+    const candidates = [
+      claims['role'],
+      claims['roles'],
+      claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
+      claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role']
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        const roles = candidate.filter((r): r is string => typeof r === 'string' && r.trim().length > 0);
+        if (roles.length > 0) return roles;
+      }
+
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate.split(',').map(role => role.trim()).filter(Boolean);
+      }
     }
-    if (typeof roleClaim === 'string' && roleClaim.trim().length > 0) {
-      return [roleClaim];
-    }
+
     return [];
   }
 }

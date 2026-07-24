@@ -146,13 +146,13 @@
       <label
         class="rd-doc-item"
         *ngFor="let doc of availableDocuments"
-        [class.rd-doc-item--selected]="isDocSelected(doc.documentId)"
+        [class.rd-doc-item--selected]="isDocSelected(doc.documentTypeId)"
       >
         <input
           type="checkbox"
           class="rd-doc-item__checkbox"
-          [checked]="isDocSelected(doc.documentId)"
-          (change)="toggleDocument(doc.documentId)"
+          [checked]="isDocSelected(doc.documentTypeId)"
+          (change)="toggleDocument(doc.documentTypeId)"
         />
         <span class="rd-doc-item__custom"></span>
         <span class="rd-doc-item__name">{{ doc.documentName }}</span>
@@ -206,6 +206,53 @@
     </div>
 
     <div class="rd-form">
+      <!-- Request Type -->
+      <div class="rd-field rd-field--radio-group">
+        <label class="rd-field__label">Request Type <span class="rd-field__required">*</span></label>
+        <div class="rd-radio-grid">
+          <button
+            class="rd-radio-button"
+            type="button"
+            *ngFor="let type of requestTypes"
+            [class.rd-radio-button--selected]="wizard.requestType === type"
+            (click)="selectRequestType(type)"
+          >
+            {{ REQUEST_TYPE_LABELS[type] }}
+          </button>
+        </div>
+      </div>
+
+      <div class="rd-field" *ngIf="wizard.requestType === 'Department'">
+        <label class="rd-field__label" for="departmentId">
+          Target Department ID <span class="rd-field__required">*</span>
+        </label>
+        <input
+          id="departmentId"
+          type="text"
+          class="rd-field__input"
+          placeholder="Enter department ID"
+          [value]="wizard.targetDepartmentId"
+          (input)="onTargetDepartmentChange($any($event.target).value)"
+        />
+        <p class="rd-field__hint">
+          If you do not know the department ID, ask your institution administrator or select an individual request.
+        </p>
+      </div>
+
+      <div class="rd-field" *ngIf="wizard.requestType === 'Individual'">
+        <label class="rd-field__label" for="targetUserId">
+          Target User Identifier <span class="rd-field__required">*</span>
+        </label>
+        <input
+          id="targetUserId"
+          type="text"
+          class="rd-field__input"
+          placeholder="User ID, username or email"
+          [value]="wizard.targetUserId"
+          (input)="onTargetUserChange($any($event.target).value)"
+        />
+      </div>
+
       <!-- Submission Deadline -->
       <div class="rd-field">
         <label class="rd-field__label" for="deadline">

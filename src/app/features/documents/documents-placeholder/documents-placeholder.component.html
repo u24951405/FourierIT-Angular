@@ -1,4 +1,56 @@
 <section class="documents-placeholder">
-  <h1>{{ title }}</h1>
-  <p>{{ message }}</p>
+  <div class="documents-placeholder__hero">
+    <div>
+      <p class="eyebrow">API-backed view</p>
+      <h1>{{ title }}</h1>
+      <p>{{ message }}</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="documents-placeholder__state">Loading documents…</div>
+  } @else if (error()) {
+    <div class="documents-placeholder__state documents-placeholder__state--error">{{ error() }}</div>
+  } @else if (canSeeAllUsersDocuments) {
+    <div class="library-grid">
+      @for (user of allUsers(); track user.id) {
+        <article class="library-card">
+          <div class="library-card__header">
+            <div>
+              <h2>{{ user.userName }}</h2>
+              <p>{{ user.email }}</p>
+            </div>
+            <span class="badge">{{ user.documentCount }} docs</span>
+          </div>
+          <p class="library-card__entity">Entity type: {{ user.entityType }}</p>
+          <div class="library-card__docs">
+            @for (doc of user.documents; track doc.documentId) {
+              <div class="library-doc">
+                <div>
+                  <strong>{{ doc.fileName }}</strong>
+                  <span>{{ doc.documentTypeName }}</span>
+                </div>
+                <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus }}</span>
+              </div>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  } @else {
+    <div class="library-grid">
+      @for (doc of myDocuments(); track doc.documentId) {
+        <article class="library-card">
+          <div class="library-card__header">
+            <div>
+              <h2>{{ doc.fileName }}</h2>
+              <p>{{ doc.documentTypeName }}</p>
+            </div>
+            <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus }}</span>
+          </div>
+          <p class="library-card__entity">Uploaded {{ doc.uploadedDate | date:'mediumDate' }}</p>
+        </article>
+      }
+    </div>
+  }
 </section>

@@ -81,6 +81,48 @@
       </fieldset>
     </div>
 
+    <h2 class="form-section-title">Entity Verification</h2>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Entity Type <span class="req">*</span></label>
+        <select formControlName="entityTypeId">
+          <option [ngValue]="null">Select an entity type</option>
+          @for (entityType of entityTypes; track entityType.entityTypeId) {
+            <option [ngValue]="entityType.entityTypeId">{{ entityType.name }}</option>
+          }
+        </select>
+        @if (form.get('entityTypeId')?.invalid && form.get('entityTypeId')?.touched) {
+          <span class="field__error">Entity type is required.</span>
+        }
+      </div>
+      <div class="field">
+        <label>{{ entityIdentificationLabel }} <span class="req">*</span></label>
+        <div class="field field--inline-action">
+          <input
+            type="text"
+            formControlName="entityIdentificationNumber"
+            [placeholder]="selectedEntityType ? entityIdentificationLabel : 'Select an entity type first'"
+          >
+          <button
+            type="button"
+            class="btn btn--secondary btn--small"
+            (click)="verifyEntity()"
+            [disabled]="isVerifyingEntity() || form.controls.entityTypeId.invalid || form.controls.entityIdentificationNumber.invalid"
+          >
+            {{ isVerifyingEntity() ? 'Verifying…' : 'Verify' }}
+          </button>
+        </div>
+        <p class="field__hint">{{ entityIdentificationHint }}</p>
+        <p class="field__hint field__hint--status" [class.field__hint--valid]="entityVerificationStatus() === 'valid'" [class.field__hint--invalid]="entityVerificationStatus() === 'invalid'">
+          {{ entityVerificationMessage() || 'Press Verify to validate the selected entity identification.' }}
+        </p>
+        @if (form.get('entityIdentificationNumber')?.invalid && form.get('entityIdentificationNumber')?.touched) {
+          <span class="field__error">{{ entityIdentificationLabel }} is required.</span>
+        }
+      </div>
+    </div>
+
     <div class="form-row">
       <div class="field">
         <label>Password <span class="req">*</span></label>
@@ -88,10 +130,32 @@
         @if (form.get('password')?.invalid && form.get('password')?.touched) {
           <span class="field__error">Password must be at least 8 characters.</span>
         }
+        <div class="password-rules" style="margin-top:8px;">
+          <p class="field__hint">Password must satisfy:</p>
+          <ul>
+            <li [class.field__hint--valid]="passwordHasMinLength()" [class.field__hint--invalid]="!passwordHasMinLength()">
+              {{ passwordRequiresLength() || 8 }}+ characters
+            </li>
+            <li [class.field__hint--valid]="passwordHasDigit()" [class.field__hint--invalid]="!passwordHasDigit()">Contains a digit</li>
+            <li [class.field__hint--valid]="passwordHasLowercase()" [class.field__hint--invalid]="!passwordHasLowercase()">Contains a lowercase letter</li>
+            <li [class.field__hint--valid]="passwordHasUppercase()" [class.field__hint--invalid]="!passwordHasUppercase()">Contains an uppercase letter</li>
+            <li [class.field__hint--valid]="passwordHasNonAlphanumeric()" [class.field__hint--invalid]="!passwordHasNonAlphanumeric()">Contains a symbol (non-alphanumeric)</li>
+          </ul>
+          @if (allPasswordRulesSatisfied()) {
+            <p class="field__hint field__hint--valid">✔ Password meets all requirements</p>
+          }
+        </div>
       </div>
       <div class="field">
         <label>Confirm Password <span class="req">*</span></label>
         <input type="password" formControlName="confirmPassword" placeholder="Repeat password">
+        <div class="field__hint" style="margin-top:6px;">
+          @if (passwordsMatch()) {
+            <span class="field__hint field__hint--valid">✔ Passwords match</span>
+          } @else if (form.get('confirmPassword')?.touched) {
+            <span class="field__hint field__hint--invalid">✖ Passwords do not match</span>
+          }
+        </div>
       </div>
     </div>
 
@@ -128,7 +192,9 @@
             <span class="field__error">Please enter a realistic date of birth.</span>
           } @else if (form.get('dateOfBirth')?.errors?.['birthDateInvalid']) {
             <span class="field__error">Enter a valid calendar date.</span>
-          }
+            } @else if (form.get('dateOfBirth')?.errors?.['birthDateTooYoung']) {
+              <span class="field__error">You must be at least 18 years old to register.</span>
+            }
         }
       </div>
       <div class="field">

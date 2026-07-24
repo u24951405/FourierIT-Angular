@@ -34,56 +34,181 @@
   gap: 0.6rem;
 }
 
-.step-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.6rem 0.95rem;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 0.8rem;
-  font-weight: 700;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+.upload-document-page {
+  display: grid;
+  gap: 1rem;
 }
 
-.step-pill.active {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
-  color: #ffffff;
-  border-color: var(--blue);
-}
-
-.workflow-panel {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-.workflow-panel__header {
+.upload-document-page__hero {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 1.4rem 1.5rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #17263c, #254b72 56%, #3a78a8);
+  color: #fff;
+  box-shadow: 0 16px 44px rgba(18, 38, 61, 0.18);
 }
 
-.workflow-panel__header h2 {
+.upload-document-page__hero h1 {
+  margin: 0.25rem 0 0.35rem;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+}
+
+.upload-document-page__hero p {
   margin: 0;
-  font-size: 1.1rem;
-  color: #0f172a;
+  color: rgba(255, 255, 255, 0.82);
 }
 
-.workflow-panel__header p {
-  margin: 0.2rem 0 0;
-  color: #64748b;
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.upload-document-page__state {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--text-mid);
+}
+
+.upload-document-page__state--error {
+  color: #b42318;
+  background: #fff6f6;
+  border-color: #f4c7c3;
+}
+
+.upload-document-page__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.upload-document-page__summary article,
+.upload-card,
+.requirements-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.upload-document-page__summary article {
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.upload-document-page__summary span,
+.requirements-card p,
+.requirements-item span:not(.badge) {
+  color: var(--text-light);
+}
+
+.upload-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 1rem;
+}
+
+.upload-card,
+.requirements-card {
+  padding: 1rem 1.1rem;
+}
+
+.upload-card__header h2,
+.requirements-card h2 {
+  margin: 0;
+}
+
+.upload-card__header p {
+  margin: 0.25rem 0 0;
+  color: var(--text-mid);
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.upload-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.2rem;
+}
+
+.requirements-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.requirements-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.requirements-item strong {
+  display: block;
+  color: var(--text);
+}
+
+.badge {
   font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0;
+  border: none;
+  background: transparent;
 }
 
+.badge--approved {
+  color: #166534;
+}
+
+.badge--rejected {
+  color: #991b1b;
+}
+
+@media (max-width: 960px) {
+  .upload-layout,
+  .upload-document-page__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .upload-document-page__hero {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
 .workflow-actions {
   display: flex;
   justify-content: flex-end;

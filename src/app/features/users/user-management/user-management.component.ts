@@ -5,7 +5,7 @@ import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { RoleService } from '../../../core/services/role.service';
-import { ApiProfileDto, UpdateManagedUserPayload, UserManagementService } from '../../../core/services/user-management.service';
+import { ManagedUserDto, UpdateManagedUserPayload, UserManagementService } from '../../../core/services/user-management.service';
 import {
   birthDateReasonable,
   formatIsoDateLocal,
@@ -14,6 +14,7 @@ import {
 
 export interface UserProfile {
   id: number;
+  userName: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -85,6 +86,10 @@ export class UserManagementComponent {
   }
 
   openEdit(user: UserProfile): void {
+    if (this.isSuperAdmin(user)) {
+      return;
+    }
+
     this.editId.set(user.id);
     this.form.patchValue({
       firstName: user.firstName,
@@ -159,10 +164,14 @@ export class UserManagementComponent {
       });
   }
 
-  onDelete(id: number): void {
-    this.userManagementService.deleteUser(id).subscribe({
+  onDelete(user: UserProfile): void {
+    if (this.isSuperAdmin(user)) {
+      return;
+    }
+
+    this.userManagementService.deleteUser(user.id).subscribe({
       next: () => {
-        this.users.update(list => list.filter(user => user.id !== id));
+        this.users.update(list => list.filter(item => item.id !== user.id));
         this.toast.show('User deleted.', 'success');
       },
       error: (error) => {
@@ -190,11 +199,15 @@ export class UserManagementComponent {
 
   private loadUsers(): void {
     this.isLoadingUsers.set(true);
-    this.userManagementService.getProfiles()
+    this.userManagementService.getAllUsers()
       .pipe(finalize(() => this.isLoadingUsers.set(false)))
       .subscribe({
-        next: (profiles) => {
-          this.users.set((profiles ?? []).map(p => this.mapProfileToUser(p)));
+        next: (users) => {
+          this.users.set(
+            (users ?? [])
+              .map(user => this.mapUserToProfile(user))
+              .filter(user => !this.isSuperAdmin(user))
+          );
         },
         error: (error) => {
           this.users.set([]);
@@ -204,21 +217,26 @@ export class UserManagementComponent {
       });
   }
 
-  private mapProfileToUser(profile: ApiProfileDto): UserProfile {
-    const roleName = profile.role?.[0] ?? '';
+  private mapUserToProfile(user: ManagedUserDto): UserProfile {
+    const roleName = user.roles?.[0] ?? '';
     const roleId = this.roles.find(r => r.name.toLowerCase() === roleName.toLowerCase())?.id ?? '';
     return {
-      id: profile.profileId,
-      firstName: profile.firstName ?? '',
-      lastName: profile.lastName ?? '',
-      email: profile.email ?? '',
-      phone: profile.phoneNumber ?? '',
-      dateOfBirth: profile.dateOfBirth ?? '',
-      jobTitle: profile.jobTitle ?? '',
+      id: user.profileId ?? 0,
+      userName: user.userName ?? '',
+      firstName: user.profile?.firstName ?? '',
+      lastName: user.profile?.lastName ?? '',
+      email: user.email ?? '',
+      phone: user.phoneNumber ?? '',
+      dateOfBirth: user.profile?.dateOfBirth ?? '',
+      jobTitle: user.profile?.jobTitle ?? '',
       roleId,
       roleName,
-      status: 'Active',
+      status: user.accountStatus ?? 'Active',
       createdAt: ''
     };
+  }
+
+  isSuperAdmin(user: UserProfile): boolean {
+    return user.userName.trim().toLowerCase() === 'superadmin';
   }
 }

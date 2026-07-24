@@ -38,6 +38,29 @@
   padding: 20px 24px;
 }
 
+.field__notice {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 12px;
+  background: rgba(236, 244, 255, 0.65);
+}
+
+.field__notice-line {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.field__notice-meta {
+  margin: 0;
+  color: var(--text-mid);
+  font-size: 13px;
+}
+
 .td-name {
   font-weight: 600;
 }
@@ -45,4 +68,24 @@
 .action-buttons {
   display: flex;
   gap: 0.4rem;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.page-header__actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }

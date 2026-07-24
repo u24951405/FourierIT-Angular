@@ -1,1 +1,36 @@
-<p>approved-documents works!</p>
+<div class="approved-documents-page">
+  <header class="approved-documents-header">
+    <h1>Approved Documents</h1>
+    <p>Use your access token to download an approved document from the institution access portal.</p>
+  </header>
+
+  <div class="approved-documents-form">
+    <div class="approved-documents-field">
+      <label for="access-token">Access Token</label>
+      <input
+        id="access-token"
+        type="text"
+        [value]="token()"
+        (input)="token.set($any($event.target).value)"
+        placeholder="Enter token provided after approval"
+      />
+    </div>
+
+    <div class="approved-documents-field">
+      <label for="document-id">Document ID</label>
+      <input
+        id="document-id"
+        type="text"
+        [value]="documentId()"
+        (input)="documentId.set($any($event.target).value)"
+        placeholder="Enter approved document ID"
+      />
+    </div>
+
+    <button class="btn btn-download" type="button" (click)="downloadDocument()" [disabled]="loading()">
+      {{ loading() ? 'Downloading…' : 'Download Approved Document' }}
+    </button>
+
+    <div *ngIf="message()" class="approved-documents-message">{{ message() }}</div>
+  </div>
+</div>

@@ -27,6 +27,14 @@ export class InstitutionsComponent implements OnInit {
 
   showModal = signal(false);
   editId = signal<number | null>(null);
+  showInviteModal = signal(false);
+  inviteInstitutionId = signal<number | null>(null);
+  inviteInstitutionName = signal('');
+  inviteLink = signal<string | null>(null);
+  inviteExpiration = signal<string | null>(null);
+  inviteSubmitting = signal(false);
+  inviteError = signal('');
+  inviteSuccess = signal('');
   isSubmitting = signal(false);
   isLoadingList = signal(false);
   isLoadingTypes = signal(false);
@@ -40,6 +48,11 @@ export class InstitutionsComponent implements OnInit {
     verifiedDomain: ['', [Validators.required, Validators.maxLength(255)]],
     regNumber: [null as number | null, [Validators.required, Validators.min(1)]],
     typeId: [null as number | null, Validators.required]
+  });
+
+  inviteForm = this.fb.group({
+    institutionId: [null as number | null, Validators.required],
+    email: ['', [Validators.required, Validators.email]]
   });
 
   ngOnInit(): void {
@@ -144,6 +157,66 @@ export class InstitutionsComponent implements OnInit {
       error: err => {
         const message =
           err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Failed to delete institution.';
+        this.toast.show(message, 'error');
+      }
+    });
+  }
+
+  openInvite(inst?: InstitutionDto): void {
+    this.inviteInstitutionId.set(inst?.institutionId ?? null);
+    this.inviteInstitutionName.set(inst?.institutionName ?? '');
+    this.inviteLink.set(null);
+    this.inviteExpiration.set(null);
+    this.inviteError.set('');
+    this.inviteSuccess.set('');
+    this.inviteForm.reset({
+      institutionId: inst?.institutionId ?? null,
+      email: ''
+    });
+    this.showInviteModal.set(true);
+  }
+
+  closeInviteModal(): void {
+    this.showInviteModal.set(false);
+    this.inviteSubmitting.set(false);
+    this.inviteError.set('');
+    this.inviteSuccess.set('');
+  }
+
+  openInviteLink(): void {
+    const link = this.inviteLink();
+    if (!link) return;
+    window.open(link, '_blank', 'noopener');
+  }
+
+  submitInvite(): void {
+    if (this.inviteForm.invalid) {
+      this.inviteForm.markAllAsTouched();
+      return;
+    }
+
+    const institutionId = this.inviteForm.get('institutionId')?.value as number | null;
+    const email = this.inviteForm.get('email')?.value?.trim();
+    if (institutionId == null || !email) return;
+
+    this.inviteSubmitting.set(true);
+
+    this.institutionService.invite(institutionId, email).pipe(
+      finalize(() => this.inviteSubmitting.set(false))
+    ).subscribe({
+      next: response => {
+        const url = `${window.location.origin}/institution/auth/access?token=${response.accessToken}`;
+        this.inviteLink.set(url);
+        this.inviteExpiration.set(new Date(response.expiresAt).toLocaleString());
+        this.inviteError.set('');
+        this.inviteSuccess.set(`Invitation sent to ${response.maskedEmail}.`);
+        this.toast.show(`Institution invite sent to ${response.maskedEmail}.`, 'success');
+      },
+      error: err => {
+        const message =
+          err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Failed to send invitation.';
+        this.inviteError.set(message);
+        this.inviteSuccess.set('');
         this.toast.show(message, 'error');
       }
     });

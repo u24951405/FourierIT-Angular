@@ -1,1 +1,47 @@
-<p>my-requests works!</p>
+<div class="my-requests-page">
+  <header class="my-requests-header">
+    <h1>My Pending Requests</h1>
+    <p>Review access requests sent to you and approve or deny document access.</p>
+  </header>
+
+  <div *ngIf="loading()" class="my-requests-loading">
+    <p>Loading pending requests…</p>
+  </div>
+
+  <div *ngIf="!loading() && error()" class="my-requests-error">
+    <p>{{ error() }}</p>
+  </div>
+
+  <div *ngIf="!loading() && !error() && pendingRequests().length === 0" class="my-requests-empty">
+    <p>No pending requests found. Check back after your institution submits a new access request.</p>
+  </div>
+
+  <div *ngIf="!loading() && pendingRequests().length > 0" class="my-requests-list">
+    <div class="request-card" *ngFor="let request of pendingRequests()">
+      <div class="request-card__header">
+        <div>
+          <span class="request-card__label">Request ID</span>
+          <strong>{{ request.enquiryRequestId }}</strong>
+        </div>
+        <span class="request-card__status">{{ request.status }}</span>
+      </div>
+      <div class="request-card__body">
+        <p><strong>Institution:</strong> {{ request.institutionName }}</p>
+        <p><strong>Requested At:</strong> {{ request.requestDate | date:'medium' }}</p>
+        <p><strong>Purpose:</strong> {{ request.purposeNote || 'Not provided' }}</p>
+        <div class="request-card__documents">
+          <span class="request-card__documents-title">Documents requested</span>
+          <ul>
+            <li *ngFor="let doc of request.documents">
+              {{ doc.documentTypeName }}<span *ngIf="doc.isMandatory"> · Mandatory</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="request-card__actions">
+        <button class="btn btn-approve" type="button" (click)="approveRequest(request.enquiryRequestId)">Approve</button>
+        <button class="btn btn-deny" type="button" (click)="denyRequest(request.enquiryRequestId)">Deny</button>
+      </div>
+    </div>
+  </div>
+</div>

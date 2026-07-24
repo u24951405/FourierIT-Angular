@@ -1,12 +1,156 @@
-<section class="coming-soon">
-  <h1>My Documents</h1>
-  <p>Review your submissions and continue with document uploads.</p>
-
-  <div class="card" style="margin-top: 1rem; max-width: 480px; padding: 1.25rem; border: 1px solid #d0dce8; border-radius: 10px; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
-    <h2 style="font-size: 1rem; margin-bottom: 0.5rem;">Document Upload</h2>
-    <p style="margin-bottom: 1rem; color: #4a6278;">Use this temporary entry point to continue the upload workflow while signed in.</p>
+<section class="documents-page">
+  <div class="documents-page__hero">
+    <div>
+      <p class="eyebrow">Personal workspace</p>
+      <h1>My Documents</h1>
+      <p>View, download, and manage the documents tied to your account.</p>
+    </div>
     <button type="button" class="btn btn--primary" (click)="openTemporaryUploadPage()">
-      Continue to Upload Documents
+      Upload a document
     </button>
   </div>
+
+  <div class="documents-page__stats">
+    <article>
+      <span>Signed in as</span>
+      <strong>{{ auth.currentUser()?.email || 'Unknown' }}</strong>
+    </article>
+    <article>
+      <span>Documents</span>
+      <strong>{{ documents().length }}</strong>
+    </article>
+    <article>
+      <span>Visible after search</span>
+      <strong>{{ filteredDocuments.length }}</strong>
+    </article>
+  </div>
+
+  <div class="documents-page__toolbar">
+    <div class="search-box">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/></svg>
+      <input type="search" placeholder="Search documents..." [value]="search()" (input)="search.set($any($event.target).value)">
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="documents-page__state">Loading documents…</div>
+  } @else if (error()) {
+    <div class="documents-page__state documents-page__state--error">{{ error() }}</div>
+  } @else if (filteredDocuments.length === 0) {
+    <div class="documents-page__state">
+      No documents found. Upload your first file to start building your record.
+    </div>
+  } @else {
+    <div class="documents-grid">
+      @for (doc of filteredDocuments; track doc.documentId) {
+        <article class="document-card">
+          <div class="document-card__top">
+            <div>
+              <span class="document-card__type">{{ doc.documentTypeName || 'Document' }}</span>
+              <h2>{{ doc.fileName }}</h2>
+            </div>
+            <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus }}</span>
+          </div>
+          <dl class="document-card__meta">
+            <div>
+              <dt>Uploaded</dt>
+              <dd>{{ doc.uploadedDate | date:'mediumDate' }}</dd>
+            </div>
+            <div>
+              <dt>Certified</dt>
+              <dd>{{ doc.isCertified ? 'Yes' : 'No' }}</dd>
+            </div>
+            <div>
+              <dt>Size</dt>
+              <dd>{{ doc.fileSizeBytes | number }} bytes</dd>
+            </div>
+            <div>
+              <dt>Encrypted</dt>
+              <dd>{{ doc.isEncrypted ? doc.encryptionAlgorithm || 'Yes' : 'No' }}</dd>
+            </div>
+          </dl>
+          <div class="document-card__actions">
+            <button type="button" class="btn btn--outline" (click)="openDetails(doc)">Details</button>
+            <button type="button" class="btn btn--outline" (click)="download(doc)">Download</button>
+            <button type="button" class="btn btn--ghost" (click)="openShare(doc)">Share</button>
+            <button type="button" class="btn btn--ghost" (click)="delete(doc)">Delete</button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+  @if (detailDocument()) {
+    <div class="modal-overlay" (click)="closeDetail()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <div>
+            <h2>{{ detailDocument()?.fileName }}</h2>
+            <p>{{ detailDocument()?.documentTypeName }}</p>
+          </div>
+          <button type="button" class="icon-btn" (click)="closeDetail()">×</button>
+        </div>
+        @if (loadingDetail()) {
+          <div class="documents-page__state">Loading document details…</div>
+        } @else {
+          <dl class="document-detail-grid">
+            <div><dt>Status</dt><dd>{{ detailDocument()?.currentStatus }}</dd></div>
+            <div><dt>Certified</dt><dd>{{ detailDocument()?.isCertified ? 'Yes' : 'No' }}</dd></div>
+            <div><dt>Encrypted</dt><dd>{{ detailDocument()?.isEncrypted ? detailDocument()?.encryptionAlgorithm || 'Yes' : 'No' }}</dd></div>
+            <div><dt>Size</dt><dd>{{ detailDocument()?.fileSizeBytes | number }} bytes</dd></div>
+            <div><dt>Uploaded</dt><dd>{{ detailDocument()?.uploadedDate | date:'medium' }}</dd></div>
+            <div><dt>Last modified</dt><dd>{{ detailDocument()?.lastModifiedDate ? (detailDocument()?.lastModifiedDate | date:'medium') : 'Never' }}</dd></div>
+          </dl>
+        }
+      </div>
+    </div>
+  }
+
+  @if (shareDocumentId()) {
+    <div class="modal-overlay" (click)="closeShare()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <div>
+            <h2>Share document</h2>
+            <p>Send this file to another user by id, username, or email.</p>
+          </div>
+          <button type="button" class="icon-btn" (click)="closeShare()">×</button>
+        </div>
+
+        <div class="field">
+          <label>Recipient <span class="req">*</span></label>
+          <input type="text" [value]="shareRecipient()" (input)="shareRecipient.set($any($event.target).value)" placeholder="user id, username, or email">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Access level</label>
+            <select [value]="shareAccessLevel()" (change)="shareAccessLevel.set($any($event.target).value)">
+              <option value="0">View</option>
+              <option value="1">Download</option>
+              <option value="2">Edit</option>
+              <option value="3">Share</option>
+              <option value="4">Delete</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Expiry date</label>
+            <input type="date" [value]="shareExpiryDate()" (input)="shareExpiryDate.set($any($event.target).value)">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Reason</label>
+          <textarea rows="3" [value]="shareReason()" (input)="shareReason.set($any($event.target).value)" placeholder="Optional reason for sharing"></textarea>
+        </div>
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn--outline" (click)="closeShare()">Cancel</button>
+          <button type="button" class="btn btn--primary" [disabled]="sharing()" (click)="submitShare()">
+            {{ sharing() ? 'Sharing...' : 'Share document' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </section>

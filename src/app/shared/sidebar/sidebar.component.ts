@@ -87,7 +87,12 @@ export class SidebarComponent {
 
   get visibleNavItems(): NavItem[] {
     if (this.auth.isDocumentOwnerOnly()) {
-      return [{ label: 'My Documents', icon: 'file', route: '/my-documents' }];
+      return [
+        { label: 'My Documents', icon: 'file', route: '/my-documents' },
+        { label: 'Documents', icon: 'folder', children: [
+          { label: 'Upload Document', route: '/documents/upload' }
+        ]}
+      ];
     }
     let items = this.navItems.filter(item =>
       item.label !== 'My Documents' || this.auth.hasRole('Document Owner')

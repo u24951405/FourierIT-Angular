@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface RoleDto {
@@ -20,7 +20,8 @@ export class RoleService {
         if (Array.isArray(response)) return response;
         if (response && Array.isArray(response.value)) return response.value;
         return [];
-      })
+      }),
+      catchError(() => of([]))
     );
   }
 }

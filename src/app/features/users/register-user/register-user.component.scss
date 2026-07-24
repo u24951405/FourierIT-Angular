@@ -46,6 +46,34 @@
   }
 }
 
+.field select,
+.field input {
+  width: 100%;
+}
+
+.field__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-light);
+  line-height: 1.45;
+}
+
+.form-row--full {
+  grid-column: 1 / -1;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 780px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .role-fieldset__legend {
   display: flex;
   align-items: baseline;
@@ -221,4 +249,60 @@
   font-weight: 500;
   color: var(--text-mid);
   line-height: 1.35;
+}
+
+/* Password rules styling */
+.password-rules {
+  font-size: 13px;
+  margin-top: 6px;
+
+  p {
+    margin: 0 0 6px 0;
+    color: var(--text-light);
+    font-size: 12px;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 6px;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-mid);
+    background: transparent;
+    padding: 6px 8px;
+    border-radius: 8px;
+    transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+
+    /* removed square marker */
+
+    &.field__hint--valid,
+    &[class*="field__hint--valid"] {
+      color: var(--success, #198754);
+      background: rgba(25,135,84,0.06);
+    }
+
+    /* no marker when valid; rely on color and background to indicate success */
+
+    &.field__hint--invalid,
+    &[class*="field__hint--invalid"] {
+      color: var(--text-mid);
+    }
+  }
+
+  .field__hint--valid {
+    font-weight: 600;
+  }
+}
+
+/* Overall success indicator */
+.field__hint--valid[aria-live],
+.field__hint--valid[role] {
+  color: var(--success, #198754);
 }

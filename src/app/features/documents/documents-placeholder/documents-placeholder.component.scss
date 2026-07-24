@@ -1,17 +1,108 @@
 .documents-placeholder {
-  padding: clamp(2rem, 5vw, 3rem);
-  max-width: 36rem;
+  display: grid;
+  gap: 1rem;
+}
 
-  h1 {
-    margin: 0 0 0.75rem;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text, #111);
-  }
+.documents-placeholder__hero {
+  padding: 1.4rem 1.5rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0d2238, #173a5d 55%, #28618b);
+  color: #fff;
+  box-shadow: 0 16px 44px rgba(18, 38, 61, 0.18);
+}
 
-  p {
-    margin: 0;
-    font-size: 1rem;
-    color: var(--text-mid, #666);
+.documents-placeholder__hero h1 {
+  margin: 0.25rem 0 0.35rem;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+}
+
+.documents-placeholder__hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.documents-placeholder__state {
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-mid);
+}
+
+.documents-placeholder__state--error {
+  color: #b42318;
+  background: #fff6f6;
+  border-color: #f4c7c3;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.library-card {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.library-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.library-card__header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.library-card__header p,
+.library-card__entity {
+  margin: 0.25rem 0 0;
+  color: var(--text-mid);
+}
+
+.library-card__docs {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.library-doc {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.library-doc strong {
+  display: block;
+  color: var(--text);
+}
+
+.library-doc span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
+
+@media (max-width: 900px) {
+  .library-grid {
+    grid-template-columns: 1fr;
   }
 }

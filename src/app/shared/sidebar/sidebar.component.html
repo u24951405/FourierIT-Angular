@@ -1,4 +1,4 @@
-<aside class="sidebar"> // wraps entire sidebar, including profile and logout
+<aside class="sidebar">
   <div class="sidebar__brand">
     <div class="sidebar__brand-icon">
       <img src="/Logo.png" alt="DocuVault logo">
@@ -21,7 +21,7 @@
         </a>
       }
 
-      @if (item.children) { // group with sub-links
+      @if (item.children) {
         <button class="sidebar__link sidebar__link--group"
                 [class.sidebar__link--open]="openGroup() === item.label"
                 (click)="toggle(item.label)">
@@ -58,7 +58,12 @@
             aria-label="View profile details">
       <div class="sidebar__avatar" aria-hidden="true">{{ userInitials }}</div>
       <div class="sidebar__user-info">
-        <strong class="sidebar__user-name" [title]="userName">{{ userName }}</strong>
+        <div class="sidebar__user-name-row">
+          <strong class="sidebar__user-name" [title]="userName">{{ userName }}</strong>
+          @if (auth.isSuperAdmin()) {
+            <span class="sidebar__admin-badge">Super Admin</span>
+          }
+        </div>
         @if (userEmail) {
           <span class="sidebar__user-email" [title]="userEmail">{{ userEmail }}</span>
         }
@@ -69,7 +74,7 @@
       </svg>
     </button>
 
-    @if (profileOpen()) { // profile panel
+    @if (profileOpen()) {
       <div class="sidebar__profile-panel" role="region" aria-label="Your profile" (click)="$event.stopPropagation()">
         @if (loadingAccount()) {
           <p class="sidebar__profile-msg">Loading your details…</p>
@@ -130,13 +135,13 @@
                 Date of birth
                 <input class="sidebar__profile-input" type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
               </label>
-              @if (profileSaveError()) {// show form error if save failed
+              @if (profileSaveError()) {
                 <p class="sidebar__profile-msg sidebar__profile-msg--error">{{ profileSaveError() }}</p>
               }
               <div class="sidebar__profile-actions">
                 <button type="button" class="sidebar__profile-action sidebar__profile-action--secondary" (click)="cancelEditProfile()">Cancel</button>
                 <button type="submit" class="sidebar__profile-action" [disabled]="savingProfile()">
-                  {{ savingProfile() ? 'Saving…' : 'Save changes' }}// disable submit button while saving to prevent multiple clicks
+                  {{ savingProfile() ? 'Saving…' : 'Save changes' }}
                 </button>
               </div>
             </form>
