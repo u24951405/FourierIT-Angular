@@ -1,0 +1,274 @@
+$dark-navy: #1e2a3a;
+$border: #e5e7eb;
+$surface: #f3f4f6;
+$text-primary: #111827;
+$text-sub: #6b7280;
+$green: #10b981;
+
+.cert-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid $border;
+
+  &__left { display: flex; align-items: center; gap: 0.875rem; }
+  &__title { font-size: 1.125rem; font-weight: 700; color: $text-primary; margin: 0 0 0.125rem; }
+  &__subtitle { font-size: 0.8125rem; color: $text-sub; margin: 0; }
+  &__actions { display: flex; gap: 0.625rem; }
+}
+
+.cert-back-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: #fff; border: 1px solid $border; border-radius: 6px;
+  color: $text-sub; cursor: pointer;
+  &:hover { background: $surface; }
+}
+
+.rf-action-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.5rem 1rem; border-radius: 6px;
+  font-size: 0.8125rem; font-weight: 500; cursor: pointer;
+  &--outline { background: #fff; border: 1px solid $border; color: $text-primary; &:hover { background: $surface; } }
+  &--primary { background: $dark-navy; border: none; color: #fff; &:hover { background: #2d3f55; } }
+}
+
+.cert-wrapper {
+  background: #d9d9d5;
+  min-height: calc(100vh - 65px);
+  display: flex;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+}
+
+.cert-document {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Certificate Header ────────────────────────────────────────────────────────
+
+.cert-header {
+  background: $dark-navy;
+  border-radius: 8px 8px 0 0;
+  padding: 1.25rem 1.5rem 0;
+  color: #fff;
+
+  &__brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+
+  &__logo {
+    display: flex; align-items: center; justify-content: center;
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.12); border-radius: 7px;
+  }
+
+  &__name { font-size: 1rem; font-weight: 700; margin: 0 0 0.125rem; }
+  &__sub { font-size: 0.625rem; opacity: 0.5; letter-spacing: 0.08em; margin: 0; }
+
+  &__verified {
+    display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+    position: absolute;
+    // Positioned via relative parent in HTML
+    margin-left: auto;
+    float: right;
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    color: $green;
+    font-weight: 700;
+  }
+
+  &__meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+
+  &__meta-item { display: flex; flex-direction: column; gap: 0.25rem; }
+  &__meta-key { font-size: 0.5625rem; letter-spacing: 0.08em; opacity: 0.5; text-transform: uppercase; }
+  &__meta-val { font-size: 0.75rem; font-weight: 500; }
+
+  &__accent {
+    height: 4px;
+    background: $green;
+    margin: 0 -1.5rem;
+  }
+}
+
+// Verified badge positioned top-right
+.cert-header__brand {
+  position: relative;
+
+  .cert-header__verified {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}
+
+// ── Certificate Body ──────────────────────────────────────────────────────────
+
+.cert-body {
+  background: #fff;
+  padding: 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+
+  &__org-label {
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    color: $text-sub;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  &__divider { display: flex; justify-content: center; }
+}
+
+.cert-score {
+  border: 2px solid $green;
+  border-radius: 8px;
+  padding: 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+
+  &__label {
+    font-size: 0.625rem;
+    letter-spacing: 0.1em;
+    color: $text-sub;
+    margin: 0;
+  }
+
+  &__value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $green;
+    margin: 0;
+    line-height: 1;
+  }
+
+  &__status {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: $green;
+    margin: 0;
+  }
+}
+
+.cert-attestation {
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+
+  p {
+    font-size: 0.8125rem;
+    color: $text-sub;
+    line-height: 1.6;
+    margin: 0 0 0.625rem;
+
+    &:last-child { margin-bottom: 0; }
+
+    strong { color: #2563eb; }
+  }
+
+  &__legal {
+    font-style: italic;
+    color: #2563eb !important;
+  }
+}
+
+// ── Engine Block ──────────────────────────────────────────────────────────────
+
+.cert-engine {
+  background: $dark-navy;
+  border-radius: 6px;
+  padding: 0.875rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 0.625rem;
+  }
+
+  &__rows { display: flex; flex-direction: column; gap: 0.375rem; }
+
+  &__row {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+  }
+
+  &__key { min-width: 120px; opacity: 0.6; }
+  &__val { font-weight: 500; color: rgba(255,255,255,0.9); word-break: break-all; }
+}
+
+// ── Signatures ────────────────────────────────────────────────────────────────
+
+.cert-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding-top: 0.5rem;
+}
+
+.cert-sig {
+  &__line {
+    height: 1px;
+    background: $text-sub;
+    margin-bottom: 0.5rem;
+  }
+
+  &__name { font-size: 0.8125rem; font-weight: 600; color: $text-primary; margin: 0 0 0.125rem; }
+  &__role { font-size: 0.75rem; color: $text-sub; margin: 0 0 0.125rem; }
+  &__date { font-size: 0.75rem; color: $text-muted; margin: 0; }
+}
+
+// ── Footer ────────────────────────────────────────────────────────────────────
+
+.cert-footer {
+  background: #111827;
+  border-radius: 0 0 8px 8px;
+  padding: 0.5rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.625rem;
+  color: rgba(255,255,255,0.35);
+}
+
+@media print {
+  .cert-page-header { display: none; }
+  .cert-wrapper { background: none; padding: 0; }
+  .cert-document { max-width: 100%; }
+}

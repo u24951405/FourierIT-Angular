@@ -1,0 +1,300 @@
+$dark-navy: #1e2a3a;
+$border: #e5e7eb;
+$surface: #f3f4f6;
+$text-primary: #111827;
+$text-sub: #6b7280;
+$text-muted: #9ca3af;
+$green: #10b981;
+$amber: #f59e0b;
+$red: #ef4444;
+
+.compliance-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid $border;
+
+  &__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: $text-primary;
+    margin: 0 0 0.125rem;
+  }
+
+  &__subtitle {
+    font-size: 0.8125rem;
+    color: $text-sub;
+    margin: 0;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.625rem;
+  }
+}
+
+.rf-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  &--outline {
+    background: #fff;
+    border: 1px solid $border;
+    color: $text-primary;
+    &:hover { background: $surface; }
+  }
+
+  &--primary {
+    background: $dark-navy;
+    border: none;
+    color: #fff;
+    &:hover { background: #2d3f55; }
+  }
+}
+
+.compliance-content {
+  padding: 1.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 1200px;
+}
+
+// ── Uptime Card ───────────────────────────────────────────────────────────────
+
+.uptime-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    margin-bottom: 1rem;
+  }
+
+  &__title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 0.125rem;
+  }
+
+  &__subtitle {
+    font-size: 0.75rem;
+    color: $text-muted;
+    margin: 0;
+  }
+}
+
+.uptime-pct-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.uptime-pct {
+  font-size: 2rem;
+  font-weight: 700;
+  color: $green;
+  margin-right: 0.75rem;
+}
+
+.uptime-pct-label {
+  font-size: 0.875rem;
+  color: $text-sub;
+}
+
+.uptime-dates {
+  text-align: right;
+  font-size: 0.75rem;
+  color: $text-muted;
+
+  p { margin: 0 0 0.125rem; }
+
+  &__noncompliant { color: $red; }
+}
+
+.uptime-timeline {
+  display: flex;
+  height: 28px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+
+  &__seg {
+    height: 100%;
+
+    &--compliant { background: $green; }
+    &--gap {
+      background: $red;
+      min-width: 3px;
+    }
+  }
+}
+
+.uptime-legend {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+    color: $text-sub;
+  }
+
+  &__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+
+    &--green { background: $green; }
+    &--red { background: $red; }
+  }
+
+  &__item--boundary { color: $text-muted; }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+.compliance-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.compliance-stat {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 1.125rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+
+  &__value {
+    font-size: 1.625rem;
+    font-weight: 700;
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    color: $text-muted;
+  }
+
+  &--green { background: #f0fdf4; border-color: #bbf7d0; .compliance-stat__value { color: $green; } }
+  &--red { background: #fef2f2; border-color: #fecaca; .compliance-stat__value { color: $red; } }
+  &--amber { background: #fffbeb; border-color: #fde68a; .compliance-stat__value { color: $amber; } }
+  &--neutral { background: $surface; .compliance-stat__value { color: $text-primary; } }
+}
+
+// ── Transition Table ──────────────────────────────────────────────────────────
+
+.transition-card {
+  background: #fff;
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid $border;
+    background: #fafafa;
+  }
+
+  &__title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 0.125rem;
+  }
+
+  &__subtitle {
+    font-size: 0.75rem;
+    color: $text-muted;
+    margin: 0;
+  }
+}
+
+.transition-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  thead tr {
+    background: $surface;
+    border-bottom: 1px solid $border;
+  }
+
+  th {
+    padding: 0.625rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $text-sub;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border;
+
+    &:last-child { border-bottom: none; }
+    &:hover { background: #fafafa; }
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    color: $text-primary;
+    vertical-align: middle;
+  }
+
+  &__date { color: $text-muted; white-space: nowrap; }
+  &__event { color: $text-sub; max-width: 380px; }
+  &__dash { color: $text-muted; }
+}
+
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &--compliant {
+    background: #f0fdf4;
+    color: $green;
+    border: 1px solid #bbf7d0;
+  }
+
+  &--noncompliant {
+    background: #fef2f2;
+    color: $red;
+    border: 1px solid #fecaca;
+  }
+}
+
+.downtime-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: $red;
+}

@@ -1,1 +1,208 @@
-<p>activity-report works!</p>
+<app-report-frame
+  [config]="frameConfig"
+  title="Document Activity Report"
+  subtitle="Full vault activity and document inventory for James Fourier"
+>
+
+  <!-- ── Report Title ──────────────────────────────────────────────────────── -->
+  <div class="act-title-block">
+    <p class="act-title-block__org">PERSONAL DOCUMENT VAULT</p>
+    <h2 class="act-title-block__title">Document Activity Report</h2>
+    <div class="act-title-block__divider">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"></circle>
+      </svg>
+    </div>
+
+    <!-- Verified Identity Badge -->
+    <div class="act-identity-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <div>
+        <span class="act-identity-badge__title">Verified Digital Identity</span>
+        <span class="act-identity-badge__sub">FICA & KYC Compliant · {{ data.documentOwner }} · {{ data.ownerId }}</span>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ── Document Overview ──────────────────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">DOCUMENT OVERVIEW</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="act-overview-grid">
+
+    <!-- Total Documents Doughnut -->
+    <div class="chart-card">
+      <h3 class="chart-card__subtitle">Total Documents</h3>
+      <p class="chart-card__desc">Active vs inactive / expiring</p>
+      <div class="act-doughnut-wrap">
+        <canvas #totalDocsChart></canvas>
+      </div>
+      <div class="act-legend">
+        <div class="act-legend-item">
+          <span class="act-legend-dot" style="background:#10b981"></span>
+          <span class="act-legend-label">Active</span>
+          <span class="act-legend-count">{{ data.activeDocuments }} ({{ activePercent() }}%)</span>
+        </div>
+        <div class="act-legend-item">
+          <span class="act-legend-dot" style="background:#e5e7eb"></span>
+          <span class="act-legend-label">Inactive / Expiring</span>
+          <span class="act-legend-count">{{ data.inactiveDocuments }} ({{ 100 - activePercent() }}%)</span>
+        </div>
+        <div class="act-legend-item act-legend-item--total">
+          <span class="act-legend-label">Total</span>
+          <span class="act-legend-count">{{ data.totalDocuments }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Doughnut -->
+    <div class="chart-card">
+      <h3 class="chart-card__subtitle">Documents by Category</h3>
+      <p class="chart-card__desc">Five core FICA material categories</p>
+      <div class="act-doughnut-wrap">
+        <canvas #categoryChart></canvas>
+      </div>
+      <div class="act-legend">
+        <div class="act-legend-item" *ngFor="let d of data.distributionByCategory">
+          <span class="act-legend-dot" [style.background]="d.color"></span>
+          <span class="act-legend-label">{{ d.label }}</span>
+          <span class="act-legend-count">{{ d.count }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Uploaded Document Inventory ───────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">UPLOADED DOCUMENT INVENTORY</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="act-table-card">
+    <table class="act-table">
+      <thead>
+        <tr>
+          <th>Document Name</th>
+          <th>Category</th>
+          <th>Upload Date</th>
+          <th>Expiry Date</th>
+          <th>Verification Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let doc of data.inventory">
+          <td class="act-table__doc-name">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+            {{ doc.documentName }}
+          </td>
+          <td>
+            <span class="act-category-tag" [style.background]="doc.categoryColor">
+              {{ doc.category }}
+            </span>
+          </td>
+          <td class="act-table__date">{{ doc.uploadDate }}</td>
+          <td class="act-table__date">{{ doc.expiryDate ?? '—' }}</td>
+          <td>
+            <span class="inv-status" [ngClass]="statusClass(doc.verificationStatus)">
+              {{ doc.verificationStatus }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Vault Access Log ───────────────────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">VAULT ACCESS LOG</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="act-table-card">
+    <table class="act-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>Accessing Authority / Role</th>
+          <th>Authorised Action Reason</th>
+          <th>Organisation</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let log of data.vaultAccessLog">
+          <td class="act-table__date">{{ log.timestamp }}</td>
+          <td>
+            <div class="act-accessor">
+              <span class="act-accessor__name">{{ log.accessorName }}</span>
+              <span class="act-accessor__role">{{ log.accessorRole }}</span>
+            </div>
+          </td>
+          <td class="act-table__reason">{{ log.actionReason }}</td>
+          <td>
+            <div class="act-org">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
+                <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+              {{ log.organisation }}
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── I Am a Client To ───────────────────────────────────────────────────── -->
+  <div class="report-section-divider">
+    <div class="report-section-divider__line"></div>
+    <span class="report-section-divider__label">I AM A CLIENT TO</span>
+    <div class="report-section-divider__line"></div>
+  </div>
+
+  <div class="act-table-card">
+    <table class="act-table">
+      <thead>
+        <tr>
+          <th>Organisation</th>
+          <th>Documents Shared</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let client of data.clientRelationships">
+          <td>
+            <div class="act-org">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
+                <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+              </svg>
+              <span class="act-org__name">{{ client.organisation }}</span>
+            </div>
+          </td>
+          <td class="act-table__shared">{{ client.documentsShared }} documents</td>
+          <td>
+            <span class="client-status" [ngClass]="clientStatusClass(client.status)">
+              {{ client.status }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</app-report-frame>

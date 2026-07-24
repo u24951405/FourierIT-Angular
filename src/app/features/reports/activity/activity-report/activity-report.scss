@@ -1,0 +1,223 @@
+$dark-navy: #1e2a3a;
+$border: #e5e7eb;
+$surface: #f3f4f6;
+$text-primary: #111827;
+$text-sub: #6b7280;
+$text-muted: #9ca3af;
+$green: #10b981;
+$amber: #f59e0b;
+$red: #ef4444;
+
+// ── Title Block ───────────────────────────────────────────────────────────────
+
+.act-title-block {
+  text-align: center;
+  padding: 1.5rem 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+
+  &__org { font-size: 0.6875rem; letter-spacing: 0.1em; color: $text-muted; margin: 0; }
+  &__title { font-size: 1.375rem; font-weight: 700; color: $text-primary; margin: 0; }
+  &__divider { display: flex; justify-content: center; }
+}
+
+.act-identity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 20px;
+
+  &__title {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: darken($green, 5%);
+    display: block;
+  }
+
+  &__sub {
+    font-size: 0.6875rem;
+    color: $text-sub;
+    display: block;
+  }
+}
+
+// ── Overview Grid ─────────────────────────────────────────────────────────────
+
+.act-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.chart-card {
+  &__subtitle {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: $text-primary;
+    margin: 0 0 0.25rem;
+  }
+}
+
+.act-doughnut-wrap {
+  max-width: 150px;
+  margin: 1rem auto;
+}
+
+.act-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.act-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+
+  &--total {
+    margin-top: 0.25rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid $border;
+    font-weight: 600;
+  }
+}
+
+.act-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.act-legend-label {
+  flex: 1;
+  color: $text-sub;
+}
+
+.act-legend-count {
+  font-weight: 600;
+  color: $text-primary;
+}
+
+// ── Tables ────────────────────────────────────────────────────────────────────
+
+.act-table-card {
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.act-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+
+  thead tr {
+    background: $surface;
+    border-bottom: 1px solid $border;
+  }
+
+  th {
+    padding: 0.625rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: $text-sub;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid $border;
+    &:last-child { border-bottom: none; }
+    &:hover { background: #fafafa; }
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    color: $text-primary;
+    vertical-align: middle;
+  }
+
+  &__doc-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #2563eb;
+    font-weight: 500;
+  }
+
+  &__date { color: $text-muted; white-space: nowrap; font-size: 0.75rem; }
+  &__reason { color: $text-sub; max-width: 300px; font-size: 0.75rem; }
+  &__shared { color: #2563eb; font-size: 0.75rem; }
+}
+
+// ── Category Tag ──────────────────────────────────────────────────────────────
+
+.act-category-tag {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: $text-primary;
+  white-space: nowrap;
+}
+
+// ── Inventory Status ──────────────────────────────────────────────────────────
+
+.inv-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+
+  &--verified   { background: #f0fdf4; color: $green; }
+  &--expiring   { background: #fffbeb; color: $amber; }
+  &--pending    { background: #fef9c3; color: darken($amber, 15%); }
+  &--expired    { background: #fef2f2; color: $red; }
+}
+
+// ── Accessor ──────────────────────────────────────────────────────────────────
+
+.act-accessor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+
+  &__name { font-weight: 500; color: $text-primary; font-size: 0.8125rem; }
+  &__role { font-size: 0.6875rem; color: $text-muted; }
+}
+
+// ── Organisation ──────────────────────────────────────────────────────────────
+
+.act-org {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  color: $text-primary;
+
+  &__name { font-weight: 500; }
+}
+
+// ── Client Status ─────────────────────────────────────────────────────────────
+
+.client-status {
+  display: inline-flex;
+  padding: 0.2rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+
+  &--active  { background: #f0fdf4; color: $green; }
+  &--pending { background: #fffbeb; color: $amber; }
+  &--expired { background: #fef2f2; color: $red; }
+}
