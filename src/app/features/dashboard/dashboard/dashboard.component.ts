@@ -17,6 +17,7 @@ import {
   Legend,
 } from 'chart.js';
 import { environment } from '../../../../environments/environment';
+import { ComplianceService, ComplianceUserSummary } from '../../../core/services/compliance.service';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -58,6 +59,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private charts: Chart[] = [];
   private router = inject(Router);
   private http = inject(HttpClient);
+  private complianceService = inject(ComplianceService);
 
   today = new Date().toLocaleDateString('en-ZA', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -76,6 +78,13 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     complianceRate: 91,
     complianceDelta: 4,
   };
+
+  complianceLoading = false;
+  complianceError = '';
+  complianceSummary: ComplianceUserSummary | null = null;
+  complianceIssues: any[] = [];
+  complianceMissingDocuments: any[] = [];
+  hasComplianceData = false;
 
   statCards: StatCard[] = [
     {
@@ -139,6 +148,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.buildVerificationChart();
       this.buildCategoryChart();
       this.buildRiskChart();
+      this.loadComplianceData();
     }, 100);
   }
 
@@ -219,6 +229,65 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       },
     });
     this.charts.push(chart);
+  }
+
+  private loadComplianceData(): void {
+    const currentUserId = this.getCurrentUserId();
+    if (!currentUserId) {
+      this.complianceError = 'No current user available.';
+      return;
+    }
+
+    this.complianceLoading = true;
+    this.complianceError = '';
+
+    this.complianceService.getUserCompliance(currentUserId).subscribe({
+      next: (response: any) => {
+        const payload = response?.data ?? response;
+        this.complianceSummary = payload ?? null;
+        this.hasComplianceData = !!payload;
+        this.complianceLoading = false;
+      },
+      error: () => {
+        this.complianceLoading = false;
+        this.complianceError = 'Unable to load compliance information right now.';
+      },
+    });
+
+    this.complianceService.getUserIssues(currentUserId).subscribe({
+      next: (response: any) => {
+        this.complianceIssues = response?.data ?? response ?? [];
+      },
+      error: () => {
+        this.complianceIssues = [];
+      },
+    });
+
+    this.complianceService.getUserMissingDocuments(currentUserId).subscribe({
+      next: (response: any) => {
+        this.complianceMissingDocuments = response?.data ?? response ?? [];
+      },
+      error: () => {
+        this.complianceMissingDocuments = [];
+      },
+    });
+  }
+
+  private getCurrentUserId(): string | null {
+    const token = localStorage.getItem('docuvault_token');
+    if (!token) return null;
+
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+      const decoded = atob(padded);
+      const claims = JSON.parse(decoded) as Record<string, unknown>;
+      return typeof claims['sub'] === 'string' ? claims['sub'] : null;
+    } catch {
+      return null;
+    }
   }
 
   navigate(path: string): void {

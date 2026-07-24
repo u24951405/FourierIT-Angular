@@ -111,6 +111,66 @@
 
   </div>
 
+  <!-- ── Compliance Overview ─────────────────────────────────────────────── -->
+  <div class="dash-chart-card" style="margin-top: 24px;">
+    <h3 class="dash-chart-card__title">Compliance Check</h3>
+    <p class="dash-chart-card__subtitle">Live compliance status from the existing API</p>
+
+    <div *ngIf="complianceLoading" class="compliance-state">Loading compliance data…</div>
+    <div *ngIf="!complianceLoading && complianceError" class="compliance-state compliance-state--error">{{ complianceError }}</div>
+
+    <div *ngIf="!complianceLoading && !complianceError && !hasComplianceData" class="compliance-state">
+      No compliance data is available yet.
+    </div>
+
+    <div *ngIf="!complianceLoading && !complianceError && hasComplianceData" class="compliance-overview">
+      <div class="compliance-summary-card">
+        <div class="compliance-summary-card__header">
+          <span class="compliance-pill">{{ complianceSummary?.overallStatus || 'Unknown' }}</span>
+          <span class="compliance-pill compliance-pill--muted">Risk: {{ complianceSummary?.riskLevel || 'Unknown' }}</span>
+        </div>
+        <div class="compliance-grid">
+          <div>
+            <div class="compliance-label">Compliance Score</div>
+            <div class="compliance-value">{{ complianceSummary?.complianceScore ?? 0 }}</div>
+          </div>
+          <div>
+            <div class="compliance-label">Compliance %</div>
+            <div class="compliance-value">{{ complianceSummary?.compliancePercentage ?? 0 }}%</div>
+          </div>
+          <div>
+            <div class="compliance-label">Uploaded</div>
+            <div class="compliance-value">{{ complianceSummary?.uploaded ?? 0 }}</div>
+          </div>
+          <div>
+            <div class="compliance-label">Missing</div>
+            <div class="compliance-value">{{ complianceSummary?.missing ?? 0 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="compliance-list-card" *ngIf="complianceIssues.length">
+        <h4 class="compliance-list-card__title">Issues</h4>
+        <ul class="compliance-list">
+          <li *ngFor="let issue of complianceIssues.slice(0, 5)">
+            <span class="compliance-list__name">{{ issue.documentName || issue.documentType || 'Issue' }}</span>
+            <span class="compliance-list__meta">{{ issue.status || issue.issue || 'Pending review' }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="compliance-list-card" *ngIf="complianceMissingDocuments.length">
+        <h4 class="compliance-list-card__title">Missing Documents</h4>
+        <ul class="compliance-list">
+          <li *ngFor="let item of complianceMissingDocuments.slice(0, 5)">
+            <span class="compliance-list__name">{{ item.documentTypeName || item.reason || 'Document' }}</span>
+            <span class="compliance-list__meta">{{ item.reason || 'Required' }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Chart Row ──────────────────────────────────────────────────────────── -->
   <div class="dash-chart-grid">
 
