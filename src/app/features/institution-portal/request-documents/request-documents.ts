@@ -201,6 +201,8 @@ export class RequestDocuments {
     const payload: InstitutionDocumentRequestPayload = {
       requestType: this.wizard.requestType!,
       purposeNote: this.wizard.justification.trim(),
+      submissionDeadline: this.wizard.submissionDeadline || null,
+      referenceNumber: this.wizard.referenceNumber.trim(),
       requestedDocuments: this.wizard.selectedDocumentTypeIds.map((documentTypeId) => ({
         documentTypeId,
         isMandatory: false,

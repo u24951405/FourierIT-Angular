@@ -96,6 +96,11 @@ export class RegisterUserComponent implements OnInit {
     this.loadRoles();
     this.loadEntityTypes();
 
+    // Default to Document Owner role for normal user registration
+    this.form.patchValue({
+      roleIds: ['DO']
+    });
+
     // Load password policy from API
     this.auth.getPasswordPolicy().subscribe({
       next: (policy) => {

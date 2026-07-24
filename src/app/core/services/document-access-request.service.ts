@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ApproveRequestResponse,
+  ApprovedInstitutionDocument,
   DenyRequestPayload,
   DenyRequestResponse,
   DocumentRequestedType,
@@ -67,6 +68,11 @@ export class DocumentAccessRequestService {
       `${this.base}/document-access-requests/${requestId}/deny`,
       payload ?? null
     );
+  }
+
+  getApprovedInstitutionDocuments(token: string): Observable<ApprovedInstitutionDocument[]> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<ApprovedInstitutionDocument[]>(`${this.base}/institution-access/documents`, { params });
   }
 
   downloadInstitutionDocument(documentId: number, token: string): Observable<Blob> {

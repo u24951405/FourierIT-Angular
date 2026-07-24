@@ -1,0 +1,69 @@
+<div class="department-requests-page">
+  <header class="department-requests-header">
+    <h1>Department Requests</h1>
+    <p>Review pending department requests and route them to a document owner for approval.</p>
+  </header>
+
+  <div *ngIf="loading()" class="department-requests-loading">
+    <p>Loading pending department requests…</p>
+  </div>
+
+  <div *ngIf="!loading() && error()" class="department-requests-error">
+    <p>{{ error() }}</p>
+  </div>
+
+  <div *ngIf="!loading() && !error() && pendingDepartmentRequests().length === 0" class="department-requests-empty">
+    <p>No pending department requests found at this time.</p>
+  </div>
+
+  <div *ngIf="!loading() && pendingDepartmentRequests().length > 0" class="department-requests-list">
+    <div class="department-request-card" *ngFor="let request of pendingDepartmentRequests()">
+      <div class="department-request-card__header">
+        <div>
+          <span class="department-request-card__label">Request ID</span>
+          <strong>{{ request.enquiryRequestId }}</strong>
+        </div>
+        <span class="department-request-card__status">{{ request.status }}</span>
+      </div>
+
+      <div class="department-request-card__body">
+        <p><strong>Institution:</strong> {{ request.institutionName }}</p>
+        <p><strong>Department:</strong> {{ request.departmentName }}</p>
+        <p><strong>Requested At:</strong> {{ request.requestDate | date:'medium' }}</p>
+        <p><strong>Purpose:</strong> {{ request.purposeNote || 'Not provided' }}</p>
+        <div class="department-request-card__documents">
+          <span class="department-request-card__documents-title">Requested Documents</span>
+          <ul>
+            <li *ngFor="let doc of request.documents">
+              {{ doc.documentTypeName }}<span *ngIf="doc.isMandatory"> · Mandatory</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="department-request-card__actions">
+        <div class="department-request-card__inputs">
+          <label>
+            Assign to User ID
+            <input
+              type="text"
+              [value]="ownerIds()[request.enquiryRequestId] || ''"
+              (input)="setOwnerId(request.enquiryRequestId, $any($event.target).value)"
+              placeholder="Enter user id"
+            />
+          </label>
+          <label>
+            Note (optional)
+            <textarea
+              rows="3"
+              [value]="ownerNotes()[request.enquiryRequestId] || ''"
+              (input)="setOwnerNote(request.enquiryRequestId, $any($event.target).value)"
+              placeholder="Add a routing note"
+            ></textarea>
+          </label>
+        </div>
+        <button class="btn btn-route" type="button" (click)="routeRequest(request.enquiryRequestId)">Route to Owner</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { InstitutionAuthService } from '../auth/institution-auth';
 
 @Component({
@@ -11,6 +11,7 @@ import { InstitutionAuthService } from '../auth/institution-auth';
   styleUrl: './dashboard.css',
 })
 export class Dashboard {
+  private router = inject(Router);
   private institutionAuthService = inject(InstitutionAuthService);
 
   institutionName = 'Demo Institution';
@@ -26,10 +27,25 @@ export class Dashboard {
   expiryNoticeCount = 1;
   showExpiryNotice = true;
 
-  goToRequestDocuments(): void {}
-  goToMyRequests(): void {}
-  goToApprovedDocuments(): void {}
-  goToRenew(): void {}
+  goToRequestDocuments(): void {
+    this.router.navigate(['/institution/request-documents']);
+  }
+
+  goToMyRequests(): void {
+    this.router.navigate(['/institution/my-requests']);
+  }
+
+  goToApprovedDocuments(): void {
+    this.router.navigate(['/institution/approved-documents']);
+  }
+
+  goToDepartmentRequests(): void {
+    this.router.navigate(['/administration/department-requests']);
+  }
+
+  goToRenew(): void {
+    this.router.navigate(['/institution/request-documents']);
+  }
 
   signOut(): void {
     this.institutionAuthService.signOut();

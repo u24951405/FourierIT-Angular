@@ -1,7 +1,7 @@
 <div class="approved-documents-page">
   <header class="approved-documents-header">
     <h1>Approved Documents</h1>
-    <p>Use your access token to download an approved document from the institution access portal.</p>
+    <p>Use your access token to load and download an approved document from the institution access portal.</p>
   </header>
 
   <div class="approved-documents-form">
@@ -16,21 +16,39 @@
       />
     </div>
 
-    <div class="approved-documents-field">
-      <label for="document-id">Document ID</label>
-      <input
-        id="document-id"
-        type="text"
-        [value]="documentId()"
-        (input)="documentId.set($any($event.target).value)"
-        placeholder="Enter approved document ID"
-      />
-    </div>
-
-    <button class="btn btn-download" type="button" (click)="downloadDocument()" [disabled]="loading()">
-      {{ loading() ? 'Downloading…' : 'Download Approved Document' }}
+    <button class="btn btn-download" type="button" (click)="loadApprovedDocuments()" [disabled]="loading()">
+      {{ loading() ? 'Loading…' : 'Load Approved Documents' }}
     </button>
 
-    <div *ngIf="message()" class="approved-documents-message">{{ message() }}</div>
+    <div *ngIf="approvedDocuments().length" class="approved-documents-list">
+      <h2>Available Documents</h2>
+      <ul>
+        <li *ngFor="let document of approvedDocuments()" class="approved-documents-item">
+          <label>
+            <input
+              type="radio"
+              name="approvedDocument"
+              [checked]="selectedDocumentId() === document.documentId"
+              (change)="selectDocument(document.documentId)"
+            />
+            <span class="approved-documents-item__meta">
+              <strong>{{ document.documentName }}</strong>
+              <span>{{ document.documentTypeName }}</span>
+            </span>
+            <span class="approved-documents-item__timestamp">
+              Approved {{ document.approvedAt | date:'mediumDate' }}
+            </span>
+          </label>
+        </li>
+      </ul>
+
+      <button class="btn btn-download" type="button" (click)="downloadDocument()" [disabled]="loading() || !selectedDocumentId()">
+        {{ loading() ? 'Downloading…' : 'Download selected document' }}
+      </button>
+    </div>
+
+    <div *ngIf="!approvedDocuments().length && message()" class="approved-documents-message">
+      {{ message() }}
+    </div>
   </div>
 </div>

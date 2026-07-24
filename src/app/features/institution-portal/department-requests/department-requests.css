@@ -1,0 +1,110 @@
+.department-requests-page {
+  padding: 1.5rem;
+}
+
+.department-requests-header {
+  margin-bottom: 1.5rem;
+}
+
+.department-requests-loading,
+.department-requests-error,
+.department-requests-empty {
+  padding: 1rem;
+  background: #fff8f0;
+  border: 1px solid #ffe2c1;
+  border-radius: 0.75rem;
+}
+
+.department-requests-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.department-request-card {
+  background: #ffffff;
+  border: 1px solid #e8eaed;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.department-request-card__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.department-request-card__label {
+  font-size: 0.85rem;
+  color: #6d6d7a;
+  display: block;
+}
+
+.department-request-card__status {
+  background: #eef6ff;
+  color: #1664d9;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.department-request-card__body p {
+  margin: 0.45rem 0;
+  color: #323238;
+}
+
+.department-request-card__documents {
+  margin-top: 1rem;
+}
+
+.department-request-card__documents-title {
+  font-weight: 700;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.department-request-card__actions {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.department-request-card__inputs {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.department-request-card__inputs label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  color: #4a4b57;
+}
+
+.department-request-card__inputs input,
+.department-request-card__inputs textarea {
+  width: 100%;
+  border: 1px solid #d7d7de;
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  color: #24243d;
+}
+
+.department-request-card__inputs textarea {
+  resize: vertical;
+}
+
+.btn-route {
+  align-self: start;
+  width: fit-content;
+  padding: 0.85rem 1.2rem;
+  border: none;
+  border-radius: 999px;
+  background: #1664d9;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}

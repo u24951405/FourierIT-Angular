@@ -237,6 +237,42 @@
         </div>
       </div>
 
+      <!-- Department Requests -->
+      <div class="action-card action-card--purple" (click)="goToDepartmentRequests()">
+        <div class="action-card__left">
+          <div class="action-card__icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 7h18"></path>
+              <path d="M9 7v10"></path>
+              <path d="M15 7v10"></path>
+              <path d="M3 17h18"></path>
+            </svg>
+          </div>
+          <div class="action-card__body">
+            <div class="action-card__header-row">
+              <h3 class="action-card__title">Department Requests</h3>
+              <button class="action-card__cta" type="button" (click)="goToDepartmentRequests()">
+                Review requests
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+            <p class="action-card__desc">
+              Review pending department access requests and route them to the correct document owner for processing.
+            </p>
+            <div class="action-card__meta">
+              <span class="action-card__meta-item">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Route requests directly to owners
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Approved Documents -->
       <div class="action-card action-card--green" (click)="goToApprovedDocuments()">
         <div class="action-card__left">

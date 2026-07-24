@@ -62,6 +62,8 @@ export interface InstitutionDocumentRequestPayload {
   targetDepartmentId?: number | null;
   targetUserId?: string | null;
   purposeNote?: string;
+  submissionDeadline?: string | null;
+  referenceNumber?: string;
   requestedDocuments: DocumentRequestedType[];
 }
 
@@ -72,6 +74,8 @@ export interface InstitutionDocumentRequestResponse {
   targetDepartmentId?: number;
   targetUserId?: string;
   status: string;
+  submissionDeadline?: string;
+  referenceNumber?: string;
   requestDate: string;
   requestedDocumentTypeIds: number[];
   message?: string;
@@ -138,6 +142,14 @@ export interface DenyRequestResponse {
   message: string;
   requestId: number;
   status: string;
+}
+
+export interface ApprovedInstitutionDocument {
+  documentId: number;
+  documentName: string;
+  documentTypeName: string;
+  approvedAt: string;
+  expiresAt?: string;
 }
 
 export interface AuditLogEntry {

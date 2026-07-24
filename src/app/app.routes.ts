@@ -5,6 +5,7 @@ import { restrictDocumentOwnerOnlyGuard } from './core/guards/restrict-document-
 import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.guard';
 import { documentUploadGuard } from './core/guards/document-upload.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { departmentAdminGuard } from './core/guards/department-admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
@@ -77,6 +78,10 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/administration/roles-management/roles-management.component')
           .then(m => m.RolesManagementComponent) },
+      { path: 'administration/department-requests',
+        canActivate: [restrictDocumentOwnerOnlyGuard, departmentAdminGuard],
+        loadComponent: () => import('./features/institution-portal/department-requests/department-requests')
+          .then(m => m.DepartmentRequests) },
       { path: 'stakeholders/all',
         canActivate: [restrictDocumentOwnerOnlyGuard],
         loadComponent: () => import('./features/stakeholders/all-stakeholders/all-stakeholders.component')
