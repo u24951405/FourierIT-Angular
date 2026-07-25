@@ -6,6 +6,9 @@ import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.gua
 import { documentUploadGuard } from './core/guards/document-upload.guard';
 import { adminGuard } from './core/guards/admin.guard';
 import { departmentAdminGuard } from './core/guards/department-admin.guard';
+import { documentManagementGuard } from './core/guards/document-management.guard';
+import { superAdminGuard } from './core/guards/super-admin.guard';
+import { institutionAuthGuard, institutionOtpGuard } from './features/institution-portal/auth/institution-auth-guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
@@ -25,6 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'institution/auth/verify',
+    canActivate: [institutionOtpGuard],
     loadComponent: () => import('./features/institution-portal/auth/otp-verify/otp-verify').then(m => m.OtpVerifyComponent)
   },
   {
@@ -33,18 +37,22 @@ export const routes: Routes = [
   },
   {
     path: 'institution/dashboard',
+    canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
   },
   {
     path: 'institution/request-documents',
+    canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
   },
   {
     path: 'institution/my-requests',
+    canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
   },
   {
     path: 'institution/approved-documents',
+    canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
   },
   {
@@ -63,17 +71,42 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
       { path: 'my-documents',
-        canActivate: [documentOwnerGuard],
+        canActivate: [documentUploadGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
           .then(m => m.MyDocumentsComponent) },
-      { path: 'users/management',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
-        loadComponent: () => import('./features/users/user-management/user-management.component')
-          .then(m => m.UserManagementComponent) },
       { path: 'administration/institutions',
         canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/administration/institutions/institutions.component')
           .then(m => m.InstitutionsComponent) },
+      { path: 'departments/admins',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        loadComponent: () => import('./features/departments/department-admin-management/department-admin-management.component')
+          .then(m => m.DepartmentAdminManagementComponent) },
+      { path: 'users/department-admins',
+        canActivate: [restrictDocumentOwnerOnlyGuard, departmentAdminGuard],
+        data: { managedRole: 'Department Admin', pageTitle: 'Department Admin Management' },
+        loadComponent: () => import('./features/users/user-management/user-management.component')
+          .then(m => m.UserManagementComponent) },
+      { path: 'users/document-owners',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        data: { managedRole: 'Document Owner', pageTitle: 'Document Owner Management' },
+        loadComponent: () => import('./features/users/user-management/user-management.component')
+          .then(m => m.UserManagementComponent) },
+      { path: 'users/stakeholders-compliance',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        data: { managedRoles: ['Stakeholder', 'Compliance Officer'], pageTitle: 'Stakeholders & Compliance Officers' },
+        loadComponent: () => import('./features/users/user-management/user-management.component')
+          .then(m => m.UserManagementComponent) },
+      { path: 'users/register-department-admin',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        data: { defaultRole: 'Department Admin', pageTitle: 'Register Department Admin' },
+        loadComponent: () => import('./features/users/register-user/register-user.component')
+          .then(m => m.RegisterUserComponent) },
+      { path: 'users/register-role-user',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        data: { allowedRoles: ['Stakeholder', 'Compliance Officer'], pageTitle: 'Register Stakeholder or Compliance Officer' },
+        loadComponent: () => import('./features/users/register-user/register-user.component')
+          .then(m => m.RegisterUserComponent) },
       { path: 'administration/roles',
         canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
         loadComponent: () => import('./features/administration/roles-management/roles-management.component')

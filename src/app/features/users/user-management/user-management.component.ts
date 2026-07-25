@@ -1,6 +1,7 @@
 import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -23,6 +24,7 @@ export interface UserProfile {
   jobTitle: string;
   roleId: string;
   roleName: string;
+  roles: string[];
   status: string;
   createdAt: string;
 }
@@ -39,9 +41,14 @@ export class UserManagementComponent {
   readonly auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
   private toast = inject(ToastService);
   private roleService = inject(RoleService);
   private userManagementService = inject(UserManagementService);
+
+  pageTitle = signal('User Management');
+  managedRoleName = signal<string | null>(null);
+  managedRoleNames = signal<string[] | null>(null);
 
   showModal = signal(false);
   editId = signal<number | null>(null);
@@ -73,6 +80,16 @@ export class UserManagementComponent {
   });
 
   constructor() {
+    const data = this.route.snapshot.data as { managedRole?: string; managedRoles?: string[]; pageTitle?: string } | undefined;
+    if (data?.pageTitle) {
+      this.pageTitle.set(data.pageTitle);
+    }
+    if (data?.managedRole) {
+      this.managedRoleName.set(data.managedRole);
+    }
+    if (Array.isArray(data?.managedRoles) && data?.managedRoles.length > 0) {
+      this.managedRoleNames.set(data.managedRoles);
+    }
     this.loadRoles();
   }
 
@@ -203,11 +220,16 @@ export class UserManagementComponent {
       .pipe(finalize(() => this.isLoadingUsers.set(false)))
       .subscribe({
         next: (users) => {
-          this.users.set(
-            (users ?? [])
-              .map(user => this.mapUserToProfile(user))
-              .filter(user => !this.isSuperAdmin(user))
-          );
+          const allUsers = (users ?? []).map(user => this.mapUserToProfile(user));
+          const managedRole = this.managedRoleName();
+          const managedRoles = this.managedRoleNames();
+          const filteredUsers = managedRoles?.length
+            ? allUsers.filter(user => user.roles.some(role => managedRoles.some(m => role.toLowerCase() === m.toLowerCase())))
+            : managedRole
+              ? allUsers.filter(user => user.roleName.toLowerCase() === managedRole.toLowerCase())
+              : allUsers;
+
+          this.users.set(filteredUsers.filter(user => !this.isSuperAdmin(user)));
         },
         error: (error) => {
           this.users.set([]);
@@ -218,8 +240,9 @@ export class UserManagementComponent {
   }
 
   private mapUserToProfile(user: ManagedUserDto): UserProfile {
-    const roleName = user.roles?.[0] ?? '';
-    const roleId = this.roles.find(r => r.name.toLowerCase() === roleName.toLowerCase())?.id ?? '';
+    const roles = user.roles ?? [];
+    const roleName = roles.join(', ');
+    const roleId = this.roles.find(r => r.name.toLowerCase() === roles[0]?.toLowerCase())?.id ?? '';
     return {
       id: user.profileId ?? 0,
       userName: user.userName ?? '',
@@ -231,6 +254,7 @@ export class UserManagementComponent {
       jobTitle: user.profile?.jobTitle ?? '',
       roleId,
       roleName,
+      roles,
       status: user.accountStatus ?? 'Active',
       createdAt: ''
     };

@@ -1,6 +1,7 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -31,6 +32,7 @@ export interface Department {
 export class DepartmentsComponent {
   private fb    = inject(FormBuilder);
   private toast = inject(ToastService);
+  private router = inject(Router);
   private departmentService = inject(DepartmentService);
   readonly auth = inject(AuthService);
 
@@ -133,6 +135,10 @@ export class DepartmentsComponent {
     });
   }
 
+  assignAdminToDepartment(department: Department): void {
+    this.router.navigate(['/departments/admins'], { queryParams: { departmentId: department.id } });
+  }
+
   private loadBranchesThenDepartments(): void {
     this.isLoadingBranches.set(true);
     this.departmentService.getBranches()
@@ -160,6 +166,39 @@ export class DepartmentsComponent {
 
   private loadDepartments(): void {
     this.isLoading.set(true);
+
+    const filterAndSet = (items: ApiDepartmentDto[] | null, departmentId?: number | null) => {
+      let departments = (items ?? []).map(d => this.mapDepartment(d));
+      if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {
+        departments = departments.filter(d => d.id === departmentId);
+      }
+      this.departments.set(departments);
+    };
+
+    if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {
+      this.auth.getCurrentAccount().subscribe({
+        next: (account) => {
+          const departmentId = account.departmentId ?? null;
+          this.departmentService.getAll()
+            .pipe(finalize(() => this.isLoading.set(false)))
+            .subscribe({
+              next: (items) => filterAndSet(items, departmentId),
+              error: (error) => {
+                this.departments.set([]);
+                const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Failed to load departments.';
+                this.toast.show(message, 'error');
+              }
+            });
+        },
+        error: () => {
+          this.departments.set([]);
+          this.toast.show('Could not determine your assigned department.', 'error');
+          this.isLoading.set(false);
+        }
+      });
+      return;
+    }
+
     this.departmentService.getAll()
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({

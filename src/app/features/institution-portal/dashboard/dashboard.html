@@ -30,8 +30,8 @@
         </svg>
       </span>
       <div class="inst-nav__user-info">
-        <span class="inst-nav__user-name">{{ institutionName }}</span>
-        <span class="inst-nav__user-code">{{ institutionCode }}</span>
+        <span class="inst-nav__user-name">{{ institutionName() }}</span>
+        <span class="inst-nav__user-code">{{ institutionCode() }}</span>
       </div>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="6 9 12 15 18 9"></polyline>
@@ -88,8 +88,8 @@
       </div>
       <div>
         <p class="inst-hero__welcome-label">Welcome back</p>
-        <h1 class="inst-hero__name">{{ institutionName }}</h1>
-        <p class="inst-hero__code">{{ institutionCode }} · FICA/KYC Compliance Portal</p>
+        <h1 class="inst-hero__name">{{ institutionName() }}</h1>
+        <p class="inst-hero__code">{{ institutionCode() }} · FICA/KYC Compliance Portal</p>
       </div>
     </div>
 
@@ -100,7 +100,7 @@
       </div>
       <div class="inst-hero__session-row">
         <span class="inst-hero__session-key">Authenticated</span>
-        <span class="inst-hero__session-val">{{ authenticatedTime }}</span>
+        <span class="inst-hero__session-val">{{ authenticatedTime() }}</span>
       </div>
       <div class="inst-hero__session-row">
         <span class="inst-hero__session-key">Auth method</span>
@@ -108,7 +108,7 @@
       </div>
       <div class="inst-hero__session-row">
         <span class="inst-hero__session-key">Expires</span>
-        <span class="inst-hero__session-val">{{ sessionExpiryLabel }}</span>
+        <span class="inst-hero__session-val">{{ sessionExpiryLabel() }}</span>
       </div>
       <button class="inst-hero__signout" type="button" (click)="signOut()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -124,16 +124,16 @@
   <!-- Stats strip -->
   <div class="inst-stats" *ngIf="!loading">
     <div class="inst-stat inst-stat--amber">
-      <span class="inst-stat__label">Active Requests</span>
-      <span class="inst-stat__value">{{ stats.activeRequests }}</span>
+      <span class="inst-stat__label">Pending Requests</span>
+      <span class="inst-stat__value">{{ stats().pendingRequests }}</span>
     </div>
     <div class="inst-stat inst-stat--green">
       <span class="inst-stat__label">Approved Requests</span>
-      <span class="inst-stat__value">{{ stats.approvedRequests }}</span>
+      <span class="inst-stat__value">{{ stats().approvedRequests }}</span>
     </div>
     <div class="inst-stat inst-stat--neutral">
-      <span class="inst-stat__label">Expired Access</span>
-      <span class="inst-stat__value">{{ stats.expiredAccess }}</span>
+      <span class="inst-stat__label">Denied Requests</span>
+      <span class="inst-stat__value">{{ stats().deniedRequests }}</span>
     </div>
   </div>
 
@@ -211,8 +211,8 @@
             <div class="action-card__header-row">
               <h3 class="action-card__title">
                 My Requests
-                <span class="action-card__badge action-card__badge--amber" *ngIf="stats.activeRequests > 0">
-                  {{ stats.activeRequests }} active
+                <span class="action-card__badge action-card__badge--amber" *ngIf="stats().pendingRequests > 0">
+                  {{ stats().pendingRequests }} active
                 </span>
               </h3>
               <button class="action-card__cta" type="button" (click)="goToMyRequests()">
@@ -226,11 +226,11 @@
               View and track the status of all your submitted document access requests. Respond to compliance officer queries and resubmit rejected requests.
             </p>
             <div class="action-card__meta">
-              <span class="action-card__meta-item" *ngIf="stats.activeRequests > 0">
+              <span class="action-card__meta-item" *ngIf="stats().pendingRequests > 0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                {{ stats.activeRequests }} Pending review
+                {{ stats().pendingRequests }} Pending review
               </span>
             </div>
           </div>
@@ -286,8 +286,8 @@
             <div class="action-card__header-row">
               <h3 class="action-card__title">
                 Approved Documents
-                <span class="action-card__badge action-card__badge--green" *ngIf="stats.approvedRequests > 0">
-                  {{ stats.approvedRequests }} available
+                <span class="action-card__badge action-card__badge--green" *ngIf="stats().approvedRequests > 0">
+                  {{ stats().approvedRequests }} available
                 </span>
               </h3>
               <button class="action-card__cta" type="button" (click)="goToApprovedDocuments()">
@@ -301,17 +301,17 @@
               Access documents that have been approved for your institution. View in the secure viewer or download watermarked copies within your permitted access period.
             </p>
             <div class="action-card__meta">
-              <span class="action-card__meta-item" *ngIf="stats.approvedRequests > 0">
+              <span class="action-card__meta-item" *ngIf="stats().approvedRequests > 0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                {{ stats.approvedRequests }} Available to view
+                {{ stats().approvedRequests }} Available to view
               </span>
-              <span class="action-card__meta-item action-card__meta-item--warn" *ngIf="expiryNoticeCount > 0">
+              <span class="action-card__meta-item action-card__meta-item--warn" *ngIf="expiryNoticeCount() > 0">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                {{ expiryNoticeCount }} Expiring within 30 days
+                {{ expiryNoticeCount() }} Expiring within 30 days
               </span>
             </div>
           </div>
@@ -322,7 +322,7 @@
   </div>
 
   <!-- Expiry Notice -->
-  <div class="expiry-notice" *ngIf="showExpiryNotice">
+  <div class="expiry-notice" *ngIf="showExpiryNotice()">
     <div class="expiry-notice__left">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
@@ -332,7 +332,7 @@
       <div>
         <p class="expiry-notice__title">Access Expiry Notice</p>
         <p class="expiry-notice__desc">
-          {{ expiryNoticeCount }} document access approval{{ expiryNoticeCount > 1 ? 's are' : ' is' }} expiring within 30 days.
+          {{ expiryNoticeCount() }} document access approval{{ expiryNoticeCount() > 1 ? 's are' : ' is' }} expiring within 30 days.
           Submit a renewal request before your access period ends to avoid interruption.
         </p>
       </div>

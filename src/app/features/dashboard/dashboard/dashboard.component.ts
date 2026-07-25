@@ -8,7 +8,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import {
   Chart,
   DoughnutController,
@@ -17,7 +16,12 @@ import {
   Legend,
 } from 'chart.js';
 import { environment } from '../../../../environments/environment';
-import { ComplianceService, ComplianceUserSummary } from '../../../core/services/compliance.service';
+import {
+  ComplianceService,
+  ComplianceDashboard,
+  ComplianceUserSummary,
+} from '../../../core/services/compliance.service';
+import { AuthService, CurrentAccount } from '../../../core/services/auth.service';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -58,26 +62,18 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   private charts: Chart[] = [];
   private router = inject(Router);
-  private http = inject(HttpClient);
+  private auth = inject(AuthService);
   private complianceService = inject(ComplianceService);
 
   today = new Date().toLocaleDateString('en-ZA', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   });
 
-  // Mock data — replace with API call
-  stats: DashboardStats = {
-    totalDocuments: 2847,
-    totalDelta: 156,
-    verifiedDocuments: 1842,
-    verifiedPercent: 64.7,
-    pendingVerification: 312,
-    pendingUrgent: 23,
-    rejectedDocuments: 98,
-    expiringSoon: 47,
-    complianceRate: 91,
-    complianceDelta: 4,
-  };
+  dashboardData: ComplianceDashboard | null = null;
+  account: CurrentAccount | null = null;
+  dashboardScope: 'system' | 'department' = 'system';
+  dashboardLoading = false;
+  dashboardError = '';
 
   complianceLoading = false;
   complianceError = '';
@@ -86,68 +82,20 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   complianceMissingDocuments: any[] = [];
   hasComplianceData = false;
 
-  statCards: StatCard[] = [
-    {
-      key: 'total',
-      value: '2,847',
-      label: 'Total Documents',
-      sublabel: '+156 this month',
-      iconBg: '#e0e7ff',
-      iconColor: '#4f46e5',
-      iconPath: 'document',
-    },
-    {
-      key: 'verified',
-      value: '1,842',
-      label: 'Verified Documents',
-      sublabel: '64.7% of total',
-      iconBg: '#dcfce7',
-      iconColor: '#16a34a',
-      iconPath: 'check',
-    },
-    {
-      key: 'pending',
-      value: '312',
-      label: 'Pending Verification',
-      sublabel: '23 urgent',
-      iconBg: '#fef3c7',
-      iconColor: '#d97706',
-      iconPath: 'clock',
-    },
-    {
-      key: 'rejected',
-      value: '98',
-      label: 'Rejected Documents',
-      sublabel: 'Requires resubmission',
-      iconBg: '#fee2e2',
-      iconColor: '#dc2626',
-      iconPath: 'x',
-    },
-    {
-      key: 'expiring',
-      value: '47',
-      label: 'Expiring Soon',
-      sublabel: 'Within 30 days',
-      iconBg: '#ffedd5',
-      iconColor: '#ea580c',
-      iconPath: 'triangle',
-    },
-    {
-      key: 'compliance',
-      value: '91%',
-      label: 'Compliance Rate',
-      sublabel: '+4% vs last month',
-      iconBg: '#1e2a3a',
-      iconColor: '#fff',
-      iconPath: 'trend',
-    },
-  ];
+  statCards: StatCard[] = [];
+
+  private readonly defaultChartData = {
+    verification: [1842, 312, 98, 595],
+    category: [1124, 876, 543, 304],
+    risk: [1124, 487, 198, 38],
+  };
 
   ngAfterViewInit(): void {
     setTimeout(() => {
       this.buildVerificationChart();
       this.buildCategoryChart();
       this.buildRiskChart();
+      this.loadDashboard();
       this.loadComplianceData();
     }, 100);
   }
@@ -229,6 +177,118 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       },
     });
     this.charts.push(chart);
+  }
+
+  private loadDashboard(): void {
+    this.dashboardLoading = true;
+    this.dashboardError = '';
+    this.dashboardData = null;
+
+    this.auth.getCurrentAccount().subscribe({
+      next: account => {
+        this.account = account;
+        if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin() && account.departmentId) {
+          this.dashboardScope = 'department';
+          this.complianceService.getDepartmentDashboard(account.departmentId).subscribe({
+            next: dashboard => this.applyDashboard(dashboard),
+            error: () => this.handleDashboardError('Unable to load department dashboard.')
+          });
+        } else {
+          this.dashboardScope = 'system';
+          this.complianceService.getSystemDashboard().subscribe({
+            next: dashboard => this.applyDashboard(dashboard),
+            error: () => this.handleDashboardError('Unable to load system dashboard.')
+          });
+        }
+      },
+      error: () => this.handleDashboardError('Unable to load user account data.'),
+    });
+  }
+
+  private applyDashboard(dashboard: ComplianceDashboard): void {
+    this.dashboardData = dashboard;
+    this.dashboardLoading = false;
+    this.dashboardError = '';
+    this.statCards = this.buildStatCards(dashboard);
+    this.updateRiskChart(dashboard);
+  }
+
+  private handleDashboardError(message: string): void {
+    this.dashboardLoading = false;
+    this.dashboardError = message;
+    this.statCards = [];
+  }
+
+  private buildStatCards(dashboard: ComplianceDashboard): StatCard[] {
+    return [
+      {
+        key: 'users',
+        value: dashboard.totalUsers,
+        label: this.dashboardScope === 'department' ? 'Department Members' : 'Total Users',
+        sublabel: this.dashboardScope === 'department' ? 'Members in your department' : 'Active users in system',
+        iconBg: '#e0e7ff',
+        iconColor: '#4f46e5',
+        iconPath: 'users',
+      },
+      {
+        key: 'compliant',
+        value: dashboard.compliantUsers,
+        label: 'Compliant Users',
+        sublabel: 'Full compliance achieved',
+        iconBg: '#dcfce7',
+        iconColor: '#16a34a',
+        iconPath: 'check',
+      },
+      {
+        key: 'noncompliant',
+        value: dashboard.nonCompliantUsers,
+        label: 'Non-Compliant Users',
+        sublabel: 'Immediate remediation needed',
+        iconBg: '#fee2e2',
+        iconColor: '#dc2626',
+        iconPath: 'x',
+      },
+      {
+        key: 'review',
+        value: dashboard.reviewRequiredUsers,
+        label: 'Review Required',
+        sublabel: 'Awaiting compliance review',
+        iconBg: '#fef3c7',
+        iconColor: '#d97706',
+        iconPath: 'clock',
+      },
+      {
+        key: 'alerts',
+        value: dashboard.totalOpenAlerts,
+        label: 'Open Alerts',
+        sublabel: 'Outstanding compliance actions',
+        iconBg: '#fee2e2',
+        iconColor: '#991b1b',
+        iconPath: 'triangle',
+      },
+      {
+        key: 'complianceRate',
+        value: `${dashboard.overallCompliancePercentage?.toFixed(1) ?? 0}%`,
+        label: 'Compliance Rate',
+        sublabel: 'Across current scope',
+        iconBg: '#1e2a3a',
+        iconColor: '#fff',
+        iconPath: 'trend',
+      }
+    ];
+  }
+
+  private updateRiskChart(dashboard: ComplianceDashboard): void {
+    const chart = this.charts.find((c, index) => index === 2);
+    if (!chart || !dashboard) return;
+
+    chart.data.datasets[0].data = [
+      dashboard.lowRiskUsers ?? 0,
+      dashboard.mediumRiskUsers ?? 0,
+      dashboard.highRiskUsers ?? 0,
+      dashboard.criticalRiskUsers ?? 0,
+    ];
+    chart.update();
   }
 
   private loadComplianceData(): void {

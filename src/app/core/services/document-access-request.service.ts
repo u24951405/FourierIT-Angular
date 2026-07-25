@@ -10,6 +10,7 @@ import {
   DocumentRequestedType,
   InstitutionDocumentRequestPayload,
   InstitutionDocumentRequestResponse,
+  InstitutionRequestSummary,
   PendingDepartmentAccessRequest,
   PendingDocumentAccessRequest,
   RouteRequestToOwnerPayload,
@@ -25,15 +26,32 @@ export class DocumentAccessRequestService {
     institutionId: number,
     payload: InstitutionDocumentRequestPayload
   ): Observable<InstitutionDocumentRequestResponse> {
-    return this.http.post<InstitutionDocumentRequestResponse>(
-      `${this.base}/institutions/${institutionId}/document-access-requests`,
+    const sessionJson = sessionStorage.getItem('institution_session');
+    const sessionToken = sessionJson ? JSON.parse(sessionJson).sessionToken : '';
+    
+    console.debug('[DocumentAccessRequestService] Creating request', {
+      sessionJson,
+      sessionToken,
+      endpoint: `${this.base}/institution-access/requests`,
       payload
+    });
+    
+    return this.http.post<InstitutionDocumentRequestResponse>(
+      `${this.base}/institution-access/requests`,
+      payload,
+      { params: new HttpParams().set('token', sessionToken) }
     );
   }
 
   getPendingRequests(): Observable<PendingDocumentAccessRequest[]> {
     return this.http.get<PendingDocumentAccessRequest[]>(
       `${this.base}/document-access-requests/pending`
+    );
+  }
+
+  getInstitutionRequestSummary(institutionId: number): Observable<InstitutionRequestSummary> {
+    return this.http.get<InstitutionRequestSummary>(
+      `${this.base}/institutions/${institutionId}/document-access-requests/summary`
     );
   }
 

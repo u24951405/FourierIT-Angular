@@ -1,6 +1,6 @@
 import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
@@ -28,9 +28,12 @@ export class RegisterUserComponent implements OnInit {
   private auth = inject(AuthService);
   private roleService = inject(RoleService);
   private router = inject(Router);
-  
+  private route = inject(ActivatedRoute);
 
   isSubmitting = signal(false);
+  pageTitle = signal('Register New User');
+  defaultRoleName = signal<string | null>(null);
+  allowedRoleNames = signal<string[] | null>(null);
   isLoadingRoles = signal(false);
   isVerifyingEntity = signal(false);
   entityVerificationStatus = signal<'idle'|'verifying'|'valid'|'invalid'>('idle');
@@ -71,7 +74,8 @@ export class RegisterUserComponent implements OnInit {
   private readonly defaultRoles: Array<{ id: string; name: string }> = [
     { id: 'DA', name: 'Department Admin' },
     { id: 'DO', name: 'Document Owner' },
-    { id: 'SH', name: 'Stakeholder' }
+    { id: 'SH', name: 'Stakeholder' },
+    { id: 'CO', name: 'Compliance Officer' }
   ];
 
   private readonly defaultEntityTypes: EntityTypeOption[] = [
@@ -88,18 +92,34 @@ export class RegisterUserComponent implements OnInit {
   }
 
   private navigateAfterRegisterOrCancel(): void {
-    const target = this.isSelfSignupFlow() ? '/auth/login' : '/users/management';
+    const target = this.isSelfSignupFlow() ? '/auth/login' : '/dashboard';
     this.router.navigate([target]);
   }
 
   ngOnInit(): void {
+    const routeData = this.route.snapshot.data as { defaultRole?: string; allowedRoles?: string[]; pageTitle?: string } | undefined;
+    if (routeData?.defaultRole) {
+      this.defaultRoleName.set(routeData.defaultRole);
+      this.pageTitle.set(`Register ${routeData.defaultRole}`);
+    }
+    if (routeData?.allowedRoles?.length) {
+      this.allowedRoleNames.set(routeData.allowedRoles);
+      if (routeData.pageTitle) {
+        this.pageTitle.set(routeData.pageTitle);
+      }
+      this.form.controls.entityTypeId.clearValidators();
+      this.form.controls.entityIdentificationNumber.clearValidators();
+      this.form.controls.entityTypeId.updateValueAndValidity({ emitEvent: false });
+      this.form.controls.entityIdentificationNumber.updateValueAndValidity({ emitEvent: false });
+    }
+
     this.loadRoles();
     this.loadEntityTypes();
 
     // Default to Document Owner role for normal user registration
-    this.form.patchValue({
-      roleIds: ['DO']
-    });
+    if (!this.defaultRoleName() && !this.allowedRoleNames()) {
+      this.form.patchValue({ roleIds: ['DO'] });
+    }
 
     // Load password policy from API
     this.auth.getPasswordPolicy().subscribe({
@@ -148,10 +168,40 @@ export class RegisterUserComponent implements OnInit {
           }));
 
           this.roles = mappedRoles.length > 0 ? mappedRoles : this.defaultRoles;
+          if (this.allowedRoleNames()) {
+            const allowedRoleIds = this.roles
+              .filter(r => this.allowedRoleNames()!.some(name => name.trim().toLowerCase() === r.name.trim().toLowerCase()))
+              .map(r => r.id);
+            if (allowedRoleIds.length) {
+              this.form.patchValue({ roleIds: [allowedRoleIds[0]] });
+            }
+          } else if (this.defaultRoleName()) {
+            const defaultRoleId = this.roles.find(r => r.name.trim().toLowerCase() === this.defaultRoleName()!.trim().toLowerCase())?.id;
+            if (defaultRoleId) {
+              this.form.patchValue({ roleIds: [defaultRoleId] });
+            }
+          } else {
+            this.form.patchValue({ roleIds: ['DO'] });
+          }
         },
         error: () => {
           this.roles = this.defaultRoles;
           this.toast.show('Could not load roles from API. Showing default roles.', 'error');
+          if (this.allowedRoleNames()) {
+            const allowedRoleIds = this.roles
+              .filter(r => this.allowedRoleNames()!.some(name => name.trim().toLowerCase() === r.name.trim().toLowerCase()))
+              .map(r => r.id);
+            if (allowedRoleIds.length) {
+              this.form.patchValue({ roleIds: [allowedRoleIds[0]] });
+            }
+          } else if (this.defaultRoleName()) {
+            const defaultRoleId = this.roles.find(r => r.name.trim().toLowerCase() === this.defaultRoleName()!.trim().toLowerCase())?.id;
+            if (defaultRoleId) {
+              this.form.patchValue({ roleIds: [defaultRoleId] });
+            }
+          } else {
+            this.form.patchValue({ roleIds: ['DO'] });
+          }
         }
       });
   }
@@ -246,7 +296,7 @@ export class RegisterUserComponent implements OnInit {
       this.cdr.markForCheck();
       return;
     }
-    if (this.entityVerificationStatus() !== 'valid') {
+    if (!this.isRoleDropdownMode && this.entityVerificationStatus() !== 'valid') {
       this.entityVerificationStatus.set('invalid');
       this.entityVerificationMessage.set('Please verify the selected identification number before registering this user.');
       this.cdr.markForCheck();
@@ -258,10 +308,13 @@ export class RegisterUserComponent implements OnInit {
     }
 
     const raw = this.form.getRawValue();
-    const selectedRoleIds = (raw.roleIds ?? []) as string[];
-    const selectedRoleNames = this.roles
-      .filter(r => selectedRoleIds.includes(r.id))
-      .map(r => r.name);
+    const defaultRole = this.defaultRoleName();
+    const selectedRoleNames = defaultRole
+      ? [defaultRole]
+      : this.roles
+          .filter(r => ((raw.roleIds ?? []) as string[]).includes(r.id))
+          .map(r => r.name)
+          .filter((name): name is string => !!name);
 
     if (selectedRoleNames.length === 0 || selectedRoleNames.length > this.maxRoles) {
       this.toast.show('Please select one or two valid roles.', 'error');
@@ -276,6 +329,11 @@ export class RegisterUserComponent implements OnInit {
       return;
     }
 
+    const requiresEntityVerification = selectedRoleNames.some(r =>
+      r.trim().toLowerCase() === 'document owner'
+      || r.trim().toLowerCase() === 'department admin'
+    );
+
     const payload: RegisterPayload = {
       firstName: (raw.firstName ?? '').trim(),
       lastName: (raw.lastName ?? '').trim(),
@@ -285,9 +343,11 @@ export class RegisterUserComponent implements OnInit {
       username: (raw.username ?? '').trim().toLowerCase(),
       emailAddress: (raw.email ?? '').trim(),
       password: raw.password ?? '',
-      entityTypeId: raw.entityTypeId ?? 0,
-      entityIdentificationNumber: (raw.entityIdentificationNumber ?? '').trim(),
-      roles: selectedRoleNames
+      roles: selectedRoleNames,
+      ...(requiresEntityVerification ? {
+        entityTypeId: raw.entityTypeId ?? undefined,
+        entityIdentificationNumber: (raw.entityIdentificationNumber ?? '').trim(),
+      } : {})
     };
 
     this.isSubmitting.set(true);
@@ -382,6 +442,28 @@ export class RegisterUserComponent implements OnInit {
   isRoleSelected(roleId: string): boolean {
     const selected = (this.form.controls.roleIds.value ?? []) as string[];
     return selected.includes(roleId);
+  }
+
+  get isRoleDropdownMode(): boolean {
+    return this.allowedRoleNames() !== null;
+  }
+
+  get allowedRoleOptions(): Array<{ id: string; name: string }> {
+    const allowedRoleNames = this.allowedRoleNames();
+    if (!allowedRoleNames) return [];
+    const allowedNames = allowedRoleNames.map(name => name.trim().toLowerCase());
+    return this.roles.filter(r => allowedNames.includes(r.name.trim().toLowerCase()));
+  }
+
+  onRoleDropdownChange(roleId: string): void {
+    const next = roleId ? [roleId] : [];
+    this.form.controls.roleIds.setValue(next);
+    this.form.controls.roleIds.markAsTouched();
+    this.cdr.markForCheck();
+  }
+
+  selectedRoleIds(): string[] {
+    return ((this.form.controls.roleIds.value ?? []) as string[]);
   }
 
   private minSelectedRolesValidator(min: number): ValidatorFn {

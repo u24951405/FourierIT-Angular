@@ -1,1 +1,17 @@
-/* Styles for approved documents view */
+/* Approved documents portal styling */
+.approved-documents-page{ padding:1.25rem }
+.approved-documents-header h1{ margin:0 0 0.25rem 0 }
+.approved-documents-form{ background:#fff; border:1px solid #eef3f6; padding:1rem; border-radius:0.75rem; display:grid; gap:1rem }
+.approved-documents-field label{ display:block; font-weight:600; margin-bottom:0.4rem }
+.approved-documents-field input{ width:100%; padding:0.6rem 0.9rem; border:1px solid #d9dde2; border-radius:0.6rem }
+.btn-download{ background:#1664d9; color:#fff; border:none; padding:0.6rem 0.9rem; border-radius:999px }
+.approved-documents-list h2{ margin:0.5rem 0 }
+.approved-documents-item{ list-style:none; padding:0.6rem; border-bottom:1px solid #f1f4f6; display:flex; align-items:center; gap:0.8rem }
+.approved-documents-item__meta{ display:flex; flex-direction:column }
+.approved-documents-item__timestamp{ margin-left:auto; color:#6b6b72; font-size:0.9rem }
+.approved-documents-message{ padding:0.6rem; background:#fff8f6; border-radius:0.6rem }
+
+@media (max-width:700px){
+	.approved-documents-item{ flex-direction:column; align-items:flex-start }
+	.approved-documents-item__timestamp{ margin-left:0 }
+}

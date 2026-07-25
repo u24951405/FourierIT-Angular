@@ -1,0 +1,130 @@
+<div class="page">
+  <div class="page-header">
+    <div class="page-header__titles">
+      <h1>Department Admin Management</h1>
+      <p>Super Admins can assign or replace department admins for each department.</p>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+    <aside class="admin-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Departments</h2>
+          <p class="panel-meta">{{ filteredDepartments.length }} department(s) available</p>
+        </div>
+        <div class="panel-search">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/></svg>
+          <input placeholder="Search departments..." (input)="search.set($any($event.target).value)">
+        </div>
+      </div>
+      <div *ngIf="isLoading()" class="loading">Loading departments…</div>
+      <div *ngIf="!isLoading() && !filteredDepartments.length" class="empty">No departments found.</div>
+      <ul class="admin-list">
+        <li *ngFor="let department of filteredDepartments" class="admin-list__item">
+          <button
+            type="button"
+            class="admin-list__button"
+            [class.admin-list__button--selected]="selectedDepartmentId() === department.id"
+            (click)="selectDepartment(department.id)"
+          >
+            <span class="admin-list__name">{{ department.name }}</span>
+            <span class="admin-list__branch">{{ department.branch }}</span>
+          </button>
+        </li>
+      </ul>
+    </aside>
+
+    <div class="admin-details">
+      <ng-container *ngIf="selectedDepartmentId() !== null; else selectPrompt">
+        <div class="details-card">
+          <div class="details-header">
+            <div>
+              <h2>Department details</h2>
+              <p class="details-note">Assign a Department Admin or replace the current assignment.</p>
+            </div>
+            <div class="details-badge">Department {{ departments().find(d => d.id === selectedDepartmentId())?.name }}</div>
+          </div>
+
+          <div class="details-meta-row">
+            <div>
+              <strong>Branch</strong>
+              <span>{{ departments().find(d => d.id === selectedDepartmentId())?.branch }}</span>
+            </div>
+            <div>
+              <strong>Created</strong>
+              <span>{{ departments().find(d => d.id === selectedDepartmentId())?.createdAt }}</span>
+            </div>
+          </div>
+
+          <section class="details-block">
+            <h3>Current admin</h3>
+            <div *ngIf="selectedDepartmentAdmin(); else noAdmin" class="admin-card">
+              <div>
+                <p class="admin-card__name"><strong>{{ selectedDepartmentAdmin()?.firstName }} {{ selectedDepartmentAdmin()?.lastName }}</strong></p>
+                <p>{{ selectedDepartmentAdmin()?.jobTitle }}</p>
+              </div>
+              <div class="admin-card__contact">
+                <p>{{ selectedDepartmentAdmin()?.email }}</p>
+              </div>
+            </div>
+            <ng-template #noAdmin>
+              <p>No department admin assigned for this department.</p>
+            </ng-template>
+          </section>
+
+          <form [formGroup]="assignmentForm" (ngSubmit)="assignAdmin()" class="admin-form">
+            <div class="form-row">
+              <label>Available admins</label>
+              <select formControlName="userId">
+                <option value="">Select a Department Admin</option>
+                <option *ngFor="let admin of unassignedAdmins()" [value]="admin.userId">
+                  {{ admin.userName }} – {{ admin.departmentName ? '(' + admin.departmentName + ')' : '(Unassigned)' }}
+                </option>
+              </select>
+              <span class="field__hint">
+                @if (unassignedAdmins().length > 0) {
+                  Showing {{ unassignedAdmins().length }} Department Admin(s).
+                  <span *ngIf="unassignedAdmins().some(a => !a.departmentId)">
+                    Unassigned: {{ unassignedAdmins().filter(a => !a.departmentId).length }}
+                  </span>
+                }
+              </span>
+              <span class="field__error" *ngIf="assignmentForm.controls.userId.invalid && assignmentForm.controls.userId.touched">
+                Select an available Department Admin.
+              </span>
+            </div>
+            <div class="form-footer">
+              <button type="button" class="btn btn--secondary" (click)="removeAdmin()" [disabled]="isSubmitting() || !selectedDepartmentAdmin()">
+                Remove current admin
+              </button>
+              <button type="submit" class="btn btn--primary" [disabled]="isSubmitting() || assignmentForm.invalid || !unassignedAdmins().length">
+                {{ isSubmitting() ? 'Assigning…' : 'Assign Department Admin' }}
+              </button>
+            </div>
+          </form>
+          <div class="details-note" *ngIf="unassignedAdminsError()">
+            {{ unassignedAdminsError() }}
+          </div>
+          <div class="details-note" *ngIf="!unassignedAdminsError() && !unassignedAdmins().length">
+            No unassigned Department Admin accounts are available. <a routerLink="/users/register-department-admin">Register one first</a>.
+          </div>
+
+          <section class="details-block" *ngIf="selectedDepartmentDocs().length">
+            <h3>Required documents</h3>
+            <ul>
+              <li *ngFor="let doc of selectedDepartmentDocs()">{{ doc.documentTypeName }} <strong *ngIf="doc.isMandatory">(mandatory)</strong></li>
+            </ul>
+          </section>
+        </div>
+      </ng-container>
+
+      <ng-template #selectPrompt>
+        <div class="details-card empty-state">
+          <h2>Select a department</h2>
+          <p>Pick a department from the list on the left to view or assign a Department Admin.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

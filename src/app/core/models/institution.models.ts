@@ -81,6 +81,12 @@ export interface InstitutionDocumentRequestResponse {
   message?: string;
 }
 
+export interface InstitutionRequestSummary {
+  pendingRequests: number;
+  approvedRequests: number;
+  deniedRequests: number;
+}
+
 export interface PendingDocumentAccessRequestDocument {
   documentTypeId: number;
   documentTypeName: string;

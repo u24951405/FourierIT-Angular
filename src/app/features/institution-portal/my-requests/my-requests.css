@@ -1,1 +1,68 @@
+/* Institution portal - My Requests styles */
+.my-requests-page {
+	padding: 1.5rem;
+}
+
+.my-requests-header h1 {
+	margin: 0 0 0.25rem 0;
+}
+
+.my-requests-loading,
+.my-requests-error,
+.my-requests-empty {
+	padding: 1rem;
+	background: #fffaf6;
+	border: 1px solid #ffe9d6;
+	border-radius: 0.75rem;
+}
+
+.my-requests-list {
+	display: grid;
+	gap: 1rem;
+}
+
+.request-card {
+	background: #ffffff;
+	border: 1px solid #edf0f3;
+	border-radius: 1rem;
+	padding: 1.25rem;
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 1rem;
+}
+
+.request-card__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+}
+
+.request-card__label { color: #6b6b72; font-size:0.85rem; display:block }
+
+.request-card__status {
+	font-weight:700;
+	padding: 0.35rem 0.75rem;
+	border-radius: 999px;
+	font-size: 0.85rem;
+}
+.request-card__status--pending{ background:#fff4e6; color:#b45b00 }
+.request-card__status--department_pending{ background:#fff4e6; color:#b45b00 }
+.request-card__status--approved{ background:#e8f7ef; color:#0a7a3a }
+.request-card__status--denied{ background:#fff0f2; color:#a41d3b }
+
+.request-card__body p { margin:0.4rem 0; color:#31313a }
+
+.request-card__documents { margin-top:0.75rem }
+.request-card__documents-title{ font-weight:700; display:block; margin-bottom:0.4rem }
+
+.request-card__actions { display:flex; gap:0.6rem; align-items:center }
+.btn{ padding:0.6rem 0.9rem; border-radius:999px; border:none; cursor:pointer; font-weight:600 }
+.btn-approve{ background:#0a7a3a; color:#fff }
+.btn-deny{ background:#a41d3b; color:#fff }
+
+@media (max-width:700px){
+	.request-card{ grid-template-columns: 1fr; }
+	.request-card__actions{ justify-self:start }
+}
 

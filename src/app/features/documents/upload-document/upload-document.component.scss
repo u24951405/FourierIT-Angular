@@ -51,6 +51,17 @@
   box-shadow: 0 16px 44px rgba(18, 38, 61, 0.18);
 }
 
+.upload-document-page__view-button {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.upload-document-page__view-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #fff;
+  color: #fff;
+}
+
 .upload-document-page__hero h1 {
   margin: 0.25rem 0 0.35rem;
   font-size: clamp(1.6rem, 3vw, 2.1rem);

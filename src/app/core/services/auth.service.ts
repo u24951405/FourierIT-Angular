@@ -18,8 +18,8 @@ export interface RegisterPayload {
   username: string;
   emailAddress: string;
   password: string;
-  entityTypeId: number;
-  entityIdentificationNumber: string;
+  entityTypeId?: number;
+  entityIdentificationNumber?: string;
   roles: string[];
 }
 
@@ -56,6 +56,8 @@ export interface CurrentAccount {
   profilePhoneNumber: string | null;
   jobTitle: string | null;
   dateOfBirth: string | null;
+  departmentId: number | null;
+  departmentName: string | null;
 }
 
 export interface UpdateCurrentAccountPayload {
@@ -173,12 +175,13 @@ export class AuthService {
   }
 
   /**
-   * Upload is permitted only for users who actually hold the Document Owner role.
+   * Upload is permitted for Document Owners and Department Admins.
    * Super Admin is not automatically allowed to upload documents.
    */
   canUploadDocuments(): boolean {
     const roles = this.getRolesFromToken();
-    return roles.some(r => r.trim().toLowerCase() === 'document owner');
+    return roles.some(r => r.trim().toLowerCase() === 'document owner')
+      || roles.some(r => r.trim().toLowerCase() === 'department admin');
   }
 
   canReviewDocuments(): boolean {

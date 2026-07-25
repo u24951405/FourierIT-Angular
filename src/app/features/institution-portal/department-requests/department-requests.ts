@@ -77,4 +77,40 @@ export class DepartmentRequests implements OnInit {
         },
       });
   }
+
+  approveRequest(requestId: number): void {
+    if (!confirm('Approve this department document request?')) return;
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.requestService
+      .approveRequest(requestId)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: () => this.loadPendingDepartmentRequests(),
+        error: (err) => {
+          const message = err?.error?.error ?? err?.error?.message ?? 'Could not approve the request.';
+          this.error.set(message);
+        },
+      });
+  }
+
+  denyRequest(requestId: number): void {
+    if (!confirm('Deny this department document request?')) return;
+
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.requestService
+      .denyRequest(requestId, { userResponseNote: 'Department admin denied the request.' })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: () => this.loadPendingDepartmentRequests(),
+        error: (err) => {
+          const message = err?.error?.error ?? err?.error?.message ?? 'Could not deny the request.';
+          this.error.set(message);
+        },
+      });
+  }
 }

@@ -1,7 +1,7 @@
 <div class="page">
   <div class="page-header">
     <div class="page-header__titles">
-      <h1>Register New User</h1>
+      <h1>{{ pageTitle() }}</h1>
       <p>Create a new user account with access permissions</p>
     </div>
   </div>
@@ -28,100 +28,75 @@
       </div>
     </div>
 
-    <div class="form-row form-row--full" style="display: none;">
-      <fieldset class="field field--roles">
-        <legend class="role-fieldset__legend">
-          <span class="role-fieldset__title">Roles <span class="req">*</span></span>
-          @if (!isLoadingRoles()) {
-            <span class="role-picker__counter" [class.role-picker__counter--ok]="selectedRoleCount() > 0">
-              {{ selectedRoleCount() }} / 2 selected
-            </span>
-          }
-        </legend>
-        <p class="field__hint">
-          Pick one or two roles for this account. Stakeholder is exclusive: it cannot be combined with another role—choose Stakeholder alone,
-          or remove it before selecting others.
-        </p>
-
+    <div class="form-row form-row--full" [style.display]="isRoleDropdownMode ? 'block' : 'none'">
+      <div class="field">
+        <label>Role <span class="req">*</span></label>
         @if (isLoadingRoles()) {
-          <div class="role-picker role-picker--loading" aria-busy="true">
-            @for (s of [1, 2, 3]; track s) {
-              <div class="role-picker__skeleton"></div>
-            }
-          </div>
-          <span class="role-picker__loading-text">Loading roles…</span>
+          <select disabled>
+            <option>Loading roles…</option>
+          </select>
+          <span class="field__hint">Loading allowed roles...</span>
         } @else {
-          <div class="role-picker" role="presentation">
-            @for (r of roles; track r.id) {
-              <label
-                class="role-option"
-                [class.role-option--selected]="isRoleSelected(r.id)"
-              >
-                <input
-                  class="role-option__input"
-                  type="checkbox"
-                  [id]="'role-cb-' + r.id"
-                  [checked]="isRoleSelected(r.id)"
-                  (change)="toggleRoleSelection(r.id, $any($event.target).checked)"
-                />
-                <span class="role-option__box" aria-hidden="true">
-                  <svg class="role-option__tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-                <span class="role-option__label">{{ r.name }}</span>
-              </label>
+          <select [value]="selectedRoleIds()[0]" (change)="onRoleDropdownChange($any($event.target).value)">
+            <option value="">Select a role</option>
+            @for (role of allowedRoleOptions; track role.id) {
+              <option [value]="role.id">{{ role.name }}</option>
             }
-          </div>
+          </select>
+          <p class="field__hint">
+            This user will be assigned a single role. Stakeholder and Compliance Officer users can view uploaded documents and registered users,
+            but they do not have document upload permissions.
+          </p>
         }
-
         @if (form.get('roleIds')?.invalid && form.get('roleIds')?.touched) {
-          <span class="field__error">Select at least one role (up to two).</span>
+          <span class="field__error">Select a role for this account.</span>
         }
-      </fieldset>
+      </div>
     </div>
 
-    <h2 class="form-section-title">Entity Verification</h2>
+    @if (!isRoleDropdownMode) {
+      <h2 class="form-section-title">Entity Verification</h2>
 
-    <div class="form-row">
-      <div class="field">
-        <label>Entity Type <span class="req">*</span></label>
-        <select formControlName="entityTypeId">
-          <option [ngValue]="null">Select an entity type</option>
-          @for (entityType of entityTypes; track entityType.entityTypeId) {
-            <option [ngValue]="entityType.entityTypeId">{{ entityType.name }}</option>
+      <div class="form-row">
+        <div class="field">
+          <label>Entity Type <span class="req">*</span></label>
+          <select formControlName="entityTypeId">
+            <option [ngValue]="null">Select an entity type</option>
+            @for (entityType of entityTypes; track entityType.entityTypeId) {
+              <option [ngValue]="entityType.entityTypeId">{{ entityType.name }}</option>
+            }
+          </select>
+          @if (form.get('entityTypeId')?.invalid && form.get('entityTypeId')?.touched) {
+            <span class="field__error">Entity type is required.</span>
           }
-        </select>
-        @if (form.get('entityTypeId')?.invalid && form.get('entityTypeId')?.touched) {
-          <span class="field__error">Entity type is required.</span>
-        }
-      </div>
-      <div class="field">
-        <label>{{ entityIdentificationLabel }} <span class="req">*</span></label>
-        <div class="field field--inline-action">
-          <input
-            type="text"
-            formControlName="entityIdentificationNumber"
-            [placeholder]="selectedEntityType ? entityIdentificationLabel : 'Select an entity type first'"
-          >
-          <button
-            type="button"
-            class="btn btn--secondary btn--small"
-            (click)="verifyEntity()"
-            [disabled]="isVerifyingEntity() || form.controls.entityTypeId.invalid || form.controls.entityIdentificationNumber.invalid"
-          >
-            {{ isVerifyingEntity() ? 'Verifying…' : 'Verify' }}
-          </button>
         </div>
-        <p class="field__hint">{{ entityIdentificationHint }}</p>
-        <p class="field__hint field__hint--status" [class.field__hint--valid]="entityVerificationStatus() === 'valid'" [class.field__hint--invalid]="entityVerificationStatus() === 'invalid'">
-          {{ entityVerificationMessage() || 'Press Verify to validate the selected entity identification.' }}
-        </p>
-        @if (form.get('entityIdentificationNumber')?.invalid && form.get('entityIdentificationNumber')?.touched) {
-          <span class="field__error">{{ entityIdentificationLabel }} is required.</span>
-        }
+        <div class="field">
+          <label>{{ entityIdentificationLabel }} <span class="req">*</span></label>
+          <div class="field field--inline-action">
+            <input
+              type="text"
+              formControlName="entityIdentificationNumber"
+              [placeholder]="selectedEntityType ? entityIdentificationLabel : 'Select an entity type first'"
+            >
+            <button
+              type="button"
+              class="btn btn--secondary btn--small"
+              (click)="verifyEntity()"
+              [disabled]="isVerifyingEntity() || form.controls.entityTypeId.invalid || form.controls.entityIdentificationNumber.invalid"
+            >
+              {{ isVerifyingEntity() ? 'Verifying…' : 'Verify' }}
+            </button>
+          </div>
+          <p class="field__hint">{{ entityIdentificationHint }}</p>
+          <p class="field__hint field__hint--status" [class.field__hint--valid]="entityVerificationStatus() === 'valid'" [class.field__hint--invalid]="entityVerificationStatus() === 'invalid'">
+            {{ entityVerificationMessage() || 'Press Verify to validate the selected entity identification.' }}
+          </p>
+          @if (form.get('entityIdentificationNumber')?.invalid && form.get('entityIdentificationNumber')?.touched) {
+            <span class="field__error">{{ entityIdentificationLabel }} is required.</span>
+          }
+        </div>
       </div>
-    </div>
+    }
 
     <div class="form-row">
       <div class="field">

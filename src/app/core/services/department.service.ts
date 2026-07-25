@@ -21,6 +21,48 @@ export interface BranchListDto {
   city: string;
 }
 
+export interface DepartmentRequiredDocumentDto {
+  departmentDocumentTypeId: number;
+  documentTypeId: number;
+  documentTypeName: string;
+  isMandatory: boolean;
+  createdAt: string;
+}
+
+export interface DepartmentAdminDto {
+  userId: string;
+  userName: string;
+  email: string;
+  departmentId?: number | null;
+  departmentName?: string | null;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
+  dateOfBirth?: string | null;
+}
+
+export interface UnassignedDepartmentAdminDto {
+  userId: string;
+  userName: string;
+  email: string;
+  phoneNumber?: string | null;
+  departmentId?: number | null;
+  departmentName?: string | null;
+}
+
+export interface CreateDepartmentAdminPayload {
+  departmentId?: number;
+  userId?: string;
+  firstName?: string;
+  lastName?: string;
+  emailAddress?: string;
+  username?: string;
+  password?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  dateOfBirth?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DepartmentService {
   private http = inject(HttpClient);
@@ -45,5 +87,25 @@ export class DepartmentService {
 
   delete(departmentId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${departmentId}`);
+  }
+
+  getRequiredDocuments(departmentId: number): Observable<DepartmentRequiredDocumentDto[]> {
+    return this.http.get<DepartmentRequiredDocumentDto[]>(`${this.base}/${departmentId}/required-documents`);
+  }
+
+  getDepartmentAdmin(departmentId: number): Observable<{ departmentId: number; admin: DepartmentAdminDto | null }> {
+    return this.http.get<{ departmentId: number; admin: DepartmentAdminDto | null }>(`${environment.apiUrl}/user/departments/${departmentId}/admin`);
+  }
+
+  getUnassignedDepartmentAdmins(): Observable<UnassignedDepartmentAdminDto[]> {
+    return this.http.get<UnassignedDepartmentAdminDto[]>(`${environment.apiUrl}/user/departments/admins/unassigned`);
+  }
+
+  assignDepartmentAdmin(departmentId: number, payload: CreateDepartmentAdminPayload): Observable<{ message: string; admin: DepartmentAdminDto }> {
+    return this.http.post<{ message: string; admin: DepartmentAdminDto }>(`${environment.apiUrl}/user/departments/${departmentId}/admin`, payload);
+  }
+
+  removeDepartmentAdmin(departmentId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${environment.apiUrl}/user/departments/${departmentId}/admin`);
   }
 }

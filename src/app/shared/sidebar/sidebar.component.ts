@@ -69,11 +69,16 @@ export class SidebarComponent {
   navItems: NavItem[] = [
     { label: 'Dashboard',    icon: 'grid',    route: '/dashboard' },
     { label: 'My Documents', icon: 'file',    route: '/my-documents' },
-    { label: 'Users', icon: 'users', children: [
-        { label: 'User Management', route: '/users/management' }
-    ]},
     { label: 'Departments', icon: 'building', children: [
-        { label: 'All Departments', route: '/departments/all' }
+        { label: 'All Departments', route: '/departments/all' },
+        { label: 'Assign Department Admin', route: '/departments/admins' }
+    ]},
+    { label: 'User Management', icon: 'users', children: [
+        { label: 'Department Admins', route: '/users/department-admins' },
+        { label: 'Document Owners', route: '/users/document-owners' },
+        { label: 'Stakeholders & Compliance', route: '/users/stakeholders-compliance' },
+        { label: 'Register Department Admin', route: '/users/register-department-admin' },
+        { label: 'Register Stakeholder or Compliance Officer', route: '/users/register-role-user' }
     ]},
     { label: 'Administration', icon: 'settings', children: [
         { label: 'Roles Management', route: '/administration/roles' },
@@ -95,8 +100,51 @@ export class SidebarComponent {
       ];
     }
     let items = this.navItems.filter(item =>
-      item.label !== 'My Documents' || this.auth.hasRole('Document Owner')
+      item.label !== 'My Documents' || this.auth.canUploadDocuments()
     );
+
+    if (!this.auth.isSuperAdmin()) {
+      items = items.map(item => {
+        if (item.label === 'Departments' && item.children) {
+          return {
+            ...item,
+            children: item.children.filter(c => c.route !== '/departments/admins')
+          };
+        }
+
+        if (item.label === 'User Management' && item.children) {
+          return {
+            ...item,
+            children: item.children.filter(c => {
+              if (c.route === '/users/department-admins') {
+                return this.auth.hasRole('Department Admin') || this.auth.isSuperAdmin();
+              }
+              if (c.route === '/users/document-owners') {
+                return this.auth.isSuperAdmin();
+              }
+              if (c.route === '/users/register-department-admin' || c.route === '/users/register-role-user') {
+                return this.auth.isSuperAdmin();
+              }
+              return true;
+            })
+          };
+        }
+
+        return item;
+      });
+    }
+
+    if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {
+      items = items.map(item => {
+        if (item.label === 'Documents' && item.children) {
+          return {
+            ...item,
+            children: item.children.filter(c => c.route !== '/documents/all')
+          };
+        }
+        return item;
+      });
+    }
 
     if (this.auth.isStakeholderViewer() || !this.auth.canUploadDocuments()) {
       items = items.map(item => {

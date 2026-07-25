@@ -30,7 +30,7 @@ export class RequestDocuments {
   private authService = inject(InstitutionAuthService);
   private requestService = inject(DocumentAccessRequestService);
 
-  institutionName = 'Demo Institution';
+  institutionName = this.authService.institutionName();
   currentStep = 1;
   purposes = Object.values(RequestPurpose);
   categories = Object.values(DocumentCategory);
@@ -220,21 +220,56 @@ export class RequestDocuments {
       payload.targetUserId = this.wizard.targetUserId.trim();
     }
 
-    this.submitting = true;
     this.submitError = null;
+    this.submitting = true;
+
+    console.debug('Submitting institution document access request', { institutionId, payload });
 
     this.requestService
       .createRequest(institutionId, payload)
       .pipe(finalize(() => (this.submitting = false)))
       .subscribe({
         next: (response) => {
+          console.debug('Document request created', response);
           this.wizard.submittedRequestId = response.enquiryRequestId?.toString() ?? null;
           this.currentStep = 5;
         },
         error: (err) => {
-          this.submitError = err?.error?.error ?? err?.error?.message ?? 'Could not submit the request.';
+          console.error('Document request submission failed', {
+            status: err?.status,
+            statusText: err?.statusText,
+            error: err?.error,
+            message: err?.message,
+            fullError: err
+          });
+          this.submitError = this.getRequestErrorMessage(err);
         },
       });
+  }
+
+  private getRequestErrorMessage(error: any): string {
+    if (!error) {
+      return 'An unknown error occurred while submitting the request.';
+    }
+
+    const serverError = error.error;
+    if (serverError) {
+      if (typeof serverError === 'string') {
+        return serverError;
+      }
+      if (serverError.error) {
+        return serverError.error;
+      }
+      if (serverError.message) {
+        return serverError.message;
+      }
+    }
+
+    if (error.status && error.statusText) {
+      return `Request failed (${error.status} ${error.statusText}).`;
+    }
+
+    return 'Could not submit the request. Check your network connection and try again.';
   }
 
   copyRequestId(): void {

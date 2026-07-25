@@ -50,6 +50,11 @@
   font-size: 0.85rem;
 }
 
+.department-request-card__status--pending{ background:#fff4e6; color:#b45b00 }
+.department-request-card__status--department_pending{ background:#fff4e6; color:#b45b00 }
+.department-request-card__status--approved{ background:#e8f7ef; color:#0a7a3a }
+.department-request-card__status--denied{ background:#fff0f2; color:#a41d3b }
+
 .department-request-card__body p {
   margin: 0.45rem 0;
   color: #323238;
@@ -69,6 +74,12 @@
   margin-top: 1.5rem;
   display: grid;
   gap: 0.85rem;
+}
+
+.department-request-card__actions-right {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
 }
 
 .department-request-card__inputs {
@@ -108,3 +119,6 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+.btn-approve{ background:#0a7a3a; color:#fff; border:none; padding:0.7rem 1rem; border-radius:999px }
+.btn-deny{ background:#a41d3b; color:#fff; border:none; padding:0.7rem 1rem; border-radius:999px }
