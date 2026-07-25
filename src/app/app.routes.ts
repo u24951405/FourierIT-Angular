@@ -8,6 +8,7 @@ import { adminGuard } from './core/guards/admin.guard';
 import { departmentAdminGuard } from './core/guards/department-admin.guard';
 
 export const routes: Routes = [
+  
   { path: '', redirectTo: 'auth/login', pathMatch: 'full' },
   {
     path: 'auth/login',
@@ -104,6 +105,14 @@ export const routes: Routes = [
         data: { documentPageTitle: 'Upload Document' },
         loadComponent: () => import('./features/documents/upload-document/upload-document.component')
           .then(m => m.UploadDocumentComponent) },
+          { path: 'system/backup-restore', // app-routing for backup-restore feature
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        loadComponent: () => import('./features/backup-restore/backup-restore')
+          .then(m => m.BackupRestoreComponent) },
+          { path: 'system/audit-logs',
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        loadComponent: () => import('./features/audit-log/audit-log/audit-log')
+          .then(m => m.AuditLogComponent) },
     ]
   },
   { path: '**', redirectTo: 'auth/login' }
