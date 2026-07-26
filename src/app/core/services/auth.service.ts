@@ -42,6 +42,17 @@ export interface PasswordPolicy {
   requiredLength: number;
 }
 
+export interface ForgotPasswordPayload {
+  emailAddress: string;
+}
+
+export interface ResetPasswordPayload {
+  emailAddress: string;
+  token: string;
+  newPassword: string;
+  confirmPassword?: string;
+}
+
 /** Full account + profile from GET /api/user/me */
 export interface CurrentAccount {
   userId: string;
@@ -128,6 +139,13 @@ export class AuthService {
     return of(null);
   }
 
+  forgotPassword(payload: ForgotPasswordPayload): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/forgot-password`, payload);
+  }
+
+  resetPassword(payload: ResetPasswordPayload): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.base}/reset-password`, payload);
+  }
 
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
