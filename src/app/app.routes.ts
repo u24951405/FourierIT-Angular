@@ -68,9 +68,23 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/dashboard/dashboard-redirect/dashboard-redirect.component')
+          .then(m => m.DashboardRedirectComponent) },
+      { path: 'dashboard/system',
         canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        data: { dashboardScope: 'system' },
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
+      { path: 'dashboard/department',
+        canActivate: [restrictDocumentOwnerOnlyGuard, departmentAdminGuard],
+        data: { dashboardScope: 'department' },
+        loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
+          .then(m => m.DashboardComponent) },
+      { path: 'dashboard/owner',
+        canActivate: [restrictDocumentOwnerOnlyGuard, documentUploadGuard],
+        loadComponent: () => import('./features/documents/my-documents/my-documents.component')
+          .then(m => m.MyDocumentsComponent) },
       { path: 'my-documents',
         canActivate: [documentUploadGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')

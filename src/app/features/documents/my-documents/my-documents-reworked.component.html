@@ -1,0 +1,147 @@
+<div class="dash-wrapper">
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-header__title">Document Owner Dashboard</h1>
+      <p class="dash-header__subtitle">Your documents, requests, and quick actions · {{ today }}</p>
+    </div>
+    <div class="dash-header__badge">
+      <span class="compliance-active-badge">
+        <span class="compliance-active-badge__dot"></span>
+        Document owner workspace
+      </span>
+    </div>
+  </div>
+
+  <div class="dash-stat-grid">
+    <div class="stat-card stat-card--clickable" (click)="openTemporaryUploadPage()">
+      <div class="stat-card__icon" style="background:#eef2ff; color:#4338ca;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ documentCount() }}</span>
+        <span class="stat-card__label">My Documents</span>
+        <span class="stat-card__sub">Uploaded and managed by you</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--clickable" (click)="navigate('/institution/my-requests')">
+      <div class="stat-card__icon" style="background:#dcfce7; color:#15803d;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 6v6l4 2" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="12" cy="12" r="10" />
+        </svg>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ pendingRequestCount() }}</span>
+        <span class="stat-card__label">Pending Requests</span>
+        <span class="stat-card__sub">Awaiting your review</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon" style="background:#dcfce7; color:#047857;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ approvedDocumentCount() }}</span>
+        <span class="stat-card__label">Approved Documents</span>
+        <span class="stat-card__sub">Available to download</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-card__icon" style="background:#fef2f2; color:#b91c1c;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </div>
+      <div class="stat-card__body">
+        <span class="stat-card__value">{{ rejectedDocumentCount() }}</span>
+        <span class="stat-card__label">Rejected Documents</span>
+        <span class="stat-card__sub">Need your attention</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-chart-card dash-chart-card--wide">
+    <div class="dash-chart-card__header">
+      <div>
+        <h3 class="dash-chart-card__title">Request Summary</h3>
+        <p class="dash-chart-card__subtitle">Pending requests assigned to you</p>
+      </div>
+      <button type="button" class="btn btn--outline" (click)="navigate('/institution/my-requests')">Review requests</button>
+    </div>
+
+    <div *ngIf="pendingRequestsLoading()" class="compliance-state">Loading pending requests…</div>
+    <div *ngIf="pendingRequestsError()" class="compliance-state compliance-state--error">{{ pendingRequestsError() }}</div>
+    <div *ngIf="!pendingRequestsLoading() && !pendingRequestsError() && pendingRequests().length === 0" class="compliance-state">
+      No pending requests found.
+    </div>
+
+    <div *ngIf="pendingRequests().length > 0" class="documents-table">
+      <div class="documents-table__row documents-table__head">
+        <span>Request #</span>
+        <span>Institution</span>
+        <span>Date</span>
+        <span>Status</span>
+      </div>
+      <div class="documents-table__row" *ngFor="let request of pendingRequests().slice(0, 5)">
+        <span>{{ request.enquiryRequestId }}</span>
+        <span>{{ request.institutionName }}</span>
+        <span>{{ request.requestDate | date:'mediumDate' }}</span>
+        <span>{{ request.status }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-chart-grid">
+    <div class="dash-chart-card dash-chart-card--clickable" (click)="openTemporaryUploadPage()">
+      <h3 class="dash-chart-card__title">Upload Document</h3>
+      <p class="dash-chart-card__subtitle">Add a new document to your vault</p>
+      <div class="stat-card__body">
+        <button class="btn btn--primary">Upload document</button>
+      </div>
+    </div>
+
+    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/documents/all')">
+      <h3 class="dash-chart-card__title">Manage Documents</h3>
+      <p class="dash-chart-card__subtitle">Browse and manage all your files</p>
+      <div class="stat-card__body">
+        <button class="btn btn--outline">Open documents</button>
+      </div>
+    </div>
+
+    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/institution/my-requests')">
+      <h3 class="dash-chart-card__title">Review Requests</h3>
+      <p class="dash-chart-card__subtitle">Approve or deny pending access requests</p>
+      <div class="stat-card__body">
+        <button class="btn btn--outline">Review requests</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-chart-card dash-chart-card--wide">
+    <h3 class="dash-chart-card__title">Recently Uploaded Documents</h3>
+    <p class="dash-chart-card__subtitle">Your latest uploads</p>
+
+    <div *ngIf="documents().length === 0" class="compliance-state">No uploaded documents yet.</div>
+    <div *ngIf="documents().length > 0" class="documents-table">
+      <div class="documents-table__row documents-table__head">
+        <span>Document</span>
+        <span>Status</span>
+        <span>Uploaded</span>
+        <span>Type</span>
+      </div>
+      <div class="documents-table__row" *ngFor="let doc of recentDocuments()">
+        <span>{{ doc.fileName }}</span>
+        <span>{{ doc.currentStatus }}</span>
+        <span>{{ doc.uploadedDate | date:'mediumDate' }}</span>
+        <span>{{ doc.documentTypeName }}</span>
+      </div>
+    </div>
+  </div>
+</div>

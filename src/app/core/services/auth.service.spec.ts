@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { firstValueFrom } from 'rxjs';
+import { AuthService } from './auth.service';
 
 function parseRolesFromToken(token: string): string[] {
   const payload = token.split('.')[1];
@@ -26,6 +28,15 @@ function parseRolesFromToken(token: string): string[] {
 
   return [];
 }
+
+describe('AuthService', () => {
+  it('returns a null password policy without issuing an HTTP request', async () => {
+    const service = new AuthService();
+    const policy = await firstValueFrom(service.getPasswordPolicy());
+
+    expect(policy).toBeNull();
+  });
+});
 
 describe('auth role parsing', () => {
   it('parses standard role claims from JWT payloads', () => {

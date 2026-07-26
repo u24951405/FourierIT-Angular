@@ -7,7 +7,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   Chart,
   DoughnutController,
@@ -62,6 +62,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   private charts: Chart[] = [];
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
   private complianceService = inject(ComplianceService);
 
@@ -184,10 +185,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.dashboardError = '';
     this.dashboardData = null;
 
+    const routeScope = this.route.snapshot.data['dashboardScope'] as 'system' | 'department' | undefined;
+
     this.auth.getCurrentAccount().subscribe({
       next: account => {
         this.account = account;
-        if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin() && account.departmentId) {
+        const shouldUseDepartmentDashboard = routeScope === 'department'
+          || (!routeScope && this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin() && account.departmentId);
+
+        if (shouldUseDepartmentDashboard && account.departmentId) {
           this.dashboardScope = 'department';
           this.complianceService.getDepartmentDashboard(account.departmentId).subscribe({
             next: dashboard => this.applyDashboard(dashboard),

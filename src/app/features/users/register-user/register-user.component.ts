@@ -121,18 +121,9 @@ export class RegisterUserComponent implements OnInit {
       this.form.patchValue({ roleIds: ['DO'] });
     }
 
-    // Load password policy from API
-    this.auth.getPasswordPolicy().subscribe({
-      next: (policy) => {
-        this.passwordPolicy.set(policy as any);
-        this.cdr.markForCheck();
-      },
-      error: () => {
-        // If policy cannot be fetched, leave null so UI can fall back to server errors on submit
-        this.passwordPolicy.set(null as any);
-        this.cdr.markForCheck();
-      }
-    });
+    // The backend does not expose a password-policy endpoint, so we use local fallbacks.
+    this.passwordPolicy.set(null);
+    this.cdr.markForCheck();
 
     this.form.controls.entityTypeId.valueChanges.subscribe(() => {
       this.resetEntityVerificationState();
