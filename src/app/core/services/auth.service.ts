@@ -269,23 +269,46 @@ export class AuthService {
 
   private extractRoles(claims: Record<string, unknown>): string[] {
     const candidates = [
-      claims['role'],
       claims['roles'],
+      claims['role'],
       claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
       claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role']
     ];
 
+    const roles: string[] = [];
+
     for (const candidate of candidates) {
       if (Array.isArray(candidate)) {
-        const roles = candidate.filter((r): r is string => typeof r === 'string' && r.trim().length > 0);
-        if (roles.length > 0) return roles;
+        candidate.forEach(item => {
+          if (typeof item === 'string' && item.trim().length > 0) {
+            roles.push(...this.parseRoleString(item));
+          }
+        });
+        continue;
       }
 
       if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        return candidate.split(',').map(role => role.trim()).filter(Boolean);
+        roles.push(...this.parseRoleString(candidate));
       }
     }
 
-    return [];
+    return [...new Set(roles.map(r => r.trim()).filter(Boolean))];
+  }
+
+  private parseRoleString(value: string): string[] {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map(item => item.trim());
+        }
+      } catch {
+        // fall through to comma split
+      }
+    }
+
+    return trimmed.split(',').map(role => role.trim()).filter(Boolean);
   }
 }

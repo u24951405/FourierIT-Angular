@@ -191,7 +191,8 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       next: account => {
         this.account = account;
         const shouldUseDepartmentDashboard = routeScope === 'department'
-          || (!routeScope && this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin() && account.departmentId);
+          || (!routeScope && (this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder'))
+            && !this.auth.isSuperAdmin() && account.departmentId);
 
         if (shouldUseDepartmentDashboard && account.departmentId) {
           this.dashboardScope = 'department';

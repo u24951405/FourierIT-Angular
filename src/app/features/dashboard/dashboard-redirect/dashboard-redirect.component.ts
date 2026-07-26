@@ -18,10 +18,10 @@ export class DashboardRedirectComponent implements OnInit {
   private auth = inject(AuthService);
 
   ngOnInit(): void {
-    const path = this.auth.isDocumentOwnerOnly()
-      ? '/dashboard/owner'
-      : this.auth.hasRole('Department Admin')
-        ? '/dashboard/department'
+    const path = this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder')
+      ? '/dashboard/department'
+      : this.auth.isDocumentOwnerOnly()
+        ? '/dashboard/owner'
         : (this.auth.hasRole('Admin') || this.auth.isSuperAdmin())
           ? '/dashboard/system'
           : '/auth/login';

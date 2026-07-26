@@ -82,11 +82,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
       { path: 'dashboard/owner',
-        canActivate: [restrictDocumentOwnerOnlyGuard, documentUploadGuard],
+        canActivate: [documentOwnerGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
           .then(m => m.MyDocumentsComponent) },
       { path: 'my-documents',
-        canActivate: [documentUploadGuard],
+        canActivate: [documentOwnerGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
           .then(m => m.MyDocumentsComponent) },
       { path: 'administration/institutions',
