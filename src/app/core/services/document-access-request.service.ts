@@ -10,6 +10,7 @@ import {
   DocumentRequestedType,
   InstitutionDocumentRequestPayload,
   InstitutionDocumentRequestResponse,
+  InstitutionRecipientDocumentType,
   InstitutionRequestSummary,
   PendingDepartmentAccessRequest,
   PendingDocumentAccessRequest,
@@ -52,6 +53,46 @@ export class DocumentAccessRequestService {
   getInstitutionRequestSummary(institutionId: number): Observable<InstitutionRequestSummary> {
     return this.http.get<InstitutionRequestSummary>(
       `${this.base}/institutions/${institutionId}/document-access-requests/summary`
+    );
+  }
+
+  getInstitutionAccessRequestSummary(token: string): Observable<InstitutionRequestSummary> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<InstitutionRequestSummary>(
+      `${this.base}/institution-access/requests/summary`,
+      { params }
+    );
+  }
+
+  getInstitutionDepartments(token: string): Observable<{ departmentId: number; departmentName: string }[]> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<{ departmentId: number; departmentName: string }[]>(
+      `${this.base}/institution-access/requests/departments`,
+      { params }
+    );
+  }
+
+  getInstitutionUsers(token: string): Observable<{ userId: string; userName: string; displayName: string }[]> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<{ userId: string; userName: string; displayName: string }[]>(
+      `${this.base}/institution-access/requests/users`,
+      { params }
+    );
+  }
+
+  getInstitutionRecipientDocumentTypes(
+    token: string,
+    requestType: 'Department' | 'Individual',
+    recipientId: string
+  ): Observable<InstitutionRecipientDocumentType[]> {
+    const params = new HttpParams()
+      .set('token', token)
+      .set('requestType', requestType)
+      .set('recipientId', recipientId);
+
+    return this.http.get<InstitutionRecipientDocumentType[]>(
+      `${this.base}/institution-access/requests/document-types`,
+      { params }
     );
   }
 

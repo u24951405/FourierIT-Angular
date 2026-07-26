@@ -14,7 +14,8 @@ export interface NavItem {
   label: string;
   icon:  string;
   route?: string;
-  children?: { label: string; route: string }[];
+  requiresSuperAdmin?: boolean;
+  children?: { label: string; route: string; requiresSuperAdmin?: boolean }[];
 }
 
 @Component({
@@ -67,12 +68,21 @@ export class SidebarComponent {
 
   //side navigation bar items with icons and routes
   navItems: NavItem[] = [
+    { label: 'Administration', icon: 'settings', children: [
+        { label: 'Roles Management', route: '/administration/roles' },
+        { label: 'Institutions',     route: '/administration/institutions' }
+    ]},
     { label: 'Dashboard',    icon: 'grid',    route: '/dashboard' },
-    { label: 'My Documents', icon: 'file',    route: '/my-documents' },
     { label: 'Departments', icon: 'building', children: [
         { label: 'All Departments', route: '/departments/all' },
         { label: 'Assign Department Admin', route: '/departments/admins' }
     ]},
+    { label: 'Documents', icon: 'folder', children: [
+        { label: 'All Documents',   route: '/documents/all' },
+        { label: 'Upload Document', route: '/documents/upload' },
+        { label: 'Document Requests', route: '/documents/requests' }
+    ]},
+    { label: 'My Documents', icon: 'file',    route: '/my-documents' },
     { label: 'User Management', icon: 'users', children: [
         { label: 'Department Admins', route: '/users/department-admins' },
         { label: 'Document Owners', route: '/users/document-owners' },
@@ -80,14 +90,8 @@ export class SidebarComponent {
         { label: 'Register Department Admin', route: '/users/register-department-admin' },
         { label: 'Register Stakeholder or Compliance Officer', route: '/users/register-role-user' }
     ]},
-    { label: 'Administration', icon: 'settings', children: [
-        { label: 'Roles Management', route: '/administration/roles' },
-        { label: 'Institutions',     route: '/administration/institutions' }
-    ]},
-    { label: 'Documents', icon: 'folder', children: [
-        { label: 'All Documents',   route: '/documents/all' },
-        { label: 'Upload Document', route: '/documents/upload' }
-    ]},
+    { label: 'Audit Log', icon: 'file', route: '/audit-logs', requiresSuperAdmin: true },
+    { label: 'Backup & Restore', icon: 'folder', route: '/backup-restore', requiresSuperAdmin: true }
   ];
 
   get visibleNavItems(): NavItem[] {
@@ -95,7 +99,8 @@ export class SidebarComponent {
       return [
         { label: 'My Documents', icon: 'file', route: '/my-documents' },
         { label: 'Documents', icon: 'folder', children: [
-          { label: 'Upload Document', route: '/documents/upload' }
+          { label: 'Upload Document', route: '/documents/upload' },
+          { label: 'Document Requests', route: '/documents/requests' }
         ]}
       ];
     }
@@ -130,8 +135,19 @@ export class SidebarComponent {
           };
         }
 
+        if (item.children) {
+          return {
+            ...item,
+            children: item.children.filter(child => !child.requiresSuperAdmin)
+          };
+        }
+
+        if (item.requiresSuperAdmin) {
+          return null as unknown as NavItem;
+        }
+
         return item;
-      });
+      }).filter(Boolean);
     }
 
     if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {

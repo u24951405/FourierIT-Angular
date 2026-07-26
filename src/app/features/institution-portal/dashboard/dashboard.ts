@@ -50,14 +50,36 @@ export class Dashboard implements OnInit {
   }
 
   private loadRequestSummary(): void {
-    const institutionId = Number(this.institutionAuthService.getInstitutionId());
-    if (!institutionId || institutionId <= 0) {
-      this.errorMessage.set('Unable to load institution stats. Please refresh the portal.');
-      return;
-    }
+    const sessionToken = this.institutionAuthService.getSessionToken();
 
     this.loading.set(true);
     this.errorMessage.set(null);
+
+    if (sessionToken) {
+      // Institution portal: use token-based summary endpoint
+      this.requestService.getInstitutionAccessRequestSummary(sessionToken).subscribe({
+        next: (summary) => {
+          this.stats.set(summary ?? {
+            pendingRequests: 0,
+            approvedRequests: 0,
+            deniedRequests: 0,
+          });
+        },
+        error: () => {
+          this.errorMessage.set('Unable to load request summary.');
+        },
+        complete: () => this.loading.set(false),
+      });
+      return;
+    }
+
+    // Fallback for internal users (e.g. admin UI)
+    const institutionId = Number(this.institutionAuthService.getInstitutionId());
+    if (!institutionId || institutionId <= 0) {
+      this.loading.set(false);
+      this.errorMessage.set('Unable to load institution stats. Please refresh the portal.');
+      return;
+    }
 
     this.requestService.getInstitutionRequestSummary(institutionId).subscribe({
       next: (summary) => {

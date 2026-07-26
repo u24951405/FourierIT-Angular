@@ -1,0 +1,362 @@
+// ─── Document Requests Page ─────────────────────────────────────────────────
+
+.document-requests-page {
+  padding: 2rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// ─── Header ─────────────────────────────────────────────────────────────────
+
+.document-requests-header {
+  margin-bottom: 2rem;
+
+  h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  p {
+    margin: 0;
+    color: #666666;
+    font-size: 1rem;
+  }
+}
+
+// ─── States (Loading, Error, Empty) ──────────────────────────────────────
+
+.document-requests-loading,
+.document-requests-error,
+.document-requests-empty {
+  padding: 2rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  font-size: 1rem;
+
+  p {
+    margin: 0;
+    color: #666666;
+  }
+}
+
+.document-requests-loading {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+}
+
+.document-requests-error {
+  background: #fff5f5;
+  border: 1px solid #ffcccb;
+  color: #c41e3a;
+
+  p {
+    color: #c41e3a;
+  }
+}
+
+.document-requests-empty {
+  background: #fafaf8;
+  border: 1px solid #e8e8e6;
+}
+
+// ─── Requests List ──────────────────────────────────────────────────────
+
+.document-requests-list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+// ─── Request Card ───────────────────────────────────────────────────────
+
+.request-card {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: #d0d0d0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &--department {
+    border-left: 4px solid #2563eb;
+  }
+}
+
+// ─── Request Header ─────────────────────────────────────────────────────
+
+.request-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.request-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.request-card__type-badge {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+
+  &.badge--owner {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  &.badge--department {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+}
+
+.request-card__title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.request-card__subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #999999;
+}
+
+.request-card__status-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  min-width: max-content;
+}
+
+.request-card__status {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  &.status--pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+.request-card__date {
+  font-size: 0.8rem;
+  color: #999999;
+}
+
+// ─── Request Body ───────────────────────────────────────────────────────
+
+.request-card__body {
+  display: grid;
+  gap: 1rem;
+}
+
+.request-card__section {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.request-card__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #999999;
+}
+
+.request-card__value {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333333;
+  line-height: 1.4;
+}
+
+// ─── Documents ──────────────────────────────────────────────────────────
+
+.request-card__documents {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.8rem;
+  background: #f9f9f7;
+  border-radius: 0.5rem;
+  border: 1px solid #eaeae7;
+  font-size: 0.9rem;
+}
+
+.document-item__name {
+  flex: 1;
+  color: #333333;
+  font-weight: 500;
+}
+
+.document-item__badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--mandatory {
+    background: #fde2e4;
+    color: #c41e3a;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+}
+
+// ─── Actions ────────────────────────────────────────────────────────────
+
+.request-card__actions {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.btn {
+  flex: 1;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &__icon {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+}
+
+.btn-approve {
+  background: #10b981;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: #059669;
+  }
+}
+
+.btn-deny {
+  background: #ef4444;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: #dc2626;
+  }
+}
+
+// ─── Responsive ─────────────────────────────────────────────────────────
+
+@media (max-width: 768px) {
+  .document-requests-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .document-requests-header {
+    margin-bottom: 1.5rem;
+
+    h1 {
+      font-size: 1.5rem;
+    }
+  }
+
+  .request-card {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+
+  .request-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .request-card__status-bar {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .request-card__actions {
+    flex-direction: column;
+  }
+
+  .btn {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 480px) {
+  .document-requests-page {
+    padding: 1rem;
+  }
+
+  .document-requests-header {
+    h1 {
+      font-size: 1.25rem;
+    }
+
+    p {
+      font-size: 0.9rem;
+    }
+  }
+
+  .request-card {
+    padding: 1rem;
+  }
+
+  .request-card__title {
+    font-size: 1.1rem;
+  }
+
+  .request-card__documents {
+    gap: 0.4rem;
+  }
+
+  .document-item {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}

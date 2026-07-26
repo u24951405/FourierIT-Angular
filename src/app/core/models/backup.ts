@@ -6,6 +6,16 @@ export interface Backup {
   isManualBackup: boolean;
 }
 
+export interface BackupResponse {
+  backupId: number;
+  userId: string;
+  fileName: string;
+  filePath: string;
+  dateBackedUp: string; // ISO Date String
+  isManualBackup: boolean;
+  statusMessage: string;
+}
+
 export interface CreateBackupRequest {
   userId: string;
   isManualBackup: boolean;

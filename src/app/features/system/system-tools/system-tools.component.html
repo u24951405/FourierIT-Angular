@@ -1,0 +1,15 @@
+<div class="page-container">
+  <header class="page-header">
+    <h1>System Tools</h1>
+    <p class="subtitle">Access system management tools for Super Admins.</p>
+  </header>
+
+  <div class="tab-bar">
+    <a routerLink="audit-logs" routerLinkActive="tab-active" class="tab-link" [routerLinkActiveOptions]="{ exact: true }">Audit Log</a>
+    <a routerLink="backup-restore" routerLinkActive="tab-active" class="tab-link" [routerLinkActiveOptions]="{ exact: true }">Backup & Restore</a>
+  </div>
+
+  <section class="tab-panel">
+    <router-outlet />
+  </section>
+</div>

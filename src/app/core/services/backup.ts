@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Backup, CreateBackupRequest, RestoreResponse } from '../models/backup';
+import { Backup, BackupResponse, CreateBackupRequest, RestoreResponse } from '../models/backup';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -15,8 +15,8 @@ export class BackupService {
     return this.http.get<Backup[]>(`${this.apiUrl}/history`);
   }
 
-  createBackup(request: CreateBackupRequest): Observable<any> {
-    return this.http.post<any>(`${this.apiUrl}/create`, request);
+  createBackup(request: CreateBackupRequest): Observable<BackupResponse> {
+    return this.http.post<BackupResponse>(`${this.apiUrl}/create`, request);
   }
 
   restoreBackup(id: number): Observable<RestoreResponse> {

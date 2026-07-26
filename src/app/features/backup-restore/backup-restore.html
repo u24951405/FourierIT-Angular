@@ -1,90 +1,105 @@
-<div class="page-container">
-  <!-- Page Header -->
-  <header class="page-header">
-    <h1>System Backup & Restore</h1>
-    <p class="subtitle">Manage system backups and data restoration</p>
+﻿<div class="page-container">
+  <header class="page-header page-header--spread">
+    <div>
+      <p class="eyebrow">System Backup</p>
+      <h1>Backup & Restore</h1>
+      <p class="subtitle">Create secure snapshots and manage restore operations without leaving the dashboard.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <span class="btn-icon">💾</span>
+        Create Backup Now
+      </button>
+    </div>
   </header>
 
-  <!-- Success Alert Banner -->
-  <div *ngIf="showSuccessBanner" class="alert-banner">
-    <span class="icon">ℹ</span>
-    <span>Backup initiated successfully. The process is running in the background.</span>
+  <div *ngIf="showSuccessBanner" class="banner banner--success">
+    <div class="banner-icon">✅</div>
+    <div>
+      <p>{{ successMessage || 'Backup initiated successfully. The process is running in the background.' }}</p>
+      <p *ngIf="backupFilePath"><a class="banner-link" [href]="backupFilePath" target="_blank" rel="noopener">View backup storage location</a></p>
+    </div>
     <button class="close-banner" (click)="dismissBanner()">✕</button>
   </div>
 
-  <!-- Primary Action Button -->
-  <div class="action-bar">
-    <button class="btn btn-primary" (click)="openCreateModal()">
-      <span class="btn-icon">💾</span> Create Backup Now
-    </button>
+  <div *ngIf="showErrorBanner" class="banner banner--error">
+    <div class="banner-icon">⚠️</div>
+    <div>
+      <p>{{ errorMessage || 'An error occurred while creating or restoring a backup.' }}</p>
+    </div>
+    <button class="close-banner" (click)="dismissBanner()">✕</button>
   </div>
 
-  <!-- Backup History Card -->
-  <div class="card">
-    <h2>Backup History</h2>
-    
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Time</th>
-          <th>BackupID</th>
-          <th>UserID</th>
-          <th>FileName</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of backupHistory">
-          <td>{{ item.dateBackedUp | date:'yyyy-MM-dd' }}</td>
-          <td>{{ item.dateBackedUp | date:'hh:mm a' }}</td>
-          <td>BKP-{{ item.backupId }}</td>
-          <td>{{ item.userId || 'System' }}</td>
-          <td class="filename">{{ item.fileName }}</td>
-          <td>
-            <button class="btn btn-outline" (click)="openRestoreModal(item)">
-              ⬆ Restore
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="backupHistory.length === 0 && !isLoading">
-          <td colspan="6" class="empty-state">No backup records found.</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  <section class="card history-card">
+    <div class="history-header">
+      <div>
+        <h2>Backup History</h2>
+        <p class="history-description">Recent snapshot records with restore controls and audit-friendly backup metadata.</p>
+      </div>
+      <span class="history-badge">{{ backupHistory.length }} records</span>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Backup ID</th>
+            <th>User</th>
+            <th>Filename</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of backupHistory">
+            <td>{{ item.dateBackedUp | date:'yyyy-MM-dd' }}</td>
+            <td>{{ item.dateBackedUp | date:'hh:mm a' }}</td>
+            <td class="backup-id">BKP-{{ item.backupId }}</td>
+            <td>{{ item.userId || 'System' }}</td>
+            <td class="filename">{{ item.fileName }}</td>
+            <td>
+              <button class="btn btn-secondary" (click)="openRestoreModal(item)">Restore</button>
+            </td>
+          </tr>
+          <tr *ngIf="backupHistory.length === 0 && !isLoading">
+            <td colspan="6" class="empty-state">No backup records found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
-<!-- ================= MODALS ================= -->
-
-<!-- 1. Create Backup Confirmation Modal -->
 <div class="modal-backdrop" *ngIf="showCreateModal">
-  <div class="modal">
+  <div class="modal modal--wide">
     <div class="modal-header">
-      <h3>Create System Backup</h3>
+      <div>
+        <h3>Create System Backup</h3>
+        <p class="modal-subtitle">A snapshot will be generated and stored securely for future restore operations.</p>
+      </div>
       <button class="close-btn" (click)="closeCreateModal()">✕</button>
     </div>
     <div class="modal-body">
-      <p>You are about to create a full system backup. Please review the following before proceeding:</p>
-      
-      <div class="info-box">
-        <span class="box-icon">ℹ</span>
-        <p>The backup will capture all documents, user data, audit logs, and system configuration at this point in time.</p>
+      <div class="info-list">
+        <div class="info-card">
+          <span class="info-icon">ℹ</span>
+          <p>The backup will capture all documents, user data, audit logs, and system configuration.</p>
+        </div>
+        <div class="info-card">
+          <span class="info-icon">ℹ</span>
+          <p>Estimated duration: 30–45 minutes. The system remains available, but performance may be reduced.</p>
+        </div>
+        <div class="info-card">
+          <span class="info-icon">ℹ</span>
+          <p>The backup is logged under your account and visible in the history list when complete.</p>
+        </div>
       </div>
 
-      <div class="info-box">
-        <span class="box-icon">ℹ</span>
-        <p>Estimated duration: 30 – 45 minutes. The system will remain available but may experience reduced performance.</p>
-      </div>
-
-      <div class="info-box">
-        <span class="box-icon">ℹ</span>
-        <p>The backup file will be stored securely and logged under your UserID in the Backup History.</p>
-      </div>
-
-      <div class="warning-box">
-        <span class="box-icon">⚠️</span>
-        <p><strong>Recommended:</strong> Perform backups during off-peak hours (after 22:00 SAST) to minimise impact on active users.</p>
+      <div class="warning-card">
+        <span class="warning-icon">⚠️</span>
+        <p><strong>Recommended:</strong> run backups during off-peak hours to minimise impact on active users.</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -94,15 +109,14 @@
   </div>
 </div>
 
-<!-- 2. Confirm Database Restore Modal -->
 <div class="modal-backdrop" *ngIf="showConfirmRestoreModal">
-  <div class="modal">
-    <div class="modal-header danger">
+  <div class="modal modal--wide">
+    <div class="modal-header modal-header--danger">
       <div class="modal-title-group">
         <span class="modal-icon-danger">⚠️</span>
         <div>
           <h3>Confirm Database Restore</h3>
-          <span class="danger-sub">This action cannot be undone</span>
+          <p class="danger-sub">Restoring will override current data and is not reversible.</p>
         </div>
       </div>
       <button class="close-btn" (click)="closeRestoreModal()">✕</button>
@@ -110,22 +124,21 @@
     <div class="modal-body" *ngIf="selectedBackup">
       <div class="details-card">
         <div class="detail-row">
-          <span class="label">SNAPSHOT FILE</span>
+          <span class="label">Snapshot file</span>
           <span class="value">{{ selectedBackup.fileName }}</span>
         </div>
         <div class="detail-row">
-          <span class="label">CREATED DATE</span>
+          <span class="label">Created</span>
           <span class="value">{{ selectedBackup.dateBackedUp | date:'yyyy-MM-dd, hh:mm a' }}</span>
         </div>
         <div class="detail-row">
-          <span class="label">BACKUP ID</span>
+          <span class="label">Backup ID</span>
           <span class="value">BKP-{{ selectedBackup.backupId }}</span>
         </div>
       </div>
-
       <div class="danger-alert-box">
         <span class="box-icon">⚠️</span>
-        <p><strong>Warning:</strong> This will overwrite all current system data with the snapshot state. Active users will be briefly interrupted.</p>
+        <p><strong>Warning:</strong> This will overwrite all current system data with the selected snapshot state.</p>
       </div>
     </div>
     <div class="modal-footer">
@@ -135,24 +148,22 @@
   </div>
 </div>
 
-<!-- 3. Restoring Progress Modal -->
 <div class="modal-backdrop" *ngIf="showRestoringModal">
-  <div class="modal text-center">
+  <div class="modal modal--narrow text-center">
     <div class="modal-body progress-body">
       <div class="spinner"></div>
       <h3>Restoring Database...</h3>
-      <p class="muted">Downloading snapshot from Azure Storage and applying restore scripts. Please do not close this window.</p>
+      <p class="muted">Applying the selected snapshot and updating the system state.</p>
     </div>
   </div>
 </div>
 
-<!-- 4. Restore Complete Modal -->
 <div class="modal-backdrop" *ngIf="showCompleteModal">
-  <div class="modal text-center">
+  <div class="modal modal--narrow text-center">
     <div class="modal-body success-body">
       <div class="success-icon-badge">✓</div>
       <h3>Restore Complete</h3>
-      <p class="muted">The database has been successfully restored to the selected snapshot state.</p>
+      <p class="muted">The system has been restored successfully.</p>
     </div>
     <div class="modal-footer center-footer">
       <button class="btn btn-primary" (click)="closeCompleteModal()">Close</button>

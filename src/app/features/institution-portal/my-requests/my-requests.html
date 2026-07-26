@@ -23,7 +23,7 @@
           <span class="request-card__label">Request ID</span>
           <strong>{{ request.enquiryRequestId }}</strong>
         </div>
-        <span class="request-card__status request-card__status--{{ request.status?.toLowerCase() }}">{{ request.status }}</span>
+        <span class="request-card__status request-card__status--{{ request.status.toLowerCase() }}">{{ request.status }}</span>
       </div>
       <div class="request-card__body">
         <p><strong>Institution:</strong> {{ request.institutionName }}</p>

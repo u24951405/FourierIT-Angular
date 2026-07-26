@@ -24,8 +24,8 @@
   <!-- ── Stepper ─────────────────────────────────────────────────────────────── -->
   <div class="rd-stepper">
     <div class="rd-step" *ngFor="let step of [
-      { n: 1, label: 'Purpose' },
-      { n: 2, label: 'Category' },
+      { n: 1, label: 'Request Type' },
+      { n: 2, label: 'Recipient' },
       { n: 3, label: 'Documents' },
       { n: 4, label: 'Request Info' },
       { n: 5, label: 'Submitted' }
@@ -49,23 +49,23 @@
     </div>
   </div>
 
-  <!-- ── Step 1: Purpose ──────────────────────────────────────────────────────── -->
+  <!-- ── Step 1: Request Type ─────────────────────────────────────────────────── -->
   <div class="rd-card" *ngIf="currentStep === 1">
-    <h2 class="rd-card__title">Select Purpose of Request</h2>
-    <p class="rd-card__subtitle">Specify why you are requesting access to these documents.</p>
+    <h2 class="rd-card__title">Choose Request Type</h2>
+    <p class="rd-card__subtitle">Request documents for either a department or an individual.</p>
 
-    <div class="rd-purpose-grid">
+    <div class="rd-category-grid">
       <button
-        class="rd-purpose-option"
-        *ngFor="let p of purposes"
+        class="rd-category-card"
+        *ngFor="let type of requestTypes"
         type="button"
-        [class.rd-purpose-option--selected]="wizard.purpose === p"
-        (click)="selectPurpose(p)"
+        [class.rd-category-card--selected]="wizard.requestType === type"
+        (click)="selectRequestType(type)"
       >
-        <span class="rd-purpose-option__radio">
-          <span class="rd-purpose-option__dot" *ngIf="wizard.purpose === p"></span>
-        </span>
-        {{ PURPOSE_LABELS[p] }}
+        <div class="rd-category-card__header">
+          <span class="rd-category-card__name">{{ REQUEST_TYPE_LABELS[type] }}</span>
+        </div>
+        <p class="rd-category-card__docs">Select this option to target {{ type === 'Department' ? 'a department' : 'an individual' }}.</p>
       </button>
     </div>
 
@@ -84,39 +84,69 @@
     </div>
   </div>
 
-  <!-- ── Step 2: Category ─────────────────────────────────────────────────────── -->
+  <!-- ── Step 2: Recipient ────────────────────────────────────────────────────── -->
   <div class="rd-card" *ngIf="currentStep === 2">
-    <h2 class="rd-card__title">Select Document Category</h2>
-    <p class="rd-card__subtitle">Choose the category that covers the documents you need.</p>
+    <h2 class="rd-card__title">Select {{ REQUEST_TYPE_LABELS[wizard.requestType!] }}</h2>
+    <p class="rd-card__subtitle">Choose the recipient for this request.</p>
 
-    <div class="rd-category-grid">
-      <button
-        class="rd-category-card"
-        *ngFor="let c of categories"
-        type="button"
-        [class.rd-category-card--selected]="wizard.category === c"
-        (click)="selectCategory(c)"
-      >
-        <div class="rd-category-card__header">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-          </svg>
-          <span class="rd-category-card__name">{{ CATEGORY_LABELS[c] }}</span>
+    <div class="rd-form">
+      <div *ngIf="loadingRecipients" class="rd-loading-message">
+        Loading recipients…
+      </div>
+
+      <div *ngIf="recipientLoadError" class="rd-error" role="alert">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>{{ recipientLoadError }}</span>
+        <button class="rd-btn rd-btn--outline" type="button" (click)="loadRecipients()">
+          Retry
+        </button>
+      </div>
+
+      <div *ngIf="!loadingRecipients && wizard.requestType === 'Department'">
+        <div class="rd-field">
+          <label class="rd-field__label" for="departmentId">
+            Target Department <span class="rd-field__required">*</span>
+          </label>
+          <select
+            id="departmentId"
+            class="rd-field__input"
+            [value]="wizard.selectedRecipientId"
+            (change)="onTargetDepartmentChange($any($event.target).value)"
+          >
+            <option value="">Select a department</option>
+            <option *ngFor="let d of departments" [value]="d.departmentId">{{ d.departmentName }}</option>
+          </select>
         </div>
-        <ul class="rd-category-card__docs">
-          <li *ngFor="let doc of getCategoryPreview(c)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-            </svg>
-            {{ doc }}
-          </li>
-        </ul>
-        <span class="rd-category-card__more" *ngIf="getCategoryMoreCount(c) > 0">
-          +{{ getCategoryMoreCount(c) }} more
-        </span>
-      </button>
+
+        <div *ngIf="!departments.length" class="rd-empty-state">
+          No departments were found for this institution. Please confirm your institution session and try again.
+        </div>
+      </div>
+
+      <div *ngIf="!loadingRecipients && wizard.requestType === 'Individual'">
+        <div class="rd-field">
+          <label class="rd-field__label" for="targetUserId">
+            Target User <span class="rd-field__required">*</span>
+          </label>
+          <select
+            id="targetUserId"
+            class="rd-field__input"
+            [value]="wizard.selectedRecipientId"
+            (change)="onTargetUserChange($any($event.target).value)"
+          >
+            <option value="">Select a user</option>
+            <option *ngFor="let u of users" [value]="u.userId">{{ u.displayName || u.userName }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="!users.length" class="rd-empty-state">
+          No users were found for this institution. Please confirm your institution session and try again.
+        </div>
+      </div>
     </div>
 
     <div class="rd-card__footer">
@@ -138,14 +168,18 @@
   <div class="rd-card" *ngIf="currentStep === 3">
     <h2 class="rd-card__title">Select Required Documents</h2>
     <p class="rd-card__subtitle">
-      Category: <strong>{{ wizard.category ? CATEGORY_LABELS[wizard.category] : '' }}</strong>
+      Recipient: <strong>{{ wizard.recipientName }}</strong>
     </p>
-    <p class="rd-card__hint">Select one or more documents from the list below.</p>
+    <p class="rd-card__hint">Select one or more document types to include in the request.</p>
 
-    <div class="rd-doc-list">
+    <div *ngIf="loadingDocuments" class="rd-loading-message">
+      Loading document types for the selected recipient...
+    </div>
+
+    <div class="rd-doc-list" *ngIf="!loadingDocuments && documentTypes.length">
       <label
         class="rd-doc-item"
-        *ngFor="let doc of availableDocuments"
+        *ngFor="let doc of documentTypes"
         [class.rd-doc-item--selected]="isDocSelected(doc.documentTypeId)"
       >
         <input
@@ -155,11 +189,17 @@
           (change)="toggleDocument(doc.documentTypeId)"
         />
         <span class="rd-doc-item__custom"></span>
-        <span class="rd-doc-item__name">{{ doc.documentName }}</span>
+        <span class="rd-doc-item__name">{{ doc.typeName }}</span>
+        <span class="rd-doc-item__description" *ngIf="doc.description">{{ doc.description }}</span>
       </label>
     </div>
 
-    <p class="rd-doc-validation" *ngIf="selectedCount === 0">
+    <div *ngIf="!loadingDocuments && documentTypes.length === 0" class="rd-empty-state">
+      No document types are available for this recipient.
+      Please go back and choose a different recipient.
+    </div>
+
+    <p class="rd-doc-validation" *ngIf="!loadingDocuments && selectedCount === 0 && documentTypes.length > 0">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
         <line x1="12" y1="9" x2="12" y2="13"></line>
@@ -192,67 +232,37 @@
     <!-- Summary strip -->
     <div class="rd-summary">
       <div class="rd-summary__row">
-        <span class="rd-summary__key">Purpose</span>
-        <span class="rd-summary__val">{{ wizard.purpose ? PURPOSE_LABELS[wizard.purpose] : '' }}</span>
+        <span class="rd-summary__key">Request Type</span>
+        <span class="rd-summary__val">{{ REQUEST_TYPE_LABELS[wizard.requestType!] }}</span>
       </div>
       <div class="rd-summary__row">
-        <span class="rd-summary__key">Category</span>
-        <span class="rd-summary__val">{{ wizard.category ? CATEGORY_LABELS[wizard.category] : '' }}</span>
+        <span class="rd-summary__key">Recipient</span>
+        <span class="rd-summary__val">{{ wizard.recipientName }}</span>
       </div>
       <div class="rd-summary__row">
         <span class="rd-summary__key">Documents</span>
         <span class="rd-summary__val">{{ selectedCount }} selected</span>
       </div>
+      <div class="rd-summary__row rd-summary__row--list" *ngIf="selectedDocumentNames.length">
+        <span class="rd-summary__key">Requested Documents</span>
+        <span class="rd-summary__val">
+          <ul class="rd-summary__list" [class.rd-summary__list--expanded]="showAllSelectedDocuments">
+            <li *ngFor="let name of visibleSelectedDocumentNames">{{ name }}</li>
+          </ul>
+          <button
+            *ngIf="hasMoreSelectedDocuments"
+            class="rd-summary__toggle"
+            type="button"
+            aria-expanded="{{ showAllSelectedDocuments }}"
+            (click)="toggleSelectedDocumentList()"
+          >
+            {{ showAllSelectedDocuments ? 'Show fewer' : 'Show all' }}
+          </button>
+        </span>
+      </div>
     </div>
 
     <div class="rd-form">
-      <!-- Request Type -->
-      <div class="rd-field rd-field--radio-group">
-        <label class="rd-field__label">Request Type <span class="rd-field__required">*</span></label>
-        <div class="rd-radio-grid">
-          <button
-            class="rd-radio-button"
-            type="button"
-            *ngFor="let type of requestTypes"
-            [class.rd-radio-button--selected]="wizard.requestType === type"
-            (click)="selectRequestType(type)"
-          >
-            {{ REQUEST_TYPE_LABELS[type] }}
-          </button>
-        </div>
-      </div>
-
-      <div class="rd-field" *ngIf="wizard.requestType === 'Department'">
-        <label class="rd-field__label" for="departmentId">
-          Target Department ID <span class="rd-field__required">*</span>
-        </label>
-        <input
-          id="departmentId"
-          type="text"
-          class="rd-field__input"
-          placeholder="Enter department ID"
-          [value]="wizard.targetDepartmentId"
-          (input)="onTargetDepartmentChange($any($event.target).value)"
-        />
-        <p class="rd-field__hint">
-          If you do not know the department ID, ask your institution administrator or select an individual request.
-        </p>
-      </div>
-
-      <div class="rd-field" *ngIf="wizard.requestType === 'Individual'">
-        <label class="rd-field__label" for="targetUserId">
-          Target User Identifier <span class="rd-field__required">*</span>
-        </label>
-        <input
-          id="targetUserId"
-          type="text"
-          class="rd-field__input"
-          placeholder="User ID, username or email"
-          [value]="wizard.targetUserId"
-          (input)="onTargetUserChange($any($event.target).value)"
-        />
-      </div>
-
       <!-- Submission Deadline -->
       <div class="rd-field">
         <label class="rd-field__label" for="deadline">
@@ -363,16 +373,33 @@
     <!-- Summary -->
     <div class="rd-summary rd-summary--white">
       <div class="rd-summary__row">
-        <span class="rd-summary__key">Purpose</span>
-        <span class="rd-summary__val">{{ wizard.purpose ? PURPOSE_LABELS[wizard.purpose] : '' }}</span>
+        <span class="rd-summary__key">Request Type</span>
+        <span class="rd-summary__val">{{ REQUEST_TYPE_LABELS[wizard.requestType!] }}</span>
       </div>
       <div class="rd-summary__row">
-        <span class="rd-summary__key">Category</span>
-        <span class="rd-summary__val">{{ wizard.category ? CATEGORY_LABELS[wizard.category] : '' }}</span>
+        <span class="rd-summary__key">Recipient</span>
+        <span class="rd-summary__val">{{ wizard.recipientName }}</span>
       </div>
       <div class="rd-summary__row">
         <span class="rd-summary__key">Documents Requested</span>
         <span class="rd-summary__val">{{ selectedCount }}</span>
+      </div>
+      <div class="rd-summary__row rd-summary__row--list" *ngIf="selectedDocumentNames.length">
+        <span class="rd-summary__key">Requested Documents</span>
+        <span class="rd-summary__val">
+          <ul class="rd-summary__list" [class.rd-summary__list--expanded]="showAllSelectedDocuments">
+            <li *ngFor="let name of visibleSelectedDocumentNames">{{ name }}</li>
+          </ul>
+          <button
+            *ngIf="hasMoreSelectedDocuments"
+            class="rd-summary__toggle"
+            type="button"
+            aria-expanded="{{ showAllSelectedDocuments }}"
+            (click)="toggleSelectedDocumentList()"
+          >
+            {{ showAllSelectedDocuments ? 'Show fewer' : 'Show all' }}
+          </button>
+        </span>
       </div>
       <div class="rd-summary__row">
         <span class="rd-summary__key">Reference Number</span>

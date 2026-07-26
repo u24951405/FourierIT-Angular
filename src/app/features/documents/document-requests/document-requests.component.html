@@ -1,0 +1,90 @@
+<div class="document-requests-page">
+  <header class="document-requests-header">
+    <h1>Document Access Requests</h1>
+    <p>Manage incoming document access requests from institutions.</p>
+  </header>
+
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="document-requests-loading">
+    <p>Loading document access requests…</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading() && error()" class="document-requests-error">
+    <p>{{ error() }}</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading() && !error() && requests().length === 0" class="document-requests-empty">
+    <p>No pending document access requests. Institutions will submit requests here.</p>
+  </div>
+
+  <!-- Requests List -->
+  <div *ngIf="!loading() && requests().length > 0" class="document-requests-list">
+    <div class="request-card" *ngFor="let request of requests()" [class.request-card--department]="request.requestType === 'department'">
+      
+      <!-- Request Header -->
+      <div class="request-card__header">
+        <div class="request-card__info">
+          <div class="request-card__type-badge" [class.badge--owner]="request.requestType === 'owner'" [class.badge--department]="request.requestType === 'department'">
+            {{ getRequestTypeLabel(request) }}
+          </div>
+          <h3 class="request-card__title">{{ request.institutionName }}</h3>
+          <p class="request-card__subtitle">Request ID #{{ request.enquiryRequestId }}</p>
+        </div>
+        <div class="request-card__status-bar">
+          <span class="request-card__status" [class.status--pending]="request.status === 'Pending' || request.status === 'Department_Pending'">
+            {{ request.status }}
+          </span>
+          <span class="request-card__date">{{ request.requestDate | date:'short' }}</span>
+        </div>
+      </div>
+
+      <!-- Request Body -->
+      <div class="request-card__body">
+        <!-- Target Information -->
+        <div class="request-card__section">
+          <span class="request-card__label">Requested From</span>
+          <p class="request-card__value">{{ getRequestTarget(request) }}</p>
+        </div>
+
+        <!-- Purpose -->
+        <div class="request-card__section">
+          <span class="request-card__label">Purpose</span>
+          <p class="request-card__value">{{ request.purposeNote || 'Not provided' }}</p>
+        </div>
+
+        <!-- Requested Documents -->
+        <div class="request-card__section">
+          <span class="request-card__label">Requested Documents</span>
+          <div class="request-card__documents">
+            <div class="document-item" *ngFor="let doc of request.documents">
+              <span class="document-item__name">{{ doc.documentTypeName }}</span>
+              <span *ngIf="doc.isMandatory" class="document-item__badge document-item__badge--mandatory">Mandatory</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="request-card__actions">
+        <button 
+          class="btn btn-approve" 
+          type="button" 
+          (click)="approveRequest(request)"
+          [disabled]="loading()">
+          <span class="btn__icon">✓</span>
+          Approve
+        </button>
+        <button 
+          class="btn btn-deny" 
+          type="button" 
+          (click)="denyRequest(request)"
+          [disabled]="loading()">
+          <span class="btn__icon">✕</span>
+          Deny
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

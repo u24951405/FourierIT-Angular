@@ -87,6 +87,14 @@ export interface InstitutionRequestSummary {
   deniedRequests: number;
 }
 
+export interface InstitutionRecipientDocumentType {
+  documentTypeId: number;
+  typeName: string;
+  description: string | null;
+  isMandatory: boolean;
+  requirementNote: string | null;
+}
+
 export interface PendingDocumentAccessRequestDocument {
   documentTypeId: number;
   documentTypeName: string;

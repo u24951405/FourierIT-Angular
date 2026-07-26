@@ -1,86 +1,112 @@
-<div class="page-container">
-  <!-- Page Header -->
-  <header class="page-header">
-    <h1>Audit Log</h1>
-    <p class="subtitle">System activity records fetched from the AuditLog entity</p>
-  </header>
-
-  <div class="card">
-    <!-- Filter Control Bar -->
-    <div class="filter-bar">
-      <div class="filters-group">
-        <span class="filter-label">🔍 Filters</span>
-        
-        <div class="field-group">
-          <label>USER ID</label>
-          <select [(ngModel)]="selectedUserId" (change)="applyFilters()" class="form-select">
-            <option value="ALL">All Users</option>
-            <option *ngFor="let user of userOptions" [value]="user">{{ user }}</option>
-          </select>
-        </div>
-
-        <div class="field-group">
-          <label>ACTIONCODE ID</label>
-          <select [(ngModel)]="selectedActionCode" (change)="applyFilters()" class="form-select">
-            <option value="ALL">All Action Codes</option>
-            <option *ngFor="let action of actionCodeOptions" [value]="action">{{ action }}</option>
-          </select>
-        </div>
-      </div>
-
-      <button class="btn btn-outline" (click)="exportToCsv()">
-        📥 Export to CSV
-      </button>
+﻿<div class="page-container">
+  <header class="page-header page-header--spread">
+    <div>
+      <p class="eyebrow">Audit Insights</p>
+      <h1>Audit Log</h1>
+      <p class="subtitle">Review system event history, filter activity, and export audit data.</p>
     </div>
 
-    <!-- Data Table -->
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>TimeStamp</th>
-          <th>AuditID</th>
-          <th>UserID</th>
-          <th>ActionCode</th>
-          <th>Details</th>
-          <th>TableAffected</th>
-          <th>RecordID</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of paginatedLogs">
-          <td class="timestamp">{{ item.timeStamp | date:'yyyy/MM/dd, HH:mm:ss' }}</td>
-          <td>{{ item.auditLogId }}</td>
-          <td>{{ item.userId || 'System' }}</td>
-          <td>
-            <span class="badge action-badge">{{ item.actionCode }}</span>
-          </td>
-          <td class="description">{{ item.description }}</td>
-          <td>{{ item.tableAffected }}</td>
-          <td>{{ item.recordID ?? '-' }}</td>
-        </tr>
-        <tr *ngIf="paginatedLogs.length === 0 && !isLoading">
-          <td colspan="7" class="empty-state">No audit log records found matching the filter criteria.</td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="applyFilters()">Refresh</button>
+      <button class="btn btn-primary" (click)="exportToCsv()">Export CSV</button>
+    </div>
+  </header>
 
-    <!-- Pagination Footer -->
+  <section class="filters-panel card">
+    <div class="filters-grid">
+      <div class="filter-card">
+        <label>Search records</label>
+        <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Search by user, action or record details" class="form-input" />
+      </div>
+
+      <div class="filter-card">
+        <label>User ID</label>
+        <select [(ngModel)]="selectedUserId" (change)="applyFilters()" class="form-select">
+          <option value="ALL">All Users</option>
+          <option *ngFor="let user of userOptions" [value]="user">{{ user }}</option>
+        </select>
+      </div>
+
+      <div class="filter-card">
+        <label>Action code</label>
+        <select [(ngModel)]="selectedActionCode" (change)="applyFilters()" class="form-select">
+          <option value="ALL">All Action Codes</option>
+          <option *ngFor="let action of actionCodeOptions" [value]="action">{{ action }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-item">
+        <span>Total events</span>
+        <strong>{{ totalRecords }}</strong>
+      </div>
+      <div class="summary-item">
+        <span>Current page</span>
+        <strong>{{ currentPage }} / {{ totalPages || 1 }}</strong>
+      </div>
+      <div class="summary-item">
+        <span>Showing</span>
+        <strong>{{ pageRangeStart }}–{{ pageRangeEnd }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="card table-card">
+    <div *ngIf="errorMessage" class="banner banner--error">{{ errorMessage }}</div>
+    <div *ngIf="isLoading" class="banner banner--info">Loading audit logs…</div>
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="sortable" (click)="setSort('timeStamp')">
+              Timestamp <span class="sort-indicator">{{ sortField === 'timeStamp' ? (sortDirection === 'asc' ? '▲' : '▼') : '' }}</span>
+            </th>
+            <th>Audit ID</th>
+            <th class="sortable" (click)="setSort('userId')">
+              User ID <span class="sort-indicator">{{ sortField === 'userId' ? (sortDirection === 'asc' ? '▲' : '▼') : '' }}</span>
+            </th>
+            <th class="sortable" (click)="setSort('actionCode')">
+              Action <span class="sort-indicator">{{ sortField === 'actionCode' ? (sortDirection === 'asc' ? '▲' : '▼') : '' }}</span>
+            </th>
+            <th>Description</th>
+            <th>Table</th>
+            <th>Record</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedLogs">
+            <td class="timestamp">{{ item.timeStamp | date:'yyyy/MM/dd, HH:mm:ss' }}</td>
+            <td>{{ item.auditLogId }}</td>
+            <td>{{ item.userId || 'System' }}</td>
+            <td>
+              <span class="badge action-badge">{{ item.actionCode }}</span>
+            </td>
+            <td class="description">{{ item.description }}</td>
+            <td>{{ item.tableAffected }}</td>
+            <td>{{ item.recordID ?? '-' }}</td>
+          </tr>
+          <tr *ngIf="paginatedLogs.length === 0 && !isLoading">
+            <td colspan="7" class="empty-state">No audit log records found matching the current filter criteria.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="pagination-footer">
-      <span class="records-info">
-        Showing {{ pageRangeStart }}–{{ pageRangeEnd }} of {{ totalRecords }} records
-      </span>
-
+      <span class="records-info">Showing {{ pageRangeStart }}–{{ pageRangeEnd }} of {{ totalRecords }} records</span>
       <div class="pagination-controls" *ngIf="totalPages > 1">
-        <button class="btn-page" [disabled]="currentPage === 1" (click)="previousPage()">Previous</button>
-        <button 
-          *ngFor="let page of [].constructor(totalPages); let i = index" 
-          class="btn-page-number" 
+        <button class="btn btn-secondary" [disabled]="currentPage === 1" (click)="previousPage()">Previous</button>
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          class="btn btn-page-number"
           [class.active]="currentPage === (i + 1)"
           (click)="goToPage(i + 1)">
           {{ i + 1 }}
         </button>
-        <button class="btn-page" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+        <button class="btn btn-secondary" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
       </div>
     </div>
-  </div>
+  </section>
 </div>

@@ -191,13 +191,29 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
           this.dashboardScope = 'department';
           this.complianceService.getDepartmentDashboard(account.departmentId).subscribe({
             next: dashboard => this.applyDashboard(dashboard),
-            error: () => this.handleDashboardError('Unable to load department dashboard.')
+            error: (error) => {
+              // If department dashboard fails and user is department admin, handle gracefully
+              console.warn('Department dashboard error:', error);
+              this.handleDashboardError('Unable to load department dashboard.');
+            }
           });
         } else {
           this.dashboardScope = 'system';
           this.complianceService.getSystemDashboard().subscribe({
             next: dashboard => this.applyDashboard(dashboard),
-            error: () => this.handleDashboardError('Unable to load system dashboard.')
+            error: (error) => {
+              // If system dashboard fails and user is department admin, try department dashboard
+              if (this.auth.hasRole('Department Admin') && this.account?.departmentId) {
+                console.warn('System dashboard error, attempting department dashboard:', error);
+                this.dashboardScope = 'department';
+                this.complianceService.getDepartmentDashboard(this.account.departmentId).subscribe({
+                  next: dashboard => this.applyDashboard(dashboard),
+                  error: () => this.handleDashboardError('Unable to load dashboard. Please refresh the page.')
+                });
+              } else {
+                this.handleDashboardError('Unable to load system dashboard.');
+              }
+            }
           });
         }
       },

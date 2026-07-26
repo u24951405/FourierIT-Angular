@@ -6,6 +6,7 @@ import {
   QueryList,
   ElementRef,
   ChangeDetectorRef,
+  ChangeDetectionStrategy,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -22,6 +23,7 @@ const RESEND_COOLDOWN_SECONDS = 55;
   imports: [CommonModule],
   templateUrl: './otp-verify.html',
   styleUrls: ['./otp-verify.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class OtpVerifyComponent implements OnInit, OnDestroy {
   @ViewChildren('otpBox') otpBoxes!: QueryList<ElementRef<HTMLInputElement>>;
@@ -96,13 +98,13 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
       if (next[index]) {
         next[index] = '';
         this.digits = next;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
         // Sync input element value
         this.setBoxValue(index, '');
       } else if (index > 0) {
         next[index - 1] = '';
         this.digits = next;
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
         this.setBoxValue(index - 1, '');
         this.focusBox(index - 1);
       }
@@ -122,7 +124,7 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
     const next = [...this.digits];
     next[index] = key;
     this.digits = next;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
 
     // Sync the DOM input value directly
     this.setBoxValue(index, key);
@@ -151,7 +153,7 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
     });
 
     this.digits = next;
-    this.cdr.detectChanges();
+    this.cdr.markForCheck();
 
     // Sync all box values to DOM
     setTimeout(() => {
@@ -197,6 +199,7 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
       error: () => {
         this.verifying = false;
         this.digits = Array(OTP_LENGTH).fill('');
+        this.cdr.markForCheck();
         setTimeout(() => {
           this.otpBoxes.toArray().forEach((box) => (box.nativeElement.value = ''));
         });
@@ -225,6 +228,7 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
         this.startResendCountdown();
         this.error = null;
         this.digits = Array(OTP_LENGTH).fill('');
+        this.cdr.markForCheck();
         setTimeout(() => {
           this.otpBoxes.toArray().forEach((box) => (box.nativeElement.value = ''));
         });

@@ -138,14 +138,19 @@ export const routes: Routes = [
         data: { documentPageTitle: 'Upload Document' },
         loadComponent: () => import('./features/documents/upload-document/upload-document.component')
           .then(m => m.UploadDocumentComponent) },
-          { path: 'system/backup-restore', // app-routing for backup-restore feature
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
-        loadComponent: () => import('./features/backup-restore/backup-restore')
-          .then(m => m.BackupRestoreComponent) },
-          { path: 'system/audit-logs',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+      { path: 'documents/requests',
+        canActivate: [restrictDocumentOwnerOnlyGuard],
+        data: { documentPageTitle: 'Document Access Requests' },
+        loadComponent: () => import('./features/documents/document-requests/document-requests.component')
+          .then(m => m.DocumentRequestsComponent) },
+      { path: 'audit-logs',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/audit-log/audit-log/audit-log')
           .then(m => m.AuditLogComponent) },
+      { path: 'backup-restore',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        loadComponent: () => import('./features/backup-restore/backup-restore')
+          .then(m => m.BackupRestoreComponent) },
     ]
   },
   { path: '**', redirectTo: 'auth/login' }

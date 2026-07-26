@@ -1,7 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BackupService } from '../../core/services/backup';
-import { Backup } from '../../core/models/backup';
+import { AuthService } from '../../core/services/auth.service';
+import { Backup, BackupResponse } from '../../core/models/backup';
 
 @Component({
   selector: 'app-backup-restore',
@@ -12,9 +13,13 @@ import { Backup } from '../../core/models/backup';
 })
 export class BackupRestoreComponent implements OnInit {
   private backupService = inject(BackupService);
+  private auth = inject(AuthService);
 
   backupHistory: Backup[] = [];
   isLoading = false;
+  errorMessage = '';
+  successMessage = '';
+  backupFilePath = '';
 
   // Modal Visibility States
   showCreateModal = false;
@@ -22,6 +27,7 @@ export class BackupRestoreComponent implements OnInit {
   showRestoringModal = false;
   showCompleteModal = false;
   showSuccessBanner = false;
+  showErrorBanner = false;
 
   // Selected Backup for Restoration
   selectedBackup: Backup | null = null;
@@ -32,13 +38,15 @@ export class BackupRestoreComponent implements OnInit {
 
   loadBackupHistory(): void {
     this.isLoading = true;
+    this.errorMessage = '';
     this.backupService.getBackupHistory().subscribe({
       next: (data) => {
-        this.backupHistory = data;
+        this.backupHistory = data.sort((a, b) => new Date(b.dateBackedUp).getTime() - new Date(a.dateBackedUp).getTime());
         this.isLoading = false;
       },
       error: (err) => {
         console.error('Failed to load backup history', err);
+        this.errorMessage = 'Unable to load backup history at this time.';
         this.isLoading = false;
       }
     });
@@ -55,19 +63,32 @@ export class BackupRestoreComponent implements OnInit {
 
   proceedWithBackup(): void {
     this.closeCreateModal();
-    const request = { userId: 'USR-0042', isManualBackup: true }; 
+    const currentUser = this.auth.currentUser();
+    const request = {
+      userId: currentUser?.id ?? '',
+      isManualBackup: true
+    };
 
     this.backupService.createBackup(request).subscribe({
-      next: () => {
+      next: (result: BackupResponse) => {
         this.showSuccessBanner = true;
+        this.showErrorBanner = false;
+        this.successMessage = result.statusMessage || 'Backup initiated successfully.';
+        this.backupFilePath = result.filePath || '';
         this.loadBackupHistory();
       },
-      error: (err) => console.error('Error initiating backup', err)
+      error: (err) => {
+        console.error('Error initiating backup', err);
+        this.errorMessage = 'Backup initiation failed. Please try again.';
+        this.showErrorBanner = true;
+        this.showSuccessBanner = false;
+      }
     });
   }
 
   dismissBanner(): void {
     this.showSuccessBanner = false;
+    this.showErrorBanner = false;
   }
 
   // --- Backup Restoration Flow ---

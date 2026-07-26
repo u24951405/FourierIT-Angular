@@ -17,10 +17,14 @@ export class AuditLogComponent implements OnInit {
   auditLogs: AuditLog[] = [];
   filteredLogs: AuditLog[] = [];
   isLoading = false;
+  errorMessage = '';
 
   // Filter States
   selectedUserId: string = 'ALL';
   selectedActionCode: string = 'ALL';
+  searchQuery: string = '';
+  sortField: 'timeStamp' | 'actionCode' | 'userId' = 'timeStamp';
+  sortDirection: 'asc' | 'desc' = 'desc';
 
   // Dropdown Option Lists
   userOptions: string[] = [];
@@ -36,15 +40,17 @@ export class AuditLogComponent implements OnInit {
 
   loadAuditLogs(): void {
     this.isLoading = true;
+    this.errorMessage = '';
     this.auditLogService.getAuditLogs().subscribe({
       next: (data) => {
-        this.auditLogs = data;
+        this.auditLogs = data.sort((a, b) => new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime());
         this.populateFilterDropdowns();
         this.applyFilters();
         this.isLoading = false;
       },
       error: (err) => {
         console.error('Failed to load audit logs', err);
+        this.errorMessage = 'Could not load audit logs at this time.';
         this.isLoading = false;
       }
     });
@@ -65,11 +71,46 @@ export class AuditLogComponent implements OnInit {
 
   applyFilters(): void {
     this.currentPage = 1; // Reset to first page on filter change
+    const query = this.searchQuery.trim().toLowerCase();
     this.filteredLogs = this.auditLogs.filter(log => {
       const matchUser = this.selectedUserId === 'ALL' || log.userId === this.selectedUserId;
       const matchAction = this.selectedActionCode === 'ALL' || log.actionCode === this.selectedActionCode;
-      return matchUser && matchAction;
+      const matchSearch = !query || [
+        log.userId,
+        log.actionCode,
+        log.description,
+        log.tableAffected,
+        log.recordID?.toString() ?? ''
+      ].some(value => value?.toString().toLowerCase().includes(query));
+      return matchUser && matchAction && matchSearch;
     });
+    this.sortLogs();
+  }
+
+  sortLogs(): void {
+    this.filteredLogs = [...this.filteredLogs].sort((a, b) => {
+      const aValue = (a[this.sortField] ?? '').toString().toLowerCase();
+      const bValue = (b[this.sortField] ?? '').toString().toLowerCase();
+
+      if (this.sortField === 'timeStamp') {
+        const diff = new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime();
+        return this.sortDirection === 'asc' ? diff : -diff;
+      }
+
+      if (aValue < bValue) return this.sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  setSort(field: 'timeStamp' | 'actionCode' | 'userId'): void {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'desc';
+    }
+    this.applyFilters();
   }
 
   // --- Pagination Logic ---
