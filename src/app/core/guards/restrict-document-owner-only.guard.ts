@@ -9,10 +9,10 @@ export const restrictDocumentOwnerOnlyGuard: CanActivateFn = (_route, state) => 
 
   if (!auth.isLoggedIn()) return router.createUrlTree(['/auth/login']);
   if (auth.isDocumentOwnerOnly()) {
-    if (state.url.startsWith('/my-documents') || state.url.startsWith('/documents/upload')) {
+    if (state.url.startsWith('/dashboard/owner') || state.url.startsWith('/my-documents') || state.url.startsWith('/documents/upload')) {
       return true;
     }
-    return router.createUrlTree(['/my-documents']);
+    return router.createUrlTree(['/dashboard/owner']);
   }
   return true;
 };

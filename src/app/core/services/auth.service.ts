@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -120,11 +120,12 @@ export class AuthService {
     );
   }
 
-  /** Fetch password policy configured server-side (Identity options)
-   * Expected shape: { requireDigit, requireLowercase, requireUppercase, requireNonAlphanumeric, requiredLength }
+  /**
+   * Password policy is optional on the backend. The registration UI already
+   * has client-side fallbacks, so return null instead of making a broken request.
    */
   getPasswordPolicy(): Observable<PasswordPolicy | null> {
-    return this.http.get<PasswordPolicy | null>(`${this.base}/password-policy`);
+    return of(null);
   }
 
 
@@ -137,7 +138,12 @@ export class AuthService {
   hasRole(role: string): boolean {
     if (this.isSuperAdmin()) return true;
     const roles = this.getRolesFromToken();
-    return roles.some(r => r.toLowerCase() === role.toLowerCase());
+    const normalizedTarget = this.normalizeRole(role);
+    return roles.some(r => this.normalizeRole(r) === normalizedTarget);
+  }
+
+  private normalizeRole(role: string): string {
+    return role.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
   }
 
   isSuperAdmin(): boolean {
@@ -162,7 +168,7 @@ export class AuthService {
   isDocumentOwnerOnly(): boolean {
     const roles = this.getRolesFromToken();
     if (roles.length !== 1) return false;
-    return roles[0].trim().toLowerCase() === 'document owner';
+    return this.normalizeRole(roles[0]) === this.normalizeRole('Document Owner');
   }
 
   /**
@@ -180,8 +186,8 @@ export class AuthService {
    */
   canUploadDocuments(): boolean {
     const roles = this.getRolesFromToken();
-    return roles.some(r => r.trim().toLowerCase() === 'document owner')
-      || roles.some(r => r.trim().toLowerCase() === 'department admin');
+    return roles.some(r => this.normalizeRole(r) === this.normalizeRole('Document Owner'))
+      || roles.some(r => this.normalizeRole(r) === this.normalizeRole('Department Admin'));
   }
 
   canReviewDocuments(): boolean {
@@ -189,7 +195,7 @@ export class AuthService {
   }
 
   hasDocumentOwnerRole(): boolean {
-    return this.getRolesFromToken().some(r => r.trim().toLowerCase() === 'document owner');
+    return this.getRolesFromToken().some(r => this.normalizeRole(r) === this.normalizeRole('Document Owner'));
   }
 
   logActivity(eventType: string, message: string): void {
@@ -198,7 +204,7 @@ export class AuthService {
 
   /** Post-login home: My Documents for document-owner-only, otherwise dashboard. */
   getDefaultAppPath(): string {
-    return this.isDocumentOwnerOnly() ? '/my-documents' : '/dashboard';
+    return this.isDocumentOwnerOnly() ? '/dashboard/owner' : '/dashboard';
   }
 
   getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
@@ -263,23 +269,46 @@ export class AuthService {
 
   private extractRoles(claims: Record<string, unknown>): string[] {
     const candidates = [
-      claims['role'],
       claims['roles'],
+      claims['role'],
       claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'],
       claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role']
     ];
 
+    const roles: string[] = [];
+
     for (const candidate of candidates) {
       if (Array.isArray(candidate)) {
-        const roles = candidate.filter((r): r is string => typeof r === 'string' && r.trim().length > 0);
-        if (roles.length > 0) return roles;
+        candidate.forEach(item => {
+          if (typeof item === 'string' && item.trim().length > 0) {
+            roles.push(...this.parseRoleString(item));
+          }
+        });
+        continue;
       }
 
       if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        return candidate.split(',').map(role => role.trim()).filter(Boolean);
+        roles.push(...this.parseRoleString(candidate));
       }
     }
 
-    return [];
+    return [...new Set(roles.map(r => r.trim()).filter(Boolean))];
+  }
+
+  private parseRoleString(value: string): string[] {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map(item => item.trim());
+        }
+      } catch {
+        // fall through to comma split
+      }
+    }
+
+    return trimmed.split(',').map(role => role.trim()).filter(Boolean);
   }
 }

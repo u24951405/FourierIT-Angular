@@ -97,7 +97,7 @@ export class SidebarComponent {
   get visibleNavItems(): NavItem[] {
     if (this.auth.isDocumentOwnerOnly()) {
       return [
-        { label: 'My Documents', icon: 'file', route: '/my-documents' },
+        { label: 'Dashboard', icon: 'file', route: '/dashboard/owner' },
         { label: 'Documents', icon: 'folder', children: [
           { label: 'Upload Document', route: '/documents/upload' },
           { label: 'Document Requests', route: '/documents/requests' }
