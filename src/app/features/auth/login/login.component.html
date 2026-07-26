@@ -49,7 +49,7 @@
       </div>
 
       <!--forgot password link-->
-      <a class="login-card__forgot" href="/forgot-password">Forgot Password?</a>
+      <a class="login-card__forgot" routerLink="/auth/forgot-password">Forgot Password?</a>
 
       <!--sign in button-->
       <button type="submit" class="btn-primary" [disabled]="isLoading()">
@@ -60,12 +60,6 @@
       </button>
 
     </form>
-
-    <!--login access with token or pin-->
-    <div class="login-card__divider"><span>Or access with</span></div>
-    <button type="button" class="btn-pin" (click)="openInstitutionPortal()">
-      Open Institution Portal (demo PIN 123456) →
-    </button>
 
     <div class="login-card__footer">
       New to DocuVault? <a routerLink="/auth/register">Create an account →</a>
