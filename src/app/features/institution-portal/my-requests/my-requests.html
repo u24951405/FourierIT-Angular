@@ -1,7 +1,19 @@
 <div class="my-requests-page">
   <header class="my-requests-header">
-    <h1>My Pending Requests</h1>
-    <p>Review access requests sent to you and approve or deny document access.</p>
+    <div class="my-requests-header__left">
+      <button class="my-requests-back" type="button" (click)="goToDashboard()" aria-label="Back to dashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H6M12 5l-7 7 7 7"></path>
+        </svg>
+      </button>
+      <div>
+        <h1>My Pending Requests</h1>
+        <p class="my-requests-subtitle">Review access requests sent to you and approve or deny document access.</p>
+      </div>
+    </div>
+    <div class="my-requests-header__right">
+      <img src="/Logo.png" alt="Portal logo" class="my-requests-logo" />
+    </div>
   </header>
 
   <div *ngIf="loading()" class="my-requests-loading">
@@ -14,33 +26,41 @@
 
   <div *ngIf="!loading() && !error() && pendingRequests().length === 0" class="my-requests-empty">
     <p>No pending requests found. Check back after your institution submits a new access request.</p>
+    <div class="my-requests-empty__actions">
+      <button class="rd-btn rd-btn--primary" type="button" (click)="loadPendingRequests()">Reload</button>
+      <button class="rd-btn rd-btn--outline" type="button" (click)="goToDashboard()">Back to Dashboard</button>
+    </div>
   </div>
-
   <div *ngIf="!loading() && pendingRequests().length > 0" class="my-requests-list">
     <div class="request-card" *ngFor="let request of pendingRequests()">
-      <div class="request-card__header">
-        <div>
-          <span class="request-card__label">Request ID</span>
-          <strong>{{ request.enquiryRequestId }}</strong>
+      <div class="request-card__meta">
+        <img src="/Logo.png" alt="Institution logo" class="request-card__logo" />
+        <div class="request-card__titles">
+          <div class="request-card__row">
+            <div class="request-card__name">#{{ request.enquiryRequestId }} · {{ request.institutionName || '—' }}</div>
+            <div class="request-card__time">{{ request.requestDate | date:'medium' }}</div>
+          </div>
+          <div class="request-card__meta-line">
+            <small>To: <strong>{{ request.recipient?.name || request.departmentName || '—' }}</strong> <span class="recipient-type">({{ request.recipient?.type || request.requestType }})</span></small>
+          </div>
+          <div class="request-card__purpose--compact">{{ request.purposeNote || 'No purpose provided' }}</div>
         </div>
-        <span class="request-card__status request-card__status--{{ request.status.toLowerCase() }}">{{ request.status }}</span>
+        <div class="request-card__status-wrapper">
+          <span class="request-card__status request-card__status--{{ request.status.toLowerCase() }}">{{ request.status }}</span>
+        </div>
       </div>
+
       <div class="request-card__body">
-        <p><strong>Institution:</strong> {{ request.institutionName }}</p>
-        <p><strong>Requested At:</strong> {{ request.requestDate | date:'medium' }}</p>
-        <p><strong>Purpose:</strong> {{ request.purposeNote || 'Not provided' }}</p>
         <div class="request-card__documents">
-          <span class="request-card__documents-title">Documents requested</span>
-          <ul>
-            <li *ngFor="let doc of request.documents">
-              {{ doc.documentTypeName }}<span *ngIf="doc.isMandatory"> · Mandatory</span>
-            </li>
-          </ul>
+          <span class="request-card__documents-title">Requested documents</span>
+          <div class="request-card__doc-list">
+            <span class="doc-chip" *ngFor="let doc of request.documents">{{ doc.documentTypeName }}<b *ngIf="doc.isMandatory" class="doc-chip--required">*</b></span>
+          </div>
         </div>
       </div>
+
       <div class="request-card__actions">
-        <button class="btn btn-approve" type="button" (click)="approveRequest(request.enquiryRequestId)">Approve</button>
-        <button class="btn btn-deny" type="button" (click)="denyRequest(request.enquiryRequestId)">Deny</button>
+        <button class="rd-btn rd-btn--outline" type="button" (click)="revokeRequest(request.enquiryRequestId)">Revoke</button>
       </div>
     </div>
   </div>

@@ -33,6 +33,11 @@ export const REPORTS_ROUTES: Routes = [
       import('./compliance/compliance-report/compliance-report').then((m: any) => m.ComplianceReportComponent),
   },
   {
+    path: 'compliance-certificate',
+    loadComponent: () =>
+      import('./compliance/compliance-certificate/compliance-certificate').then((m: any) => m.ComplianceCertificateComponent),
+  },
+  {
     path: 'activity',
     loadComponent: () =>
       import('./activity/activity-report/activity-report').then((m: any) => m.ActivityReportComponent),

@@ -47,6 +47,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
   },
   {
+    path: 'institution/auth/token-requested',
+    loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
+  },
+  {
+    path: 'institution/thank-you',
+    loadComponent: () => import('./features/institution-portal/auth/thank-you/thank-you.component').then(m => m.ThankYouComponent)
+  },
+  {
     path: 'institution/dashboard',
     canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
@@ -93,8 +101,8 @@ export const routes: Routes = [
           .then(m => m.DashboardComponent) },
       { path: 'dashboard/owner',
         canActivate: [documentOwnerGuard],
-        loadComponent: () => import('./features/documents/my-documents/my-documents.component')
-          .then(m => m.MyDocumentsComponent) },
+        loadComponent: () => import('./features/documents/my-documents/my-documents-owner-dashboard.component')
+          .then(m => m.MyDocumentsDashboardComponent) },
       { path: 'my-documents',
         canActivate: [documentOwnerGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
@@ -175,6 +183,10 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/backup-restore/backup-restore')
           .then(m => m.BackupRestoreComponent) },
+      {
+        path: 'reports',
+        loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES)
+      },
     ]
   },
   { path: '**', redirectTo: 'auth/login' }

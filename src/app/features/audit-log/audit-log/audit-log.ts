@@ -32,7 +32,9 @@ export class AuditLogComponent implements OnInit {
 
   // Pagination States
   currentPage = 1;
-  pageSize = 10;
+  pageSize = 25;
+  private _totalRecords = 0;
+  private nextPageCache: AuditLog[] | null = null;
 
   ngOnInit(): void {
     this.loadAuditLogs();
@@ -41,12 +43,25 @@ export class AuditLogComponent implements OnInit {
   loadAuditLogs(): void {
     this.isLoading = true;
     this.errorMessage = '';
-    this.auditLogService.getAuditLogs().subscribe({
-      next: (data) => {
-        this.auditLogs = data.sort((a, b) => new Date(b.timeStamp).getTime() - new Date(a.timeStamp).getTime());
+    const filters: any = {
+      userId: this.selectedUserId !== 'ALL' ? this.selectedUserId : undefined,
+      actionCode: this.selectedActionCode !== 'ALL' ? this.selectedActionCode : undefined,
+      page: this.currentPage,
+      pageSize: this.pageSize,
+      query: this.searchQuery?.trim() || undefined
+    };
+
+    this.auditLogService.getAuditLogs(filters).subscribe({
+      next: (res) => {
+        this.auditLogs = res.items.sort((a, b) => new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime());
+        this._totalRecords = res.totalCount;
         this.populateFilterDropdowns();
-        this.applyFilters();
+        this.filteredLogs = [...this.auditLogs];
+        this.sortLogs();
         this.isLoading = false;
+        // announce to screen readers (aria-live) implicitly via banner in template
+        // Prefetch next page for smoother navigation
+        this.prefetchNextPage();
       },
       error: (err) => {
         console.error('Failed to load audit logs', err);
@@ -54,6 +69,26 @@ export class AuditLogComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  applyFilters(): void {
+    this.currentPage = 1; // Reset to first page on filter change
+    this.loadAuditLogs();
+  }
+
+  // Debounced search
+  private searchDebounceTimer: any;
+  onSearchChange(): void {
+    clearTimeout(this.searchDebounceTimer);
+    this.searchDebounceTimer = setTimeout(() => {
+      this.currentPage = 1;
+      this.loadAuditLogs();
+    }, 350);
+  }
+
+  onFilterChange(): void {
+    this.currentPage = 1;
+    this.loadAuditLogs();
   }
 
   populateFilterDropdowns(): void {
@@ -65,26 +100,8 @@ export class AuditLogComponent implements OnInit {
       if (log.actionCode) actions.add(log.actionCode);
     });
 
-    this.userOptions = Array.from(users);
-    this.actionCodeOptions = Array.from(actions);
-  }
-
-  applyFilters(): void {
-    this.currentPage = 1; // Reset to first page on filter change
-    const query = this.searchQuery.trim().toLowerCase();
-    this.filteredLogs = this.auditLogs.filter(log => {
-      const matchUser = this.selectedUserId === 'ALL' || log.userId === this.selectedUserId;
-      const matchAction = this.selectedActionCode === 'ALL' || log.actionCode === this.selectedActionCode;
-      const matchSearch = !query || [
-        log.userId,
-        log.actionCode,
-        log.description,
-        log.tableAffected,
-        log.recordID?.toString() ?? ''
-      ].some(value => value?.toString().toLowerCase().includes(query));
-      return matchUser && matchAction && matchSearch;
-    });
-    this.sortLogs();
+    this.userOptions = Array.from(users).sort((a, b) => (a || '').localeCompare(b || ''));
+    this.actionCodeOptions = Array.from(actions).sort((a, b) => (a || '').localeCompare(b || ''));
   }
 
   sortLogs(): void {
@@ -115,16 +132,16 @@ export class AuditLogComponent implements OnInit {
 
   // --- Pagination Logic ---
   get paginatedLogs(): AuditLog[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredLogs.slice(startIndex, startIndex + this.pageSize);
+    // Server provides paged results already
+    return this.filteredLogs;
   }
 
   get totalPages(): number {
-    return Math.ceil(this.filteredLogs.length / this.pageSize) || 1;
+    return Math.ceil((this._totalRecords || 0) / this.pageSize) || 1;
   }
 
   get totalRecords(): number {
-    return this.filteredLogs.length;
+    return this._totalRecords;
   }
 
   get pageRangeStart(): number {
@@ -137,18 +154,50 @@ export class AuditLogComponent implements OnInit {
 
   nextPage(): void {
     if (this.currentPage < this.totalPages) {
-      this.currentPage++;
+      if (this.nextPageCache) {
+        this.currentPage++;
+        this.auditLogs = this.nextPageCache;
+        this.filteredLogs = [...this.auditLogs];
+        this.sortLogs();
+        this.nextPageCache = null;
+        this.prefetchNextPage();
+      } else {
+        this.currentPage++;
+        this.loadAuditLogs();
+      }
     }
   }
 
   previousPage(): void {
     if (this.currentPage > 1) {
       this.currentPage--;
+      this.loadAuditLogs();
     }
   }
 
   goToPage(page: number): void {
     this.currentPage = page;
+    this.loadAuditLogs();
+  }
+
+  private prefetchNextPage(): void {
+    if (this.currentPage >= this.totalPages) return;
+    const filters: any = {
+      userId: this.selectedUserId !== 'ALL' ? this.selectedUserId : undefined,
+      actionCode: this.selectedActionCode !== 'ALL' ? this.selectedActionCode : undefined,
+      page: this.currentPage + 1,
+      pageSize: this.pageSize,
+      query: this.searchQuery?.trim() || undefined
+    };
+
+    this.auditLogService.getAuditLogs(filters).subscribe({
+      next: (res) => {
+        this.nextPageCache = res.items.sort((a, b) => new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime());
+      },
+      error: () => {
+        this.nextPageCache = null;
+      }
+    });
   }
 
   // --- CSV Export Logic ---

@@ -20,6 +20,7 @@ export class BackupRestoreComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   backupFilePath = '';
+  showBackingUpModal = false;
 
   // Modal Visibility States
   showCreateModal = false;
@@ -63,23 +64,27 @@ export class BackupRestoreComponent implements OnInit {
 
   proceedWithBackup(): void {
     this.closeCreateModal();
+    this.showBackingUpModal = true;
     const currentUser = this.auth.currentUser();
     const request = {
       userId: currentUser?.id ?? '',
       isManualBackup: true
     };
-
     this.backupService.createBackup(request).subscribe({
       next: (result: BackupResponse) => {
+        this.showBackingUpModal = false;
         this.showSuccessBanner = true;
         this.showErrorBanner = false;
-        this.successMessage = result.statusMessage || 'Backup initiated successfully.';
+        const message = result.statusMessage || 'Backup created successfully.';
+        this.successMessage = message;
         this.backupFilePath = result.filePath || '';
         this.loadBackupHistory();
       },
       error: (err) => {
         console.error('Error initiating backup', err);
-        this.errorMessage = 'Backup initiation failed. Please try again.';
+        this.showBackingUpModal = false;
+        const message = err?.error?.message || err?.error?.error || err?.error?.title || 'Backup initiation failed. Please try again.';
+        this.errorMessage = message;
         this.showErrorBanner = true;
         this.showSuccessBanner = false;
       }
@@ -110,14 +115,21 @@ export class BackupRestoreComponent implements OnInit {
     this.showRestoringModal = true;
 
     this.backupService.restoreBackup(backupId).subscribe({
-      next: () => {
+      next: (response) => {
         this.showRestoringModal = false;
         this.showCompleteModal = true;
+        this.showSuccessBanner = true;
+        this.showErrorBanner = false;
+        this.successMessage = response.message || 'Restore completed successfully.';
         this.loadBackupHistory();
       },
       error: (err) => {
         console.error('Error restoring backup', err);
+        const message = err?.error?.message || err?.error?.error || err?.error?.title || 'Restore failed. Please try again.';
+        this.errorMessage = message;
         this.showRestoringModal = false;
+        this.showErrorBanner = true;
+        this.showSuccessBanner = false;
       }
     });
   }

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -22,6 +22,7 @@ export class RequestDocuments {
   private router = inject(Router);
   private authService = inject(InstitutionAuthService);
   private requestService = inject(DocumentAccessRequestService);
+  private cdr = inject(ChangeDetectorRef);
 
   institutionName = this.authService.institutionName();
   currentStep = 1;
@@ -189,9 +190,24 @@ export class RequestDocuments {
     if (this.wizard.requestType === 'Department') {
       this.requestService
         .getInstitutionDepartments(token)
-        .pipe(finalize(() => (this.loadingRecipients = false)))
+        .pipe(finalize(() => { this.loadingRecipients = false; this.cdr.detectChanges(); }))
         .subscribe({
-          next: (list) => (this.departments = list ?? []),
+            next: (list) => {
+              console.debug('[RequestDocuments] getInstitutionDepartments response', list);
+              // API may return either an array or an object fallback { departments, warning }
+              if (Array.isArray(list)) {
+                this.departments = list ?? [];
+              } else if (list && (list as any).departments) {
+                this.departments = (list as any).departments ?? [];
+                // Optionally surface warning to user
+                if ((list as any).warning) {
+                  this.recipientLoadError = (list as any).warning;
+                  console.warn('[RequestDocuments] departments fallback warning', (list as any).warning);
+                }
+              } else {
+                this.departments = [];
+              }
+            },
           error: () => {
             this.departments = [];
             this.recipientLoadError = 'Failed to load departments. Please try again.';
@@ -200,9 +216,20 @@ export class RequestDocuments {
     } else {
       this.requestService
         .getInstitutionUsers(token)
-        .pipe(finalize(() => (this.loadingRecipients = false)))
+        .pipe(finalize(() => { this.loadingRecipients = false; this.cdr.detectChanges(); }))
         .subscribe({
-          next: (list) => (this.users = list ?? []),
+            next: (list) => {
+              console.debug('[RequestDocuments] getInstitutionUsers response', list);
+              // API may return either an array or an object fallback { users, warning }
+              if (Array.isArray(list)) {
+                this.users = list ?? [];
+              } else if (list && (list as any).users) {
+                this.users = (list as any).users ?? [];
+                if ((list as any).warning) this.recipientLoadError = (list as any).warning;
+              } else {
+                this.users = [];
+              }
+            },
           error: () => {
             this.users = [];
             this.recipientLoadError = 'Failed to load users. Please try again.';
@@ -211,7 +238,7 @@ export class RequestDocuments {
     }
   }
 
-  private loadDocumentTypes(): void {
+  loadDocumentTypes(): void {
     if (!this.wizard.selectedRecipientId || !this.wizard.requestType) {
       this.loadingDocuments = false;
       this.documentLoadError = 'Unable to load documents. Please refresh the portal or select a valid recipient.';
@@ -234,10 +261,26 @@ export class RequestDocuments {
       .getInstitutionRecipientDocumentTypes(token, this.wizard.requestType, this.wizard.selectedRecipientId)
       .pipe(finalize(() => {
         this.loadingDocuments = false;
+        this.cdr.detectChanges();
       }))
       .subscribe({
-        next: (list) => {
-          this.documentTypes = list ?? [];
+        next: (response) => {
+          console.debug('[RequestDocuments] getInstitutionRecipientDocumentTypes response', response);
+
+          const payload = Array.isArray(response)
+            ? { documentTypes: response as InstitutionRecipientDocumentType[] }
+            : (response as { documentTypes?: InstitutionRecipientDocumentType[]; warning?: string });
+
+          this.documentTypes = payload.documentTypes ?? [];
+          this.documentLoadError = null;
+
+          if (!this.documentTypes.length) {
+            this.documentLoadError = 'No required document types were found for the selected recipient.';
+          }
+
+          if (payload.warning) {
+            console.warn('[RequestDocuments] document types warning', payload.warning);
+          }
         },
         error: () => {
           this.documentTypes = [];
@@ -262,6 +305,18 @@ export class RequestDocuments {
     this.wizard.selectedDocumentTypeIds = ids.includes(documentTypeId)
       ? ids.filter((id) => id !== documentTypeId)
       : [...ids, documentTypeId];
+    this.cdr.detectChanges();
+  }
+
+  onDocKeydown(event: KeyboardEvent, documentTypeId: number): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.toggleDocument(documentTypeId);
+    }
+  }
+
+  trackByDocumentTypeId(_index: number, item: InstitutionRecipientDocumentType): number {
+    return item.documentTypeId;
   }
 
   toggleSelectedDocumentList(): void {
@@ -335,16 +390,27 @@ export class RequestDocuments {
 
     console.debug('Submitting institution document access request', { institutionId, payload });
 
-    const idForCall = institutionId ?? 0;
-
     this.requestService
-      .createRequest(idForCall, payload)
-      .pipe(finalize(() => (this.submitting = false)))
+      .createRequest(payload)
+      .pipe(finalize(() => {
+        this.submitting = false;
+        try { this.cdr.detectChanges(); } catch {}
+      }))
       .subscribe({
         next: (response) => {
-          console.debug('Document request created', response);
-          this.wizard.submittedRequestId = response.enquiryRequestId?.toString() ?? null;
-          this.currentStep = 5;
+          try {
+            console.debug('Document request created', response);
+            this.wizard.submittedRequestId = response?.enquiryRequestId?.toString() ?? null;
+            this.currentStep = 5;
+            this.submitError = null;
+            this.submitting = false;
+            this.cdr.detectChanges();
+          } catch (ex) {
+            console.error('Error handling successful request response', ex);
+            this.submitError = 'An error occurred while processing the response.';
+            this.submitting = false;
+            try { this.cdr.detectChanges(); } catch {}
+          }
         },
         error: (err) => {
           console.error('Document request submission failed', {
@@ -355,6 +421,8 @@ export class RequestDocuments {
             fullError: err
           });
           this.submitError = this.getRequestErrorMessage(err);
+          this.submitting = false;
+          try { this.cdr.detectChanges(); } catch {}
         },
       });
   }

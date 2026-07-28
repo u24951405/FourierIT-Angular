@@ -208,6 +208,20 @@
   border: 1px solid #dfe8f3;
 }
 
+.rd-success__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.rd-success__logo {
+  height: 36px;
+  width: auto;
+  display: block;
+}
+
 /* Purpose grid */
 .rd-purpose-grid {
   display: grid;
@@ -384,6 +398,10 @@
   transition: background 0.1s;
 }
 
+.rd-doc-item {
+  transition: background 150ms ease, transform 100ms ease;
+}
+
 .rd-doc-item:last-child {
   border-bottom: none;
 }
@@ -399,11 +417,32 @@
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
 }
 
+/* Ensure immediate visual feedback when the native checkbox is toggled.
+   Using :has keeps the visual state in sync even if Angular class binding
+   updates slightly later, preventing a brief white flash. */
+.rd-doc-item:has(.rd-doc-item__checkbox:checked) {
+  background: linear-gradient(135deg, #0f172a, #31445d);
+  border-left: 4px solid #fff;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
+}
+
+.rd-doc-item:has(.rd-doc-item__checkbox:checked) .rd-doc-item__name {
+  color: #fff;
+}
+
+.rd-doc-item:has(.rd-doc-item__checkbox:checked) .rd-doc-item__badge {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.9);
+}
+
+
 .rd-doc-item__checkbox {
-  position: absolute;
   opacity: 0;
-  width: 0;
-  height: 0;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .rd-doc-item__checkbox:checked + .rd-doc-item__custom {
@@ -426,6 +465,22 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
+.rd-doc-item__title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.rd-doc-item__badge {
+  font-size: 0.6875rem;
+  background: #ffecec;
+  color: #b45309;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
 .rd-doc-item__custom::after {
   content: '';
   position: absolute;
@@ -443,6 +498,17 @@
 .rd-doc-item__name {
   font-size: 0.875rem;
   color: var(--text-primary);
+}
+
+.rd-doc-item__content {
+  display: flex;
+  flex-direction: column;
+}
+
+.rd-doc-item__description {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
 }
 
 .rd-doc-item--selected .rd-doc-item__name {
@@ -529,6 +595,23 @@
   border: 1px solid #e2e8f0;
   width: 100%;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.rd-summary--white {
+  padding: 1rem 1.25rem;
+}
+
+.rd-summary__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed #eef2f7;
+}
+
+.rd-summary__row:last-child {
+  border-bottom: none;
 }
 
 .rd-summary__row {

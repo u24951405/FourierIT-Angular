@@ -10,7 +10,7 @@ import type { InstitutionRequestSummary } from '../../../core/models/institution
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css',
+  styleUrls: ['./dashboard.css'],
 })
 export class Dashboard implements OnInit {
   private router = inject(Router);
@@ -30,6 +30,10 @@ export class Dashboard implements OnInit {
   });
   readonly expiryNoticeCount = signal(0);
   readonly showExpiryNotice = signal(true);
+  readonly notifications = signal<{ enquiryRequestId: number; status: string; requestType: string; recipientName: string; message: string; timestamp: string }[]>([]);
+  readonly notificationsOpen = signal(false);
+  readonly notificationsLoading = signal(false);
+  readonly notificationsError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.institutionName.set(this.institutionAuthService.institutionName());
@@ -70,6 +74,7 @@ export class Dashboard implements OnInit {
         },
         complete: () => this.loading.set(false),
       });
+      this.loadInstitutionNotifications(sessionToken);
       return;
     }
 
@@ -108,15 +113,42 @@ export class Dashboard implements OnInit {
     this.router.navigate(['/institution/approved-documents']);
   }
 
-  goToDepartmentRequests(): void {
-    this.router.navigate(['/administration/department-requests']);
-  }
-
   goToRenew(): void {
     this.router.navigate(['/institution/request-documents']);
   }
 
+  toggleNotifications(): void {
+    const open = !this.notificationsOpen();
+    this.notificationsOpen.set(open);
+
+    if (open && !this.notifications().length) {
+      const sessionToken = this.institutionAuthService.getSessionToken();
+      if (sessionToken) {
+        this.loadInstitutionNotifications(sessionToken);
+      }
+    }
+  }
+
+  private loadInstitutionNotifications(token: string): void {
+    this.notificationsLoading.set(true);
+    this.notificationsError.set(null);
+
+    this.requestService.getInstitutionNotifications(token).subscribe({
+      next: (notifications) => {
+        this.notifications.set(notifications ?? []);
+      },
+      error: () => {
+        this.notificationsError.set('Unable to load notifications.');
+      },
+      complete: () => this.notificationsLoading.set(false),
+    });
+  }
+
   signOut(): void {
     this.institutionAuthService.signOut();
+  }
+
+  endSession(): void {
+    this.institutionAuthService.endSession();
   }
 }

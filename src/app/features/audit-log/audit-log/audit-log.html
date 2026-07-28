@@ -16,12 +16,12 @@
     <div class="filters-grid">
       <div class="filter-card">
         <label>Search records</label>
-        <input type="text" [(ngModel)]="searchQuery" (input)="applyFilters()" placeholder="Search by user, action or record details" class="form-input" />
+        <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="Search by user, action or record details" class="form-input" />
       </div>
 
       <div class="filter-card">
         <label>User ID</label>
-        <select [(ngModel)]="selectedUserId" (change)="applyFilters()" class="form-select">
+        <select [(ngModel)]="selectedUserId" (change)="onFilterChange()" class="form-select">
           <option value="ALL">All Users</option>
           <option *ngFor="let user of userOptions" [value]="user">{{ user }}</option>
         </select>
@@ -29,7 +29,7 @@
 
       <div class="filter-card">
         <label>Action code</label>
-        <select [(ngModel)]="selectedActionCode" (change)="applyFilters()" class="form-select">
+        <select [(ngModel)]="selectedActionCode" (change)="onFilterChange()" class="form-select">
           <option value="ALL">All Action Codes</option>
           <option *ngFor="let action of actionCodeOptions" [value]="action">{{ action }}</option>
         </select>
@@ -54,9 +54,13 @@
 
   <section class="card table-card">
     <div *ngIf="errorMessage" class="banner banner--error">{{ errorMessage }}</div>
-    <div *ngIf="isLoading" class="banner banner--info">Loading audit logs…</div>
+    <div *ngIf="isLoading" class="banner banner--info" role="status" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <span class="visually-hidden">Loading audit logs…</span>
+      <span class="sr-text">Loading audit logs…</span>
+    </div>
 
-    <div class="table-wrapper">
+    <div class="table-wrapper" [attr.aria-busy]="isLoading">
       <table class="data-table">
         <thead>
           <tr>
@@ -76,6 +80,13 @@
           </tr>
         </thead>
         <tbody>
+          <ng-container *ngIf="isLoading">
+            <tr class="skeleton-row" *ngFor="let n of [].constructor(pageSize)">
+              <td colspan="7">
+                <div class="skeleton-line"></div>
+              </td>
+            </tr>
+          </ng-container>
           <tr *ngFor="let item of paginatedLogs">
             <td class="timestamp">{{ item.timeStamp | date:'yyyy/MM/dd, HH:mm:ss' }}</td>
             <td>{{ item.auditLogId }}</td>

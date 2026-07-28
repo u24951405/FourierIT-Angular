@@ -11,6 +11,7 @@ import {
   InstitutionDocumentRequestPayload,
   InstitutionDocumentRequestResponse,
   InstitutionRecipientDocumentType,
+  InstitutionNotification,
   InstitutionRequestSummary,
   PendingDepartmentAccessRequest,
   PendingDocumentAccessRequest,
@@ -24,7 +25,6 @@ export class DocumentAccessRequestService {
   private base = `${environment.apiUrl}`;
 
   createRequest(
-    institutionId: number,
     payload: InstitutionDocumentRequestPayload
   ): Observable<InstitutionDocumentRequestResponse> {
     const sessionJson = sessionStorage.getItem('institution_session');
@@ -64,6 +64,11 @@ export class DocumentAccessRequestService {
     );
   }
 
+  getInstitutionRequests(token: string): Observable<any[]> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<any[]>(`${this.base}/institution-access/requests`, { params });
+  }
+
   getInstitutionDepartments(token: string): Observable<{ departmentId: number; departmentName: string }[]> {
     const params = new HttpParams().set('token', token);
     return this.http.get<{ departmentId: number; departmentName: string }[]>(
@@ -84,13 +89,13 @@ export class DocumentAccessRequestService {
     token: string,
     requestType: 'Department' | 'Individual',
     recipientId: string
-  ): Observable<InstitutionRecipientDocumentType[]> {
+  ): Observable<InstitutionRecipientDocumentType[] | { documentTypes?: InstitutionRecipientDocumentType[]; warning?: string }> {
     const params = new HttpParams()
       .set('token', token)
       .set('requestType', requestType)
       .set('recipientId', recipientId);
 
-    return this.http.get<InstitutionRecipientDocumentType[]>(
+    return this.http.get<InstitutionRecipientDocumentType[] | { documentTypes?: InstitutionRecipientDocumentType[]; warning?: string }>(
       `${this.base}/institution-access/requests/document-types`,
       { params }
     );
@@ -129,9 +134,21 @@ export class DocumentAccessRequestService {
     );
   }
 
+  revokeInstitutionRequest(requestId: number): Observable<any> {
+    const sessionJson = sessionStorage.getItem('institution_session');
+    const sessionToken = sessionJson ? JSON.parse(sessionJson).sessionToken : '';
+    const params = new HttpParams().set('token', sessionToken);
+    return this.http.post<any>(`${this.base}/institution-access/requests/${requestId}/revoke`, null, { params });
+  }
+
   getApprovedInstitutionDocuments(token: string): Observable<ApprovedInstitutionDocument[]> {
     const params = new HttpParams().set('token', token);
     return this.http.get<ApprovedInstitutionDocument[]>(`${this.base}/institution-access/documents`, { params });
+  }
+
+  getInstitutionNotifications(token: string): Observable<InstitutionNotification[]> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<InstitutionNotification[]>(`${this.base}/institution-access/notifications`, { params });
   }
 
   downloadInstitutionDocument(documentId: number, token: string): Observable<Blob> {
@@ -140,5 +157,10 @@ export class DocumentAccessRequestService {
       params,
       responseType: 'blob',
     });
+  }
+
+  flagApprovedDocument(documentId: number, token: string, payload: { reason: string }): Observable<any> {
+    const params = new HttpParams().set('token', token);
+    return this.http.post<any>(`${this.base}/institution-access/documents/${documentId}/flag`, payload, { params });
   }
 }

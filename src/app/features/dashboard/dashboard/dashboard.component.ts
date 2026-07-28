@@ -305,13 +305,23 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     const chart = this.charts.find((c, index) => index === 2);
     if (!chart || !dashboard) return;
 
+    // Ensure chart still has a rendered canvas and is attached to a document
+    const canvas = (chart as any).canvas ?? (chart.ctx && (chart.ctx as any).canvas);
+    if (!canvas || !canvas.ownerDocument) return;
+
     chart.data.datasets[0].data = [
       dashboard.lowRiskUsers ?? 0,
       dashboard.mediumRiskUsers ?? 0,
       dashboard.highRiskUsers ?? 0,
       dashboard.criticalRiskUsers ?? 0,
     ];
-    chart.update();
+
+    try {
+      chart.update();
+    } catch (err) {
+      // Guard against Chart.js errors when element detached
+      console.warn('Skipped updating risk chart due to detached canvas or Chart error.', err);
+    }
   }
 
   private loadComplianceData(): void {

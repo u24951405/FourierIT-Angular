@@ -7,5 +7,5 @@ export const documentOwnerGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (!auth.isLoggedIn()) return router.createUrlTree(['/auth/login']);
-  return auth.isDocumentOwnerOnly() ? true : router.createUrlTree(['/dashboard']);
+  return auth.canUploadDocuments() ? true : router.createUrlTree(['/dashboard']);
 };

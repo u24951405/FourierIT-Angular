@@ -98,6 +98,7 @@ export class SidebarComponent {
     if (this.auth.isDocumentOwnerOnly()) {
       return [
         { label: 'Dashboard', icon: 'file', route: '/dashboard/owner' },
+        { label: 'My Documents', icon: 'file', route: '/my-documents' },
         { label: 'Documents', icon: 'folder', children: [
           { label: 'Upload Document', route: '/documents/upload' },
           { label: 'Document Requests', route: '/documents/requests' }

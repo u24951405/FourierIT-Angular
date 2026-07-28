@@ -9,7 +9,7 @@ import { environment } from '../../../environments/environment';
 })
 export class BackupService {
   private http = inject(HttpClient);
-  private apiUrl = `${environment.apiUrl}/api/Backup`;
+  private apiUrl = `${environment.apiUrl}/Backup`;
 
   getBackupHistory(): Observable<Backup[]> {
     return this.http.get<Backup[]>(`${this.apiUrl}/history`);

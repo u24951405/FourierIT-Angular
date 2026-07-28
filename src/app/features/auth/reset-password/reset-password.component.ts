@@ -1,5 +1,5 @@
 import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
@@ -26,9 +26,9 @@ export class ResetPasswordComponent {
   form = this.fb.group({
     emailAddress: ['', [Validators.required, Validators.email]],
     token: ['', [Validators.required]],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    newPassword: ['', [Validators.required, Validators.minLength(8), this.passwordStrengthValidator.bind(this)]],
     confirmPassword: ['', [Validators.required]]
-  }, { validators: this.passwordsMatch });
+  }, { validators: this.passwordsMatchValidator.bind(this) });
 
   constructor() {
     const email = this.route.snapshot.queryParamMap.get('email') ?? '';
@@ -53,15 +53,68 @@ export class ResetPasswordComponent {
       .subscribe({
         next: ({ message }) => {
           this.successMessage.set(message);
-          setTimeout(() => this.router.navigate(['/auth/login']), 2000);
+          setTimeout(() => this.router.navigate(['/auth/login'], { replaceUrl: true }), 2000);
         },
         error: (err) => this.errorMessage.set(err?.error?.error ?? 'Password reset failed.')
       });
   }
 
-  private passwordsMatch(form: any) {
+  private passwordsMatchValidator(form: any) {
     const password = form.get('newPassword')?.value;
     const confirm = form.get('confirmPassword')?.value;
     return password === confirm ? null : { passwordMismatch: true };
+  }
+
+  passwordsMatch(): boolean {
+    const password = this.form.get('newPassword')?.value;
+    const confirm = this.form.get('confirmPassword')?.value;
+    return typeof password === 'string' && typeof confirm === 'string' && password === confirm;
+  }
+
+  private passwordStrengthValidator(control: AbstractControl): ValidationErrors | null {
+    const value = String(control.value ?? '');
+    const validLength = value.length >= 8;
+    const hasDigit = /\d/.test(value);
+    const hasLowercase = /[a-z]/.test(value);
+    const hasUppercase = /[A-Z]/.test(value);
+    const hasNonAlphanumeric = /[^A-Za-z0-9]/.test(value);
+
+    return validLength && hasDigit && hasLowercase && hasUppercase && hasNonAlphanumeric
+      ? null
+      : { passwordStrength: true };
+  }
+
+  private getPassword(): string {
+    return String(this.form.get('newPassword')?.value ?? '');
+  }
+
+  passwordHasMinLength(): boolean {
+    return this.getPassword().length >= 8;
+  }
+
+  passwordHasDigit(): boolean {
+    return /\d/.test(this.getPassword());
+  }
+
+  passwordHasLowercase(): boolean {
+    return /[a-z]/.test(this.getPassword());
+  }
+
+  passwordHasUppercase(): boolean {
+    return /[A-Z]/.test(this.getPassword());
+  }
+
+  passwordHasNonAlphanumeric(): boolean {
+    return /[^A-Za-z0-9]/.test(this.getPassword());
+  }
+
+  allPasswordRulesSatisfied(): boolean {
+    return (
+      this.passwordHasMinLength() &&
+      this.passwordHasDigit() &&
+      this.passwordHasLowercase() &&
+      this.passwordHasUppercase() &&
+      this.passwordHasNonAlphanumeric()
+    );
   }
 }

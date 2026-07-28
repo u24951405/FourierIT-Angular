@@ -339,8 +339,32 @@ export class InstitutionAuthService {
     this.otpAttempts.set(0);
     this.pendingValidation = null;
     this.pendingAccessToken = null;
-
     this.router.navigate(['/institution/auth/expired']);
+  }
+
+  /**
+   * End the current institution portal session and show a thank-you page.
+   * Intended for explicit "End Session" actions from the portal UI.
+   */
+  endSession(): void {
+    const institutionId = this.getInstitutionId();
+
+    if (institutionId) {
+      this.logAuditEvent({
+        userId: institutionId,
+        institutionId,
+        timestamp: new Date().toISOString(),
+        actionType: AuditEventType.LOGOUT,
+      });
+    }
+
+    sessionStorage.removeItem(INSTITUTION_SESSION_KEY);
+    this.session.set(null);
+    this.otpAttempts.set(0);
+    this.pendingValidation = null;
+    this.pendingAccessToken = null;
+
+    this.router.navigate(['/institution/thank-you']);
   }
 
   // ─── Session Expiry Check ───────────────────────────────────────────────────

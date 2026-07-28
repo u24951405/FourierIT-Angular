@@ -176,21 +176,42 @@
       Loading document types for the selected recipient...
     </div>
 
-    <div class="rd-doc-list" *ngIf="!loadingDocuments && documentTypes.length">
+    <div *ngIf="!loadingDocuments && documentLoadError" class="rd-error" role="alert">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ documentLoadError }}</span>
+      <button class="rd-btn rd-btn--outline" type="button" (click)="loadDocumentTypes()">
+        Retry
+      </button>
+    </div>
+
+    <div class="rd-doc-list" *ngIf="!loadingDocuments && !documentLoadError && documentTypes.length">
       <label
         class="rd-doc-item"
-        *ngFor="let doc of documentTypes"
+        *ngFor="let doc of documentTypes; trackBy: trackByDocumentTypeId"
         [class.rd-doc-item--selected]="isDocSelected(doc.documentTypeId)"
+        tabindex="0"
+        (keydown)="onDocKeydown($event, doc.documentTypeId)"
+        title="{{ doc.typeName }}"
       >
         <input
           type="checkbox"
           class="rd-doc-item__checkbox"
           [checked]="isDocSelected(doc.documentTypeId)"
           (change)="toggleDocument(doc.documentTypeId)"
+          aria-label="Select {{ doc.typeName }}"
         />
-        <span class="rd-doc-item__custom"></span>
-        <span class="rd-doc-item__name">{{ doc.typeName }}</span>
-        <span class="rd-doc-item__description" *ngIf="doc.description">{{ doc.description }}</span>
+        <span class="rd-doc-item__custom" aria-hidden="true"></span>
+        <div class="rd-doc-item__content">
+          <div class="rd-doc-item__title-row">
+            <span class="rd-doc-item__name">{{ doc.typeName }}</span>
+            <span *ngIf="doc.isMandatory" class="rd-doc-item__badge">Required</span>
+          </div>
+          <span class="rd-doc-item__description" *ngIf="doc.description">{{ doc.description }}</span>
+        </div>
       </label>
     </div>
 
@@ -344,6 +365,10 @@
 
   <!-- ── Step 5: Submitted ─────────────────────────────────────────────────────── -->
   <div class="rd-card rd-card--success" *ngIf="currentStep === 5">
+    <div class="rd-success__brand">
+      <img src="/Logo.png" alt="{{ institutionName }} logo" class="rd-success__logo" />
+    </div>
+
     <div class="rd-success-icon">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>

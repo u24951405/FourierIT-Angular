@@ -159,11 +159,23 @@ export interface DenyRequestResponse {
 }
 
 export interface ApprovedInstitutionDocument {
+  requestId: number;
+  requestType: 'Department' | 'Individual';
+  recipientName: string;
   documentId: number;
   documentName: string;
   documentTypeName: string;
   approvedAt: string;
   expiresAt?: string;
+}
+
+export interface InstitutionNotification {
+  enquiryRequestId: number;
+  status: string;
+  requestType: 'Department' | 'Individual';
+  recipientName: string;
+  message: string;
+  timestamp: string;
 }
 
 export interface AuditLogEntry {

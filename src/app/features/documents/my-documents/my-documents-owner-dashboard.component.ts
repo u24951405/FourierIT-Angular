@@ -13,15 +13,14 @@ import { ToastService } from '../../../core/services/toast.service';
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, DoughnutController, ArcElement, Tooltip, Legend);
 
 @Component({
-  selector: 'app-my-documents',
+  selector: 'app-my-documents-dashboard',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './my-documents.component.html',
+  templateUrl: './my-documents-dashboard.component.html',
   styleUrls: ['./my-documents.component.scss', '../../../features/dashboard/dashboard/dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-
-export class MyDocumentsComponent implements OnInit, AfterViewInit {
+export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
   @ViewChild('verificationChart') verificationChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('riskChart') riskChartRef!: ElementRef<HTMLCanvasElement>;
@@ -331,4 +330,3 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
     this.charts.push(chart);
   }
 }
-

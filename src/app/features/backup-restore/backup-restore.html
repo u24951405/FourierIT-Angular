@@ -158,6 +158,16 @@
   </div>
 </div>
 
+<div class="modal-backdrop" *ngIf="showBackingUpModal">
+  <div class="modal modal--narrow text-center">
+    <div class="modal-body progress-body">
+      <div class="spinner"></div>
+      <h3>Creating Backup...</h3>
+      <p class="muted">This may take several minutes. The system will continue to run while the backup completes.</p>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" *ngIf="showCompleteModal">
   <div class="modal modal--narrow text-center">
     <div class="modal-body success-body">
