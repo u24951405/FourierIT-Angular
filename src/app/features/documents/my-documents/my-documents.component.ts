@@ -16,7 +16,7 @@ Chart.register(CategoryScale, LinearScale, PointElement, LineElement, DoughnutCo
   selector: 'app-my-documents',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './my-documents-dashboard.component.html',
+  templateUrl: './my-documents.component.html',
   styleUrls: ['./my-documents.component.scss', '../../../features/dashboard/dashboard/dashboard.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })

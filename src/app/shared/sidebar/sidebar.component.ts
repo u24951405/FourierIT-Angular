@@ -73,6 +73,7 @@ export class SidebarComponent {
         { label: 'Institutions',     route: '/administration/institutions' }
     ]},
     { label: 'Dashboard',    icon: 'grid',    route: '/dashboard' },
+    { label: 'Compliance', icon: 'file', route: '/reports/compliance' },
     { label: 'Departments', icon: 'building', children: [
         { label: 'All Departments', route: '/departments/all' },
         { label: 'Assign Department Admin', route: '/departments/admins' }

@@ -93,8 +93,8 @@ export const routes: Routes = [
           .then(m => m.DashboardComponent) },
       { path: 'dashboard/owner',
         canActivate: [documentOwnerGuard],
-        loadComponent: () => import('./features/documents/my-documents/my-documents.component')
-          .then(m => m.MyDocumentsComponent) },
+        loadComponent: () => import('./features/documents/my-documents/my-documents-dashboard.component')
+          .then(m => m.MyDocumentsDashboardComponent) },
       { path: 'my-documents',
         canActivate: [documentOwnerGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
@@ -175,6 +175,11 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/backup-restore/backup-restore')
           .then(m => m.BackupRestoreComponent) },
+      {
+        path: 'reports',
+        canActivate: [authGuard],
+        loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES)
+      },
     ]
   },
   { path: '**', redirectTo: 'auth/login' }

@@ -94,6 +94,38 @@
     </div>
   </div>
 
+  <div class="transition-card" *ngIf="!isLoading && (historyItems.length || alerts.length)">
+    <div class="transition-card__header">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      <div>
+        <p class="transition-card__title">Latest Compliance Activity</p>
+        <p class="transition-card__subtitle">Real history and alerts from the compliance API</p>
+      </div>
+    </div>
+
+    <div *ngIf="alerts.length" style="margin-bottom: 1rem;">
+      <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">Open Alerts</h4>
+      <ul style="margin: 0; padding-left: 1rem;">
+        <li *ngFor="let alert of alerts.slice(0, 5)">
+          <strong>{{ alert.alertType || 'Compliance alert' }}</strong> — {{ alert.message }}
+        </li>
+      </ul>
+    </div>
+
+    <div *ngIf="historyItems.length">
+      <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">Recent History</h4>
+      <ul style="margin: 0; padding-left: 1rem;">
+        <li *ngFor="let item of historyItems.slice(0, 8)">
+          <strong>{{ item.status }}</strong> — {{ item.changeReason }} ({{ item.compliancePercentage }}%)
+        </li>
+      </ul>
+    </div>
+  </div>
+
   <!-- ── State Changes Table ────────────────────────────────────────────────── -->
   <div class="transition-card">
     <div class="transition-card__header">

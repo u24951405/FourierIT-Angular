@@ -20,6 +20,9 @@ import {
   ComplianceService,
   ComplianceDashboard,
   ComplianceUserSummary,
+  ComplianceRuleSummary,
+  ComplianceHistoryItem,
+  ComplianceAlert,
 } from '../../../core/services/compliance.service';
 import { AuthService, CurrentAccount } from '../../../core/services/auth.service';
 
@@ -81,6 +84,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   complianceSummary: ComplianceUserSummary | null = null;
   complianceIssues: any[] = [];
   complianceMissingDocuments: any[] = [];
+  complianceRules: ComplianceRuleSummary[] = [];
+  complianceHistory: ComplianceHistoryItem[] = [];
+  complianceAlerts: ComplianceAlert[] = [];
   hasComplianceData = false;
 
   statCards: StatCard[] = [];
@@ -335,6 +341,21 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         this.complianceLoading = false;
         this.complianceError = 'Unable to load compliance information right now.';
       },
+    });
+
+    this.complianceService.getComplianceRules().subscribe({
+      next: (rules) => this.complianceRules = rules,
+      error: () => this.complianceRules = []
+    });
+
+    this.complianceService.getComplianceHistory(currentUserId).subscribe({
+      next: (history) => this.complianceHistory = history,
+      error: () => this.complianceHistory = []
+    });
+
+    this.complianceService.getAlerts(currentUserId).subscribe({
+      next: (alerts) => this.complianceAlerts = alerts,
+      error: () => this.complianceAlerts = []
     });
 
     this.complianceService.getUserIssues(currentUserId).subscribe({

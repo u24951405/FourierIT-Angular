@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { ComplianceReportData, ComplianceTransition } from '../../reports.models';
+import { ComplianceAlert, ComplianceHistoryItem, ComplianceService } from '../../../../core/services/compliance.service';
 
 @Component({
   selector: 'app-compliance-report',
@@ -11,8 +12,9 @@ import { ComplianceReportData, ComplianceTransition } from '../../reports.models
   templateUrl: './compliance-report.html',
   styleUrls: ['./compliance-report.scss'],
 })
-export class ComplianceReportComponent {
+export class ComplianceReportComponent implements OnInit {
   private router = inject(Router);
+  private complianceService = inject(ComplianceService);
 
   data: ComplianceReportData = {
     reportId: 'DV-CMP-4163721330',
@@ -36,6 +38,15 @@ export class ComplianceReportComponent {
     ],
   };
 
+  historyItems: ComplianceHistoryItem[] = [];
+  alerts: ComplianceAlert[] = [];
+  isLoading = false;
+  errorMessage = '';
+
+  ngOnInit(): void {
+    this.loadComplianceData();
+  }
+
   // Timeline segments for visual uptime bar
   get timelineSegments(): { isCompliant: boolean; widthPct: number }[] {
     return [
@@ -49,6 +60,50 @@ export class ComplianceReportComponent {
       { isCompliant: false, widthPct: 1 },
       { isCompliant: true, widthPct: 21 },
     ];
+  }
+
+  private loadComplianceData(): void {
+    const userId = this.getCurrentUserId();
+    if (!userId) {
+      this.errorMessage = 'No current user available.';
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.complianceService.getComplianceHistory(userId).subscribe({
+      next: (history) => {
+        this.historyItems = history;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.historyItems = [];
+        this.isLoading = false;
+      },
+    });
+
+    this.complianceService.getAlerts(userId).subscribe({
+      next: (alerts) => this.alerts = alerts,
+      error: () => this.alerts = [],
+    });
+  }
+
+  private getCurrentUserId(): string | null {
+    const token = localStorage.getItem('docuvault_token');
+    if (!token) return null;
+
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+      const decoded = atob(padded);
+      const claims = JSON.parse(decoded) as Record<string, unknown>;
+      return typeof claims['sub'] === 'string' ? claims['sub'] : null;
+    } catch {
+      return null;
+    }
   }
 
   viewCertificate(): void {

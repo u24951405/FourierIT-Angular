@@ -86,12 +86,12 @@
         </div>
       </div>
 
-      <div class="compliance-list-card" *ngIf="complianceIssues.length">
-        <h4 class="compliance-list-card__title">Issues</h4>
+      <div class="compliance-list-card" *ngIf="complianceRules.length">
+        <h4 class="compliance-list-card__title">Required Documents</h4>
         <ul class="compliance-list">
-          <li *ngFor="let issue of complianceIssues.slice(0, 5)">
-            <span class="compliance-list__name">{{ issue.documentName || issue.documentType || 'Issue' }}</span>
-            <span class="compliance-list__meta">{{ issue.status || issue.issue || 'Pending review' }}</span>
+          <li *ngFor="let rule of complianceRules.slice(0, 6)">
+            <span class="compliance-list__name">{{ rule.ruleName }}</span>
+            <span class="compliance-list__meta">{{ rule.isMandatory ? 'Mandatory' : 'Optional' }}</span>
           </li>
         </ul>
       </div>
@@ -102,6 +102,26 @@
           <li *ngFor="let item of complianceMissingDocuments.slice(0, 5)">
             <span class="compliance-list__name">{{ item.documentTypeName || item.reason || 'Document' }}</span>
             <span class="compliance-list__meta">{{ item.reason || 'Required' }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="compliance-list-card" *ngIf="complianceHistory.length">
+        <h4 class="compliance-list-card__title">Recent Compliance Activity</h4>
+        <ul class="compliance-list">
+          <li *ngFor="let entry of complianceHistory.slice(0, 5)">
+            <span class="compliance-list__name">{{ entry.status }}</span>
+            <span class="compliance-list__meta">{{ entry.compliancePercentage }}% · {{ entry.changeReason }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="compliance-list-card" *ngIf="complianceAlerts.length">
+        <h4 class="compliance-list-card__title">Open Compliance Alerts</h4>
+        <ul class="compliance-list">
+          <li *ngFor="let alert of complianceAlerts.slice(0, 5)">
+            <span class="compliance-list__name">{{ alert.alertType || 'Compliance alert' }}</span>
+            <span class="compliance-list__meta">{{ alert.severity || 'Medium' }} · {{ alert.message }}</span>
           </li>
         </ul>
       </div>
