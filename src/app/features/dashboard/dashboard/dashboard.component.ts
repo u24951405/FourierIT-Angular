@@ -124,7 +124,6 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       this.buildCategoryChart();
       this.buildRiskChart();
       this.loadDashboard();
-      this.loadComplianceData();
     }, 100);
   }
 
@@ -263,9 +262,11 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         if (shouldUseDepartmentDashboard && account.departmentId) {
           this.dashboardScope = 'department';
           this.complianceService.getDepartmentDashboard(account.departmentId).subscribe({
-            next: dashboard => this.applyDashboard(dashboard),
+            next: dashboard => {
+              this.applyDashboard(dashboard);
+              this.loadComplianceData();
+            },
             error: (error) => {
-              // If department dashboard fails and user is department admin, handle gracefully
               console.warn('Department dashboard error:', error);
               this.handleDashboardError('Unable to load department dashboard.');
             }
@@ -273,14 +274,19 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         } else {
           this.dashboardScope = 'system';
           this.complianceService.getSystemDashboard().subscribe({
-            next: dashboard => this.applyDashboard(dashboard),
+            next: dashboard => {
+              this.applyDashboard(dashboard);
+              this.loadComplianceData();
+            },
             error: (error) => {
-              // If system dashboard fails and user is department admin, try department dashboard
               if (this.auth.hasRole('Department Admin') && this.account?.departmentId) {
                 console.warn('System dashboard error, attempting department dashboard:', error);
                 this.dashboardScope = 'department';
                 this.complianceService.getDepartmentDashboard(this.account.departmentId).subscribe({
-                  next: dashboard => this.applyDashboard(dashboard),
+                  next: dashboard => {
+                    this.applyDashboard(dashboard);
+                    this.loadComplianceData();
+                  },
                   error: () => this.handleDashboardError('Unable to load dashboard. Please refresh the page.')
                 });
               } else {
@@ -445,14 +451,28 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadComplianceData(): void {
-    const currentUserId = this.auth.getCurrentUserId();
-    if (!currentUserId) {
-      this.complianceError = 'No current user available.';
+    this.complianceLoading = true;
+    this.complianceError = '';
+
+    if (this.dashboardScope === 'department' && this.dashboardData) {
+      const summary = this.buildDepartmentComplianceSummary(this.dashboardData);
+      this.complianceSummary = summary;
+      this.hasComplianceData = !!summary;
+      this.complianceLoading = false;
+      this.complianceRules = [];
+      this.complianceHistory = [];
+      this.complianceAlerts = [];
+      this.complianceIssues = [];
+      this.complianceMissingDocuments = [];
       return;
     }
 
-    this.complianceLoading = true;
-    this.complianceError = '';
+    const currentUserId = this.auth.getCurrentUserId();
+    if (!currentUserId) {
+      this.complianceError = 'No current user available.';
+      this.complianceLoading = false;
+      return;
+    }
 
     this.complianceService.getUserCompliance(currentUserId).subscribe({
       next: (response: any) => {
@@ -500,6 +520,50 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
         this.complianceMissingDocuments = [];
       },
     });
+  }
+
+  private buildDepartmentComplianceSummary(dashboard: ComplianceDashboard | null): ComplianceUserSummary | null {
+    if (!dashboard) {
+      return null;
+    }
+
+    const totalUsers = Number(dashboard.totalUsers ?? 0);
+    const compliantUsers = Number(dashboard.compliantUsers ?? 0);
+    const nonCompliantUsers = Number(dashboard.nonCompliantUsers ?? 0);
+    const reviewRequiredUsers = Number(dashboard.reviewRequiredUsers ?? 0);
+    const compliancePercentage = Number(dashboard.overallCompliancePercentage ?? 0);
+    const averageScore = Number(dashboard.averageComplianceScore ?? 0);
+
+    let overallStatus = 'Unknown';
+    if (compliancePercentage >= 90) {
+      overallStatus = 'Compliant';
+    } else if (compliancePercentage >= 70) {
+      overallStatus = 'Review Required';
+    } else if (nonCompliantUsers > 0) {
+      overallStatus = 'Non-Compliant';
+    }
+
+    let riskLevel = 'Low';
+    if ((dashboard.criticalRiskUsers ?? 0) > 0) {
+      riskLevel = 'Critical';
+    } else if ((dashboard.highRiskUsers ?? 0) > 0) {
+      riskLevel = 'High';
+    } else if ((dashboard.mediumRiskUsers ?? 0) > 0) {
+      riskLevel = 'Medium';
+    }
+
+    return {
+      overallStatus,
+      riskLevel,
+      compliancePercentage,
+      complianceScore: averageScore,
+      uploaded: totalUsers,
+      compliant: compliantUsers,
+      nonCompliant: nonCompliantUsers,
+      missing: Math.max(0, totalUsers - compliantUsers),
+      pendingReviewDocuments: reviewRequiredUsers,
+      totalRequired: totalUsers,
+    };
   }
 
   private normalizeComplianceSummary(payload: any): ComplianceUserSummary | null {
