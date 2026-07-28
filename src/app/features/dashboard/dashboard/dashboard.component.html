@@ -86,12 +86,12 @@
         </div>
       </div>
 
-      <div class="compliance-list-card" *ngIf="complianceIssues.length">
-        <h4 class="compliance-list-card__title">Issues</h4>
+      <div class="compliance-list-card" *ngIf="complianceRules.length">
+        <h4 class="compliance-list-card__title">Required Documents</h4>
         <ul class="compliance-list">
-          <li *ngFor="let issue of complianceIssues.slice(0, 5)">
-            <span class="compliance-list__name">{{ issue.documentName || issue.documentType || 'Issue' }}</span>
-            <span class="compliance-list__meta">{{ issue.status || issue.issue || 'Pending review' }}</span>
+          <li *ngFor="let rule of complianceRules.slice(0, 6)">
+            <span class="compliance-list__name">{{ rule.ruleName }}</span>
+            <span class="compliance-list__meta">{{ rule.isMandatory ? 'Mandatory' : 'Optional' }}</span>
           </li>
         </ul>
       </div>
@@ -102,6 +102,26 @@
           <li *ngFor="let item of complianceMissingDocuments.slice(0, 5)">
             <span class="compliance-list__name">{{ item.documentTypeName || item.reason || 'Document' }}</span>
             <span class="compliance-list__meta">{{ item.reason || 'Required' }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="compliance-list-card" *ngIf="complianceHistory.length">
+        <h4 class="compliance-list-card__title">Recent Compliance Activity</h4>
+        <ul class="compliance-list">
+          <li *ngFor="let entry of complianceHistory.slice(0, 5)">
+            <span class="compliance-list__name">{{ entry.status }}</span>
+            <span class="compliance-list__meta">{{ entry.compliancePercentage }}% · {{ entry.changeReason }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="compliance-list-card" *ngIf="complianceAlerts.length">
+        <h4 class="compliance-list-card__title">Open Compliance Alerts</h4>
+        <ul class="compliance-list">
+          <li *ngFor="let alert of complianceAlerts.slice(0, 5)">
+            <span class="compliance-list__name">{{ alert.alertType || 'Compliance alert' }}</span>
+            <span class="compliance-list__meta">{{ alert.severity || 'Medium' }} · {{ alert.message }}</span>
           </li>
         </ul>
       </div>
@@ -119,56 +139,26 @@
         <canvas #verificationChart></canvas>
       </div>
       <div class="dash-legend">
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#10b981"></span>
-          <span class="dash-legend-label">Verified</span>
-          <span class="dash-legend-val">1,842</span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#f59e0b"></span>
-          <span class="dash-legend-label">Pending</span>
-          <span class="dash-legend-val">312</span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#ef4444"></span>
-          <span class="dash-legend-label">Rejected</span>
-          <span class="dash-legend-val">98</span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#d1d5db"></span>
-          <span class="dash-legend-label">Unreviewed</span>
-          <span class="dash-legend-val">595</span>
+        <div class="dash-legend-item" *ngFor="let item of verificationLegendItems">
+          <span class="dash-legend-dot" [style.background]="item.color"></span>
+          <span class="dash-legend-label">{{ item.label }}</span>
+          <span class="dash-legend-val">{{ item.value }}</span>
         </div>
       </div>
     </div>
 
     <!-- Documents by Category -->
     <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/reports/activity')">
-      <h3 class="dash-chart-card__title">Documents by Category</h3>
-      <p class="dash-chart-card__subtitle">Distribution across compliance types</p>
+      <h3 class="dash-chart-card__title">Compliance Status Breakdown</h3>
+      <p class="dash-chart-card__subtitle">Real dashboard counts from backend compliance status data</p>
       <div class="dash-doughnut-wrap">
         <canvas #categoryChart></canvas>
       </div>
       <div class="dash-legend">
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#1e2a3a"></span>
-          <span class="dash-legend-label">KYC</span>
-          <span class="dash-legend-val">1,124</span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#2d5282"></span>
-          <span class="dash-legend-label">FICA</span>
-          <span class="dash-legend-val">876</span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#7bafd4"></span>
-          <span class="dash-legend-label">Corporate Gov.</span>
-          <span class="dash-legend-val">543</span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#b0cfe8"></span>
-          <span class="dash-legend-label">Tax Compliance</span>
-          <span class="dash-legend-val">304</span>
+        <div class="dash-legend-item" *ngFor="let item of categoryLegendItems">
+          <span class="dash-legend-dot" [style.background]="item.color"></span>
+          <span class="dash-legend-label">{{ item.label }}</span>
+          <span class="dash-legend-val">{{ item.value }}</span>
         </div>
       </div>
     </div>
@@ -181,25 +171,10 @@
         <canvas #riskChart></canvas>
       </div>
       <div class="dash-legend">
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#10b981"></span>
-          <span class="dash-legend-label">Low Risk</span>
-          <span class="dash-legend-val">1,124 <span class="dash-legend-pct">(61%)</span></span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#f59e0b"></span>
-          <span class="dash-legend-label">Medium Risk</span>
-          <span class="dash-legend-val">487 <span class="dash-legend-pct">(26%)</span></span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#ef4444"></span>
-          <span class="dash-legend-label">High Risk</span>
-          <span class="dash-legend-val">198 <span class="dash-legend-pct">(11%)</span></span>
-        </div>
-        <div class="dash-legend-item">
-          <span class="dash-legend-dot" style="background:#991b1b"></span>
-          <span class="dash-legend-label">Critical Risk</span>
-          <span class="dash-legend-val">38 <span class="dash-legend-pct">(2%)</span></span>
+        <div class="dash-legend-item" *ngFor="let item of riskLegendItems">
+          <span class="dash-legend-dot" [style.background]="item.color"></span>
+          <span class="dash-legend-label">{{ item.label }}</span>
+          <span class="dash-legend-val">{{ item.value }}</span>
         </div>
       </div>
     </div>

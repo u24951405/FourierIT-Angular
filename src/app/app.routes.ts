@@ -5,7 +5,7 @@ import { restrictDocumentOwnerOnlyGuard } from './core/guards/restrict-document-
 import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.guard';
 import { documentUploadGuard } from './core/guards/document-upload.guard';
 import { adminGuard } from './core/guards/admin.guard';
-import { departmentAdminGuard } from './core/guards/department-admin.guard';
+import { departmentAdminGuard, departmentScopedGuard } from './core/guards/department-admin.guard';
 import { documentManagementGuard } from './core/guards/document-management.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { institutionAuthGuard, institutionOtpGuard } from './features/institution-portal/auth/institution-auth-guard';
@@ -86,6 +86,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard',
+        pathMatch: 'full',
         canActivate: [authGuard],
         loadComponent: () => import('./features/dashboard/dashboard-redirect/dashboard-redirect.component')
           .then(m => m.DashboardRedirectComponent) },
@@ -95,13 +96,13 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
       { path: 'dashboard/department',
-        canActivate: [restrictDocumentOwnerOnlyGuard, departmentAdminGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, departmentScopedGuard],
         data: { dashboardScope: 'department' },
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
       { path: 'dashboard/owner',
         canActivate: [documentOwnerGuard],
-        loadComponent: () => import('./features/documents/my-documents/my-documents-owner-dashboard.component')
+        loadComponent: () => import('./features/documents/my-documents/my-documents-dashboard.component')
           .then(m => m.MyDocumentsDashboardComponent) },
       { path: 'my-documents',
         canActivate: [documentOwnerGuard],
@@ -185,6 +186,7 @@ export const routes: Routes = [
           .then(m => m.BackupRestoreComponent) },
       {
         path: 'reports',
+        canActivate: [authGuard],
         loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES)
       },
     ]

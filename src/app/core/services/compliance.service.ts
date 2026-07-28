@@ -17,6 +17,7 @@ export interface ComplianceUserSummary {
   expired?: number;
   missing?: number;
   notCertified?: number;
+  pendingReviewDocuments?: number;
   compliancePercentage?: number;
   complianceScore?: number;
   riskScore?: number;
@@ -67,6 +68,23 @@ export interface DepartmentComplianceSummary {
   nonCompliantUsers: ComplianceUserSummary[];
 }
 
+export interface ComplianceRuleSummary {
+  complianceRuleId: number;
+  ruleName: string;
+  appliesTo: string;
+  isMandatory: boolean;
+  validationRules: string;
+  isActive: boolean;
+  description?: string;
+}
+
+export interface ComplianceHistoryItem {
+  status: string;
+  compliancePercentage: number;
+  changeReason: string;
+  changedAt: string;
+}
+
 export interface ComplianceDashboard {
   totalUsers: number;
   compliantUsers: number;
@@ -114,5 +132,24 @@ export class ComplianceService {
   getDepartmentDashboard(departmentId: number): Observable<ComplianceDashboard> {
     return this.http.get<{ success: boolean; data: ComplianceDashboard }>(`${this.base}/departments/${departmentId}/dashboard`)
       .pipe(map(response => response.data));
+  }
+
+  getComplianceRules(): Observable<ComplianceRuleSummary[]> {
+    return this.http.get<{ success: boolean; data: ComplianceRuleSummary[] }>(`${this.base}/rules`)
+      .pipe(map(response => response.data ?? []));
+  }
+
+  getComplianceHistory(userId: string): Observable<ComplianceHistoryItem[]> {
+    return this.http.get<{ success: boolean; data: ComplianceHistoryItem[] }>(`${this.base}/users/${userId}/history`)
+      .pipe(map(response => response.data ?? []));
+  }
+
+  getAlerts(userId?: string): Observable<ComplianceAlert[]> {
+    const url = userId
+      ? `${this.base}/alerts?userId=${encodeURIComponent(userId)}`
+      : `${this.base}/alerts`;
+
+    return this.http.get<{ success: boolean; data: ComplianceAlert[] }>(url)
+      .pipe(map(response => response.data ?? []));
   }
 }

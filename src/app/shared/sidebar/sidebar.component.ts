@@ -73,6 +73,7 @@ export class SidebarComponent {
         { label: 'Institutions',     route: '/administration/institutions' }
     ]},
     { label: 'Dashboard',    icon: 'grid',    route: '/dashboard' },
+    { label: 'Compliance', icon: 'file', route: '/reports/compliance' },
     { label: 'Departments', icon: 'building', children: [
         { label: 'All Departments', route: '/departments/all' },
         { label: 'Assign Department Admin', route: '/departments/admins' }
@@ -151,8 +152,16 @@ export class SidebarComponent {
       }).filter(Boolean);
     }
 
-    if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {
+    if (!this.auth.isSuperAdmin() && (this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder'))) {
       items = items.map(item => {
+        if (item.label === 'Dashboard') {
+          return { ...item, route: '/dashboard/department' };
+        }
+
+        if (item.label === 'Compliance') {
+          return { ...item, route: '/reports/compliance' };
+        }
+
         if (item.label === 'Documents' && item.children) {
           return {
             ...item,
