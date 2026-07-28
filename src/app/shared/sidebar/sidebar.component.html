@@ -10,43 +10,53 @@
   </div>
 
   <nav class="sidebar__nav">
-    @for (item of visibleNavItems; track item.label) {
-
-      @if (!item.children) {
+    <ng-container *ngFor="let item of visibleNavItems">
+      <ng-container *ngIf="!item.children">
         <a class="sidebar__link"
            [routerLink]="item.route"
            routerLinkActive="sidebar__link--active">
           <span class="sidebar__icon" [innerHTML]="getIcon(item.icon)"></span>
           <span>{{ item.label }}</span>
         </a>
-      }
+      </ng-container>
 
-      @if (item.children) {
-        <button class="sidebar__link sidebar__link--group"
-                [class.sidebar__link--open]="openGroup() === item.label"
-                (click)="toggle(item.label)">
-          <span class="sidebar__icon" [innerHTML]="getIcon(item.icon)"></span>
-          <span class="sidebar__link-text">{{ item.label }}</span>
-          <svg class="sidebar__chevron" xmlns="http://www.w3.org/2000/svg"
-               fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
-          </svg>
-        </button>
+      <ng-container *ngIf="item.children">
+        <div class="sidebar__group">
+          <a *ngIf="item.route"
+             class="sidebar__link sidebar__link--group"
+             [routerLink]="item.route"
+             routerLinkActive="sidebar__link--active">
+            <span class="sidebar__icon" [innerHTML]="getIcon(item.icon)"></span>
+            <span class="sidebar__link-text">{{ item.label }}</span>
+          </a>
+          <button *ngIf="!item.route"
+                  class="sidebar__link sidebar__link--group"
+                  [class.sidebar__link--open]="openGroup() === item.label"
+                  (click)="toggle(item.label)">
+            <span class="sidebar__icon" [innerHTML]="getIcon(item.icon)"></span>
+            <span class="sidebar__link-text">{{ item.label }}</span>
+          </button>
 
-        @if (openGroup() === item.label) {
-          <div class="sidebar__sub">
-            @for (child of item.children; track child.route) {
-              <a class="sidebar__sub-link"
-                 [routerLink]="child.route"
-                 routerLinkActive="sidebar__sub-link--active">
-                {{ child.label }}
-              </a>
-            }
-          </div>
-        }
-      }
+          <button class="sidebar__link sidebar__link--group sidebar__group-toggle"
+                  [class.sidebar__link--open]="openGroup() === item.label"
+                  (click)="toggle(item.label)">
+            <svg class="sidebar__chevron" xmlns="http://www.w3.org/2000/svg"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </button>
+        </div>
 
-    }
+        <div class="sidebar__sub" *ngIf="openGroup() === item.label">
+          <a *ngFor="let child of item.children"
+             class="sidebar__sub-link"
+             [routerLink]="child.route"
+             routerLinkActive="sidebar__sub-link--active">
+            {{ child.label }}
+          </a>
+        </div>
+      </ng-container>
+    </ng-container>
   </nav>
 
   <footer class="sidebar__footer">
@@ -60,13 +70,9 @@
       <div class="sidebar__user-info">
         <div class="sidebar__user-name-row">
           <strong class="sidebar__user-name" [title]="userName">{{ userName }}</strong>
-          @if (auth.isSuperAdmin()) {
-            <span class="sidebar__admin-badge">Super Admin</span>
-          }
+          <span *ngIf="auth.isSuperAdmin()" class="sidebar__admin-badge">Super Admin</span>
         </div>
-        @if (userEmail) {
-          <span class="sidebar__user-email" [title]="userEmail">{{ userEmail }}</span>
-        }
+        <span *ngIf="userEmail" class="sidebar__user-email" [title]="userEmail">{{ userEmail }}</span>
       </div>
       <svg class="sidebar__profile-chevron" xmlns="http://www.w3.org/2000/svg" fill="none"
            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -74,81 +80,93 @@
       </svg>
     </button>
 
-    @if (profileOpen()) {
+    <ng-container *ngIf="profileOpen()">
       <div class="sidebar__profile-panel" role="region" aria-label="Your profile" (click)="$event.stopPropagation()">
-        @if (loadingAccount()) {
+        <ng-container *ngIf="loadingAccount(); else accountState">
           <p class="sidebar__profile-msg">Loading your details…</p>
-        } @else if (accountError()) {
-          <p class="sidebar__profile-msg sidebar__profile-msg--error">{{ accountError() }}</p>
-        } @else if (accountDetails(); as a) {
-          @if (!editingProfile()) {
-            <dl class="sidebar__profile-dl">
-              <dt>Username</dt>
-              <dd>{{ a.userName }}</dd>
-              <dt>Email</dt>
-              <dd>{{ a.email }}</dd>
-              @if (profileFullName(a)) {
-                <dt>Name</dt>
-                <dd>{{ profileFullName(a) }}</dd>
-              }
-              <dt>Roles</dt>
-              <dd>{{ a.roles.length ? a.roles.join(', ') : '—' }}</dd>
-              <dt>Account status</dt>
-              <dd>{{ a.accountStatus }}</dd>
-              @if (displayPhone(a)) {
-                <dt>Phone</dt>
-                <dd>{{ displayPhone(a) }}</dd>
-              }
-              @if (a.jobTitle) {
-                <dt>Job title</dt>
-                <dd>{{ a.jobTitle }}</dd>
-              }
-              @if (a.dateOfBirth) {
-                <dt>Date of birth</dt>
-                <dd>{{ a.dateOfBirth }}</dd>
-              }
-            </dl>
-            <button type="button" class="sidebar__profile-action" (click)="startEditProfile()">Edit details</button>
-          } @else {
-            <form class="sidebar__profile-form" [formGroup]="editForm" (ngSubmit)="saveProfile()">
-              <label class="sidebar__profile-label">
-                First name
-                <input class="sidebar__profile-input" type="text" formControlName="firstName">
-              </label>
-              <label class="sidebar__profile-label">
-                Last name
-                <input class="sidebar__profile-input" type="text" formControlName="lastName">
-              </label>
-              <label class="sidebar__profile-label">
-                Email
-                <input class="sidebar__profile-input" type="email" formControlName="emailAddress">
-              </label>
-              <label class="sidebar__profile-label">
-                Phone
-                <input class="sidebar__profile-input" type="text" formControlName="phoneNumber" placeholder="e.g. 0821234567">
-              </label>
-              <label class="sidebar__profile-label">
-                Job title
-                <input class="sidebar__profile-input" type="text" formControlName="jobTitle">
-              </label>
-              <label class="sidebar__profile-label">
-                Date of birth
-                <input class="sidebar__profile-input" type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
-              </label>
-              @if (profileSaveError()) {
-                <p class="sidebar__profile-msg sidebar__profile-msg--error">{{ profileSaveError() }}</p>
-              }
-              <div class="sidebar__profile-actions">
-                <button type="button" class="sidebar__profile-action sidebar__profile-action--secondary" (click)="cancelEditProfile()">Cancel</button>
-                <button type="submit" class="sidebar__profile-action" [disabled]="savingProfile()">
-                  {{ savingProfile() ? 'Saving…' : 'Save changes' }}
-                </button>
-              </div>
-            </form>
-          }
-        }
+        </ng-container>
+
+        <ng-template #accountState>
+          <ng-container *ngIf="accountError(); else accountContent">
+            <p class="sidebar__profile-msg sidebar__profile-msg--error">{{ accountError() }}</p>
+          </ng-container>
+
+          <ng-template #accountContent>
+            <ng-container *ngIf="accountDetails() as a; else noAccount">
+              <ng-container *ngIf="!editingProfile(); else editProfileForm">
+                <dl class="sidebar__profile-dl">
+                  <dt>Username</dt>
+                  <dd>{{ a.userName }}</dd>
+                  <dt>Email</dt>
+                  <dd>{{ a.email }}</dd>
+                  <ng-container *ngIf="profileFullName(a)">
+                    <dt>Name</dt>
+                    <dd>{{ profileFullName(a) }}</dd>
+                  </ng-container>
+                  <dt>Roles</dt>
+                  <dd>{{ a.roles.length ? a.roles.join(', ') : '—' }}</dd>
+                  <dt>Account status</dt>
+                  <dd>{{ a.accountStatus }}</dd>
+                  <ng-container *ngIf="displayPhone(a)">
+                    <dt>Phone</dt>
+                    <dd>{{ displayPhone(a) }}</dd>
+                  </ng-container>
+                  <ng-container *ngIf="a.jobTitle">
+                    <dt>Job title</dt>
+                    <dd>{{ a.jobTitle }}</dd>
+                  </ng-container>
+                  <ng-container *ngIf="a.dateOfBirth">
+                    <dt>Date of birth</dt>
+                    <dd>{{ a.dateOfBirth }}</dd>
+                  </ng-container>
+                </dl>
+                <button type="button" class="sidebar__profile-action" (click)="startEditProfile()">Edit details</button>
+              </ng-container>
+
+              <ng-template #editProfileForm>
+                <form class="sidebar__profile-form" [formGroup]="editForm" (ngSubmit)="saveProfile()">
+                  <label class="sidebar__profile-label">
+                    First name
+                    <input class="sidebar__profile-input" type="text" formControlName="firstName">
+                  </label>
+                  <label class="sidebar__profile-label">
+                    Last name
+                    <input class="sidebar__profile-input" type="text" formControlName="lastName">
+                  </label>
+                  <label class="sidebar__profile-label">
+                    Email
+                    <input class="sidebar__profile-input" type="email" formControlName="emailAddress">
+                  </label>
+                  <label class="sidebar__profile-label">
+                    Phone
+                    <input class="sidebar__profile-input" type="text" formControlName="phoneNumber" placeholder="e.g. 0821234567">
+                  </label>
+                  <label class="sidebar__profile-label">
+                    Job title
+                    <input class="sidebar__profile-input" type="text" formControlName="jobTitle">
+                  </label>
+                  <label class="sidebar__profile-label">
+                    Date of birth
+                    <input class="sidebar__profile-input" type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
+                  </label>
+                  <p *ngIf="profileSaveError()" class="sidebar__profile-msg sidebar__profile-msg--error">{{ profileSaveError() }}</p>
+                  <div class="sidebar__profile-actions">
+                    <button type="button" class="sidebar__profile-action sidebar__profile-action--secondary" (click)="cancelEditProfile()">Cancel</button>
+                    <button type="submit" class="sidebar__profile-action" [disabled]="savingProfile()">
+                      {{ savingProfile() ? 'Saving…' : 'Save changes' }}
+                    </button>
+                  </div>
+                </form>
+              </ng-template>
+            </ng-container>
+
+            <ng-template #noAccount>
+              <p class="sidebar__profile-msg sidebar__profile-msg--error">Could not load your profile.</p>
+            </ng-template>
+          </ng-template>
+        </ng-template>
       </div>
-    }
+    </ng-container>
 
     <button type="button" class="sidebar__logout" (click)="logout()">Log out</button>
   </footer>

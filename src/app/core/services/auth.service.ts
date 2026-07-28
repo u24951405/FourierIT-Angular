@@ -216,6 +216,22 @@ export class AuthService {
     return this.getRolesFromToken().some(r => this.normalizeRole(r) === this.normalizeRole('Document Owner'));
   }
 
+  getCurrentUserId(): string | null {
+    const current = this.currentUser();
+    if (current?.id) {
+      return current.id;
+    }
+
+    const token = this.getToken();
+    if (!token) return null;
+
+    const claims = this.decodeTokenClaims(token);
+    if (!claims) return null;
+
+    const sub = claims['sub'] ?? claims['nameid'] ?? claims['nameidentifier'];
+    return typeof sub === 'string' ? sub : null;
+  }
+
   logActivity(eventType: string, message: string): void {
     console.info(`[auth] ${eventType}: ${message}`);
   }

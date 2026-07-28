@@ -40,12 +40,12 @@
     <div class="uptime-pct-row">
       <div>
         <span class="uptime-pct">{{ data.uptimePercentage }}%</span>
-        <span class="uptime-pct-label">{{ data.compliantDays }} compliant days out of {{ data.totalDays }} total</span>
+        <span class="uptime-pct-label">{{ data.compliantDays }} live compliant entries out of {{ data.totalDays }} total records</span>
       </div>
       <div class="uptime-dates">
-        <p>Launch: {{ data.launchDate }}</p>
-        <p>Present: {{ data.presentDate }}</p>
-        <p class="uptime-dates__noncompliant">{{ data.nonCompliantDays }} days non-compliant</p>
+        <p>First update: {{ data.launchDate }}</p>
+        <p>Latest update: {{ data.presentDate }}</p>
+        <p class="uptime-dates__noncompliant">{{ data.nonCompliantDays }} non-compliant records</p>
       </div>
     </div>
 
@@ -78,19 +78,19 @@
   <div class="compliance-stats">
     <div class="compliance-stat compliance-stat--green">
       <span class="compliance-stat__value">{{ data.compliantDays | number }}</span>
-      <span class="compliance-stat__label">Total Uptime Days</span>
+      <span class="compliance-stat__label">Compliant Records</span>
     </div>
     <div class="compliance-stat compliance-stat--red">
       <span class="compliance-stat__value">{{ data.nonCompliantDays }}</span>
-      <span class="compliance-stat__label">Non-Compliant Days</span>
+      <span class="compliance-stat__label">Non-Compliant Records</span>
     </div>
     <div class="compliance-stat compliance-stat--amber">
       <span class="compliance-stat__value">{{ data.incidentCount }}</span>
-      <span class="compliance-stat__label">Incident Count</span>
+      <span class="compliance-stat__label">Open Alerts</span>
     </div>
     <div class="compliance-stat compliance-stat--neutral">
       <span class="compliance-stat__value">{{ data.uptimePercentage }}%</span>
-      <span class="compliance-stat__label">Uptime Percentage</span>
+      <span class="compliance-stat__label">Compliance %</span>
     </div>
   </div>
 
@@ -135,55 +135,30 @@
         <line x1="12" y1="17" x2="12.01" y2="17"></line>
       </svg>
       <div>
-        <p class="transition-card__title">Historical Compliance State Changes</p>
-        <p class="transition-card__subtitle">Complete record of every transition between compliant and non-compliant states</p>
+        <p class="transition-card__title">Live Compliance History</p>
+        <p class="transition-card__subtitle">Recent compliance updates loaded directly from the backend</p>
       </div>
     </div>
 
     <table class="transition-table">
       <thead>
         <tr>
-          <th>Transition Date</th>
-          <th>Previous State</th>
-          <th></th>
-          <th>New State</th>
-          <th>Triggering Catalyst Event</th>
-          <th>Downtime</th>
+          <th>Updated</th>
+          <th>Status</th>
+          <th>Compliance %</th>
+          <th>Reason</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let t of data.transitions">
-          <td class="transition-table__date">{{ t.transitionDate }}</td>
+        <tr *ngFor="let item of historyItems.slice(0, 8)">
+          <td class="transition-table__date">{{ item.changedAt | date:'mediumDate' }}</td>
           <td>
-            <span class="state-badge" [class.state-badge--compliant]="t.previousState === 'Compliant'" [class.state-badge--noncompliant]="t.previousState === 'Non-Compliant'">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path *ngIf="t.previousState === 'Compliant'" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline *ngIf="t.previousState === 'Compliant'" points="22 4 12 14.01 9 11.01"></polyline>
-                <path *ngIf="t.previousState !== 'Compliant'" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              </svg>
-              {{ t.previousState }}
+            <span class="state-badge" [class.state-badge--compliant]="!item.status.toLowerCase().includes('non') && !item.status.toLowerCase().includes('review')" [class.state-badge--noncompliant]="item.status.toLowerCase().includes('non') || item.status.toLowerCase().includes('review')">
+              {{ item.status }}
             </span>
           </td>
-          <td>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </td>
-          <td>
-            <span class="state-badge" [class.state-badge--compliant]="t.newState === 'Compliant'" [class.state-badge--noncompliant]="t.newState === 'Non-Compliant'">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path *ngIf="t.newState === 'Compliant'" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                <polyline *ngIf="t.newState === 'Compliant'" points="22 4 12 14.01 9 11.01"></polyline>
-                <path *ngIf="t.newState !== 'Compliant'" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-              </svg>
-              {{ t.newState }}
-            </span>
-          </td>
-          <td class="transition-table__event">{{ t.triggeringEvent }}</td>
-          <td>
-            <span *ngIf="t.downtime" class="downtime-badge">{{ t.downtime }}</span>
-            <span *ngIf="!t.downtime" class="transition-table__dash">—</span>
-          </td>
+          <td>{{ item.compliancePercentage }}%</td>
+          <td class="transition-table__event">{{ item.changeReason || 'No reason provided' }}</td>
         </tr>
       </tbody>
     </table>

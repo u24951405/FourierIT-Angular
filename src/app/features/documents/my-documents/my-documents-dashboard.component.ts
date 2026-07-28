@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
@@ -7,6 +7,10 @@ import { DocumentsApiService, DocumentListItem } from '../../../core/services/do
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
 import { finalize } from 'rxjs';
+import { Chart, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
+import { countDocumentsByCategory } from './category-counts';
+
+Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
 @Component({
   selector: 'app-my-documents-dashboard',
@@ -15,7 +19,18 @@ import { finalize } from 'rxjs';
   templateUrl: './my-documents-dashboard.component.html',
   styleUrls: ['../../../features/dashboard/dashboard/dashboard.component.scss']
 })
-export class MyDocumentsDashboardComponent implements OnInit {
+export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
+  @ViewChild('verificationChart') verificationChartRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
+
+  private charts: Chart[] = [];
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      this.buildVerificationChart();
+      this.buildCategoryChart();
+    }, 100);
+  }
   private router = inject(Router);
   private docsApi = inject(DocumentsApiService);
   private complianceService = inject(ComplianceService);
@@ -55,17 +70,7 @@ export class MyDocumentsDashboardComponent implements OnInit {
     }
     return '+6% vs last month';
   });
-  readonly categoryCounts = computed(() => {
-    const counts = { kyc: 0, fica: 0, tax: 0, other: 0 };
-    this.documents().forEach(doc => {
-      const name = (doc.documentTypeName || '').toLowerCase();
-      if (name.includes('kyc')) counts.kyc += 1;
-      else if (name.includes('fica')) counts.fica += 1;
-      else if (name.includes('tax')) counts.tax += 1;
-      else counts.other += 1;
-    });
-    return counts;
-  });
+  readonly categoryCounts = computed(() => countDocumentsByCategory(this.documents()));
 
   ngOnInit(): void {
     this.loadDocuments();
@@ -88,7 +93,10 @@ export class MyDocumentsDashboardComponent implements OnInit {
     this.docsApi.getMyDocuments()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: docs => this.documents.set(docs ?? []),
+        next: docs => {
+          this.documents.set(docs ?? []);
+          this.refreshCharts();
+        },
         error: err => {
           this.documents.set([]);
           const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not load your documents.';
@@ -107,13 +115,35 @@ export class MyDocumentsDashboardComponent implements OnInit {
     this.complianceService.getUserCompliance(currentUserId).subscribe({
       next: response => {
         const payload = response?.data ?? response;
-        this.complianceSummary.set(payload ?? null);
+        this.complianceSummary.set(this.normalizeComplianceSummary(payload) ?? null);
+        this.refreshCharts();
       },
       error: err => {
         console.warn('Unable to load owner compliance summary', err);
         this.complianceSummary.set(null);
       }
     });
+  }
+
+  private refreshCharts(): void {
+    console.log('refreshCharts called', {
+      hasVerificationRef: !!this.verificationChartRef,
+      hasCategoryRef: !!this.categoryChartRef,
+      documents: this.documents().length,
+      compliance: this.complianceSummary(),
+    });
+
+    // destroy existing charts
+    this.charts.forEach(c => {
+      try { c.destroy(); } catch { /* ignore */ }
+    });
+    this.charts = [];
+
+    // only build if view children are available
+    if (this.verificationChartRef && this.categoryChartRef) {
+      this.buildVerificationChart();
+      this.buildCategoryChart();
+    }
   }
 
   private loadPendingRequests(): void {
@@ -132,20 +162,109 @@ export class MyDocumentsDashboardComponent implements OnInit {
       });
   }
 
-  private getCurrentUserId(): string | null {
-    const token = localStorage.getItem('docuvault_token');
-    if (!token) return null;
-
-    try {
-      const payload = token.split('.')[1];
-      if (!payload) return null;
-      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-      const decoded = atob(padded);
-      const claims = JSON.parse(decoded) as Record<string, unknown>;
-      return typeof claims['sub'] === 'string' ? claims['sub'] : null;
-    } catch {
+  private normalizeComplianceSummary(payload: any): any {
+    if (!payload || typeof payload !== 'object') {
       return null;
     }
+
+    const summary = { ...payload } as Record<string, any>;
+    const uploaded = Number(summary['uploaded'] ?? summary['Uploaded'] ?? 0);
+    const compliant = Number(summary['compliant'] ?? summary['Compliant'] ?? 0);
+    const nonCompliant = Number(summary['nonCompliant'] ?? summary['NonCompliant'] ?? 0);
+    const pendingReviewDocuments = Number(summary['pendingReviewDocuments'] ?? summary['PendingReviewDocuments'] ?? 0);
+    const expired = Number(summary['expired'] ?? summary['Expired'] ?? 0);
+    const missing = Number(summary['missing'] ?? summary['Missing'] ?? 0);
+
+    summary['uploaded'] = uploaded;
+    summary['compliant'] = compliant;
+    summary['nonCompliant'] = nonCompliant;
+    summary['pendingReviewDocuments'] = pendingReviewDocuments;
+    summary['expired'] = expired;
+    summary['missing'] = missing;
+
+    if (summary['compliancePercentage'] == null && summary['CompliancePercentage'] != null) {
+      summary['compliancePercentage'] = Number(summary['CompliancePercentage']);
+    }
+    if (summary['complianceScore'] == null && summary['ComplianceScore'] != null) {
+      summary['complianceScore'] = Number(summary['ComplianceScore']);
+    }
+    if (!summary['overallStatus'] && summary['OverallStatus']) {
+      summary['overallStatus'] = summary['OverallStatus'];
+    }
+    if (!summary['riskLevel'] && summary['RiskLevel']) {
+      summary['riskLevel'] = summary['RiskLevel'];
+    }
+
+    return summary;
+  }
+
+  private getCurrentUserId(): string | null {
+    return this.auth.getCurrentUserId();
+  }
+
+  private buildVerificationChart(): void {
+    const ctx = this.verificationChartRef?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+    // destroy any existing Chart instance attached to this canvas to avoid double-initialization
+    try {
+      const existing = Chart.getChart(this.verificationChartRef.nativeElement as HTMLCanvasElement);
+      if (existing) existing.destroy();
+    } catch { /* ignore */ }
+    const approved = this.approvedDocumentCount();
+    const pending = this.documentsPendingReviewCount();
+    const rejected = this.rejectedDocumentCount();
+    const unreviewed = Math.max(this.documentCount() - (approved + pending + rejected), 0);
+
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Verified', 'Pending', 'Rejected', 'Unreviewed'],
+        datasets: [{
+          data: [approved, pending, rejected, unreviewed],
+          backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#d1d5db'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    this.charts.push(chart);
+  }
+
+  private buildCategoryChart(): void {
+    const ctx = this.categoryChartRef?.nativeElement?.getContext('2d');
+    if (!ctx) return;
+    // destroy any existing Chart instance attached to this canvas
+    try {
+      const existing = Chart.getChart(this.categoryChartRef.nativeElement as HTMLCanvasElement);
+      if (existing) existing.destroy();
+    } catch { /* ignore */ }
+    const counts = this.categoryCounts();
+    const chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['KYC', 'FICA', 'Tax', 'Other'],
+        datasets: [{
+          data: [counts.kyc, counts.fica, counts.tax, counts.other],
+          backgroundColor: ['#1e2a3a', '#2d5282', '#7bafd4', '#b0cfe8'],
+          borderWidth: 2,
+          borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    this.charts.push(chart);
   }
 }

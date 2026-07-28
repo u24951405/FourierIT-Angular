@@ -91,11 +91,32 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   statCards: StatCard[] = [];
 
-  private readonly defaultChartData = {
-    verification: [1842, 312, 98, 595],
-    category: [1124, 876, 543, 304],
-    risk: [1124, 487, 198, 38],
-  };
+  get verificationLegendItems() {
+    return [
+      { label: 'Compliant', value: this.dashboardData?.compliantUsers ?? 0, color: '#10b981' },
+      { label: 'Review Required', value: this.dashboardData?.reviewRequiredUsers ?? 0, color: '#f59e0b' },
+      { label: 'Non-Compliant', value: this.dashboardData?.nonCompliantUsers ?? 0, color: '#ef4444' },
+      { label: 'Pending', value: this.dashboardData?.pendingUsers ?? 0, color: '#d1d5db' },
+    ];
+  }
+
+  get categoryLegendItems() {
+    return [
+      { label: 'Partial Compliant', value: this.dashboardData?.partialCompliantUsers ?? 0, color: '#1e2a3a' },
+      { label: 'Open Alerts', value: this.dashboardData?.totalOpenAlerts ?? 0, color: '#2d5282' },
+      { label: 'Critical Risk', value: this.dashboardData?.criticalRiskUsers ?? 0, color: '#7bafd4' },
+      { label: 'High Risk', value: this.dashboardData?.highRiskUsers ?? 0, color: '#b0cfe8' },
+    ];
+  }
+
+  get riskLegendItems() {
+    return [
+      { label: 'Low Risk', value: this.dashboardData?.lowRiskUsers ?? 0, color: '#10b981' },
+      { label: 'Medium Risk', value: this.dashboardData?.mediumRiskUsers ?? 0, color: '#f59e0b' },
+      { label: 'High Risk', value: this.dashboardData?.highRiskUsers ?? 0, color: '#ef4444' },
+      { label: 'Critical Risk', value: this.dashboardData?.criticalRiskUsers ?? 0, color: '#991b1b' },
+    ];
+  }
 
   ngAfterViewInit(): void {
     setTimeout(() => {
@@ -116,12 +137,25 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private buildVerificationChart(): void {
     const ctx = this.verificationChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;
+    // destroy any existing Chart instance attached to this canvas to avoid "canvas is already in use" errors
+    try {
+      const existing = Chart.getChart(this.verificationChartRef.nativeElement as HTMLCanvasElement);
+      if (existing) existing.destroy();
+    } catch { /* ignore if not available */ }
+
+    const data = this.dashboardData ? [
+      this.dashboardData.compliantUsers,
+      this.dashboardData.reviewRequiredUsers,
+      this.dashboardData.nonCompliantUsers,
+      this.dashboardData.pendingUsers ?? 0,
+    ] : [0, 0, 0, 0];
+
     const chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Verified', 'Pending', 'Rejected', 'Unreviewed'],
+        labels: ['Compliant', 'Review Required', 'Non-Compliant', 'Pending'],
         datasets: [{
-          data: [1842, 312, 98, 595],
+          data,
           backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#d1d5db'],
           borderWidth: 2,
           borderColor: '#fff',
@@ -141,12 +175,25 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private buildCategoryChart(): void {
     const ctx = this.categoryChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;
+    // destroy any existing Chart instance attached to this canvas
+    try {
+      const existing = Chart.getChart(this.categoryChartRef.nativeElement as HTMLCanvasElement);
+      if (existing) existing.destroy();
+    } catch { /* ignore if not available */ }
+
+    const data = this.dashboardData ? [
+      this.dashboardData.partialCompliantUsers,
+      this.dashboardData.totalOpenAlerts,
+      this.dashboardData.criticalRiskUsers,
+      this.dashboardData.highRiskUsers,
+    ] : [0, 0, 0, 0];
+
     const chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['KYC', 'FICA', 'Corporate Gov.', 'Tax Compliance'],
+        labels: ['Partial', 'Open Alerts', 'Critical Risk', 'High Risk'],
         datasets: [{
-          data: [1124, 876, 543, 304],
+          data,
           backgroundColor: ['#1e2a3a', '#2d5282', '#7bafd4', '#b0cfe8'],
           borderWidth: 2,
           borderColor: '#fff',
@@ -166,12 +213,25 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private buildRiskChart(): void {
     const ctx = this.riskChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;
+    // destroy any existing Chart instance attached to this canvas
+    try {
+      const existing = Chart.getChart(this.riskChartRef.nativeElement as HTMLCanvasElement);
+      if (existing) existing.destroy();
+    } catch { /* ignore if not available */ }
+
+    const initialData = this.dashboardData ? [
+      this.dashboardData.lowRiskUsers ?? 0,
+      this.dashboardData.mediumRiskUsers ?? 0,
+      this.dashboardData.highRiskUsers ?? 0,
+      this.dashboardData.criticalRiskUsers ?? 0,
+    ] : [0, 0, 0, 0];
+
     const chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical Risk'],
         datasets: [{
-          data: [1124, 487, 198, 38],
+          data: initialData,
           backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#991b1b'],
           borderWidth: 2,
           borderColor: '#fff',
@@ -235,17 +295,55 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   private applyDashboard(dashboard: ComplianceDashboard): void {
-    this.dashboardData = dashboard;
+    this.dashboardData = this.normalizeDashboard(dashboard);
     this.dashboardLoading = false;
     this.dashboardError = '';
-    this.statCards = this.buildStatCards(dashboard);
-    this.updateRiskChart(dashboard);
+    this.statCards = this.buildStatCards(this.dashboardData);
+    this.updateVerificationChart(this.dashboardData);
+    this.updateCategoryChart(this.dashboardData);
+    this.updateRiskChart(this.dashboardData);
   }
 
   private handleDashboardError(message: string): void {
     this.dashboardLoading = false;
     this.dashboardError = message;
     this.statCards = [];
+  }
+
+  private normalizeDashboard(dashboard: ComplianceDashboard | null | undefined): ComplianceDashboard {
+    if (!dashboard || typeof dashboard !== 'object') {
+      return {
+        totalUsers: 0,
+        compliantUsers: 0,
+        nonCompliantUsers: 0,
+        partialCompliantUsers: 0,
+        reviewRequiredUsers: 0,
+        totalOpenAlerts: 0,
+        overallCompliancePercentage: 0,
+        averageComplianceScore: 0,
+        criticalRiskUsers: 0,
+        highRiskUsers: 0,
+        mediumRiskUsers: 0,
+        lowRiskUsers: 0,
+      };
+    }
+
+    return {
+      ...dashboard,
+      totalUsers: Number(dashboard.totalUsers ?? 0),
+      compliantUsers: Number(dashboard.compliantUsers ?? 0),
+      nonCompliantUsers: Number(dashboard.nonCompliantUsers ?? 0),
+      partialCompliantUsers: Number(dashboard.partialCompliantUsers ?? 0),
+      reviewRequiredUsers: Number(dashboard.reviewRequiredUsers ?? 0),
+      pendingUsers: Number(dashboard.pendingUsers ?? 0),
+      totalOpenAlerts: Number(dashboard.totalOpenAlerts ?? 0),
+      overallCompliancePercentage: Number(dashboard.overallCompliancePercentage ?? 0),
+      averageComplianceScore: Number(dashboard.averageComplianceScore ?? 0),
+      criticalRiskUsers: Number(dashboard.criticalRiskUsers ?? 0),
+      highRiskUsers: Number(dashboard.highRiskUsers ?? 0),
+      mediumRiskUsers: Number(dashboard.mediumRiskUsers ?? 0),
+      lowRiskUsers: Number(dashboard.lowRiskUsers ?? 0),
+    };
   }
 
   private buildStatCards(dashboard: ComplianceDashboard): StatCard[] {
@@ -307,6 +405,32 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     ];
   }
 
+  private updateVerificationChart(dashboard: ComplianceDashboard): void {
+    const chart = this.charts.find((c, index) => index === 0);
+    if (!chart || !dashboard) return;
+
+    chart.data.datasets[0].data = [
+      dashboard.compliantUsers,
+      dashboard.reviewRequiredUsers,
+      dashboard.nonCompliantUsers,
+      dashboard.pendingUsers ?? 0,
+    ];
+    chart.update();
+  }
+
+  private updateCategoryChart(dashboard: ComplianceDashboard): void {
+    const chart = this.charts.find((c, index) => index === 1);
+    if (!chart || !dashboard) return;
+
+    chart.data.datasets[0].data = [
+      dashboard.partialCompliantUsers,
+      dashboard.totalOpenAlerts,
+      dashboard.criticalRiskUsers,
+      dashboard.highRiskUsers,
+    ];
+    chart.update();
+  }
+
   private updateRiskChart(dashboard: ComplianceDashboard): void {
     const chart = this.charts.find((c, index) => index === 2);
     if (!chart || !dashboard) return;
@@ -321,7 +445,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadComplianceData(): void {
-    const currentUserId = this.getCurrentUserId();
+    const currentUserId = this.auth.getCurrentUserId();
     if (!currentUserId) {
       this.complianceError = 'No current user available.';
       return;
@@ -333,8 +457,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.complianceService.getUserCompliance(currentUserId).subscribe({
       next: (response: any) => {
         const payload = response?.data ?? response;
-        this.complianceSummary = payload ?? null;
-        this.hasComplianceData = !!payload;
+        const normalized = this.normalizeComplianceSummary(payload);
+        this.complianceSummary = normalized ?? null;
+        this.hasComplianceData = !!normalized;
         this.complianceLoading = false;
       },
       error: () => {
@@ -377,21 +502,40 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private getCurrentUserId(): string | null {
-    const token = localStorage.getItem('docuvault_token');
-    if (!token) return null;
-
-    try {
-      const payload = token.split('.')[1];
-      if (!payload) return null;
-      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
-      const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
-      const decoded = atob(padded);
-      const claims = JSON.parse(decoded) as Record<string, unknown>;
-      return typeof claims['sub'] === 'string' ? claims['sub'] : null;
-    } catch {
+  private normalizeComplianceSummary(payload: any): ComplianceUserSummary | null {
+    if (!payload || typeof payload !== 'object') {
       return null;
     }
+
+    const summary = { ...payload } as Record<string, any>;
+    const uploaded = Number(summary['uploaded'] ?? summary['Uploaded'] ?? 0);
+    const compliant = Number(summary['compliant'] ?? summary['Compliant'] ?? 0);
+    const nonCompliant = Number(summary['nonCompliant'] ?? summary['NonCompliant'] ?? 0);
+    const pendingReviewDocuments = Number(summary['pendingReviewDocuments'] ?? summary['PendingReviewDocuments'] ?? 0);
+    const expired = Number(summary['expired'] ?? summary['Expired'] ?? 0);
+    const missing = Number(summary['missing'] ?? summary['Missing'] ?? 0);
+
+    summary['uploaded'] = uploaded;
+    summary['compliant'] = compliant;
+    summary['nonCompliant'] = nonCompliant;
+    summary['pendingReviewDocuments'] = pendingReviewDocuments;
+    summary['expired'] = expired;
+    summary['missing'] = missing;
+
+    if (summary['compliancePercentage'] == null && summary['CompliancePercentage'] != null) {
+      summary['compliancePercentage'] = Number(summary['CompliancePercentage']);
+    }
+    if (summary['complianceScore'] == null && summary['ComplianceScore'] != null) {
+      summary['complianceScore'] = Number(summary['ComplianceScore']);
+    }
+    if (!summary['overallStatus'] && summary['OverallStatus']) {
+      summary['overallStatus'] = summary['OverallStatus'];
+    }
+    if (!summary['riskLevel'] && summary['RiskLevel']) {
+      summary['riskLevel'] = summary['RiskLevel'];
+    }
+
+    return summary as ComplianceUserSummary;
   }
 
   navigate(path: string): void {
