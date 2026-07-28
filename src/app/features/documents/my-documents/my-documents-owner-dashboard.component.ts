@@ -9,6 +9,7 @@ import { DocumentsApiService, DocumentDetailItem, DocumentListItem } from '../..
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
 import { ToastService } from '../../../core/services/toast.service';
+import { ComplianceService, ComplianceUserSummary } from '../../../core/services/compliance.service';
 
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, DoughnutController, ArcElement, Tooltip, Legend);
 
@@ -29,6 +30,7 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
   private router = inject(Router);
   private docsApi = inject(DocumentsApiService);
   private requestService = inject(DocumentAccessRequestService);
+  private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
   readonly auth = inject(AuthService);
 
@@ -51,6 +53,7 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
   readonly pendingRequests = signal<PendingDocumentAccessRequest[]>([]);
   readonly pendingRequestsLoading = signal(false);
   readonly pendingRequestsError = signal<string | null>(null);
+  readonly complianceSummary = signal<ComplianceUserSummary | null>(null);
 
   readonly documentCount = computed(() => this.documents().length);
   readonly approvedDocumentCount = computed(() => this.documents().filter(doc => doc.currentStatus?.toLowerCase() === 'approved').length);
@@ -97,6 +100,7 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.loadDocuments();
     this.loadPendingRequests();
+    this.loadComplianceSummary();
   }
 
   ngAfterViewInit(): void {
@@ -242,6 +246,61 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
           this.pendingRequestsError.set(message);
         }
       });
+  }
+
+  private loadComplianceSummary(): void {
+    const currentUserId = this.auth.getCurrentUserId();
+    if (!currentUserId) {
+      this.complianceSummary.set(null);
+      return;
+    }
+
+    this.complianceService.getUserCompliance(currentUserId).subscribe({
+      next: response => {
+        const payload = response?.data ?? response;
+        this.complianceSummary.set(this.normalizeComplianceSummary(payload) ?? null);
+      },
+      error: err => {
+        console.warn('Unable to load owner compliance summary', err);
+        this.complianceSummary.set(null);
+      }
+    });
+  }
+
+  private normalizeComplianceSummary(payload: any): ComplianceUserSummary | null {
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const summary = { ...payload } as Record<string, any>;
+    const uploaded = Number(summary['uploaded'] ?? summary['Uploaded'] ?? 0);
+    const compliant = Number(summary['compliant'] ?? summary['Compliant'] ?? 0);
+    const nonCompliant = Number(summary['nonCompliant'] ?? summary['NonCompliant'] ?? 0);
+    const pendingReviewDocuments = Number(summary['pendingReviewDocuments'] ?? summary['PendingReviewDocuments'] ?? 0);
+    const expired = Number(summary['expired'] ?? summary['Expired'] ?? 0);
+    const missing = Number(summary['missing'] ?? summary['Missing'] ?? 0);
+
+    summary['uploaded'] = uploaded;
+    summary['compliant'] = compliant;
+    summary['nonCompliant'] = nonCompliant;
+    summary['pendingReviewDocuments'] = pendingReviewDocuments;
+    summary['expired'] = expired;
+    summary['missing'] = missing;
+
+    if (summary['compliancePercentage'] == null && summary['CompliancePercentage'] != null) {
+      summary['compliancePercentage'] = Number(summary['CompliancePercentage']);
+    }
+    if (summary['complianceScore'] == null && summary['ComplianceScore'] != null) {
+      summary['complianceScore'] = Number(summary['ComplianceScore']);
+    }
+    if (!summary['overallStatus'] && summary['OverallStatus']) {
+      summary['overallStatus'] = summary['OverallStatus'];
+    }
+    if (!summary['riskLevel'] && summary['RiskLevel']) {
+      summary['riskLevel'] = summary['RiskLevel'];
+    }
+
+    return summary as ComplianceUserSummary;
   }
 
   private buildVerificationChart(): void {
