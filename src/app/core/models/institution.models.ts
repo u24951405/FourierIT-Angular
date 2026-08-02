@@ -107,6 +107,10 @@ export interface PendingDocumentAccessRequest {
   institutionId: number;
   institutionName: string;
   targetUserId?: string;
+  senderName?: string;
+  senderType?: 'Institution';
+  recipientName?: string;
+  recipientType?: 'Department' | 'Individual';
   status: string;
   purposeNote: string;
   requestDate: string;
@@ -119,6 +123,10 @@ export interface PendingDepartmentAccessRequest {
   institutionName: string;
   targetDepartmentId: number;
   departmentName: string;
+  senderName?: string;
+  senderType?: 'Institution';
+  recipientName?: string;
+  recipientType?: 'Department' | 'Individual';
   status: string;
   purposeNote: string;
   requestDate: string;

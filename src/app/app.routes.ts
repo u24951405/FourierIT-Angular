@@ -186,7 +186,7 @@ export const routes: Routes = [
           .then(m => m.BackupRestoreComponent) },
       {
         path: 'reports',
-        canActivate: [authGuard],
+        canActivate: [superAdminGuard],
         loadChildren: () => import('./features/reports/reports.routes').then(m => m.REPORTS_ROUTES)
       },
     ]

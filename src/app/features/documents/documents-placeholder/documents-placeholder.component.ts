@@ -35,7 +35,8 @@ export class DocumentsPlaceholderComponent {
   }
 
   get canSeeAllUsersDocuments(): boolean {
-    return this.auth.hasRole('Department Admin')
+    return this.auth.isSuperAdmin()
+      || this.auth.hasRole('Department Admin')
       || this.auth.hasRole('Compliance Officer')
       || this.auth.hasRole('Stakeholder');
   }

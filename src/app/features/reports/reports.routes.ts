@@ -14,8 +14,13 @@ import { Routes } from '@angular/router';
 export const REPORTS_ROUTES: Routes = [
   {
     path: '',
-    redirectTo: 'ad-hoc',
+    redirectTo: 'super-admin',
     pathMatch: 'full',
+  },
+  {
+    path: 'super-admin',
+    loadComponent: () =>
+      import('./super-admin-reports/super-admin-reports.component').then(m => m.SuperAdminReportsComponent),
   },
   {
     path: 'ad-hoc',

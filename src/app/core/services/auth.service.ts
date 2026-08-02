@@ -176,7 +176,11 @@ export class AuthService {
 
   /** Roles from the current JWT (order preserved). */
   getUserRoles(): string[] {
-    return this.getRolesFromToken();
+    const roles = this.getRolesFromToken();
+    if (this.isSuperAdmin() && !roles.some(r => this.normalizeRole(r) === this.normalizeRole('Super Admin'))) {
+      return [...roles, 'Super Admin'];
+    }
+    return roles;
   }
 
   /**

@@ -1,7 +1,7 @@
 <div class="document-requests-page">
   <header class="document-requests-header">
     <h1>Document Access Requests</h1>
-    <p>Manage incoming document access requests from institutions.</p>
+    <p>Review incoming requests and see who submitted them and who they are for.</p>
   </header>
 
   <!-- Loading State -->
@@ -42,10 +42,16 @@
 
       <!-- Request Body -->
       <div class="request-card__body">
-        <!-- Target Information -->
+        <!-- Sender Information -->
         <div class="request-card__section">
-          <span class="request-card__label">Requested From</span>
-          <p class="request-card__value">{{ getRequestTarget(request) }}</p>
+          <span class="request-card__label">Submitted By</span>
+          <p class="request-card__value">{{ getSenderLabel(request) }}</p>
+        </div>
+
+        <!-- Recipient Information -->
+        <div class="request-card__section">
+          <span class="request-card__label">Requested For</span>
+          <p class="request-card__value">{{ getRecipientLabel(request) }}</p>
         </div>
 
         <!-- Purpose -->
@@ -63,6 +69,27 @@
               <span *ngIf="doc.isMandatory" class="document-item__badge document-item__badge--mandatory">Mandatory</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="request-card__meta">
+        <button class="btn btn-secondary" type="button" (click)="toggleRequestDetails(request)">
+          {{ isRequestExpanded(request) ? 'Hide details' : 'View details' }}
+        </button>
+      </div>
+
+      <div *ngIf="isRequestExpanded(request)" class="request-card__details">
+        <div class="request-card__section">
+          <span class="request-card__label">Request Summary</span>
+          <p class="request-card__value">{{ request.purposeNote || 'No purpose note provided.' }}</p>
+        </div>
+        <div class="request-card__section">
+          <span class="request-card__label">Request Target</span>
+          <p class="request-card__value">{{ getRecipientLabel(request) }}</p>
+        </div>
+        <div class="request-card__section">
+          <span class="request-card__label">Submitted On</span>
+          <p class="request-card__value">{{ request.requestDate | date:'medium' }}</p>
         </div>
       </div>
 

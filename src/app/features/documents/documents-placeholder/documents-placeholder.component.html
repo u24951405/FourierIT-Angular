@@ -1,9 +1,9 @@
 <section class="documents-placeholder">
   <div class="documents-placeholder__hero">
     <div>
-      <p class="eyebrow">API-backed view</p>
+      <p class="eyebrow">Document library</p>
       <h1>{{ title }}</h1>
-      <p>{{ message }}</p>
+      <p>{{ canSeeAllUsersDocuments ? 'Review documents across the platform with a clear overview of each user and their submissions.' : 'Manage your uploaded files and view their current review status in one place.' }}</p>
     </div>
   </div>
 
@@ -20,17 +20,17 @@
               <h2>{{ user.userName }}</h2>
               <p>{{ user.email }}</p>
             </div>
-            <span class="badge">{{ user.documentCount }} docs</span>
+            <span class="badge">{{ user.documentCount }} file{{ user.documentCount === 1 ? '' : 's' }}</span>
           </div>
-          <p class="library-card__entity">Entity type: {{ user.entityType }}</p>
+          <p class="library-card__entity">Entity: {{ user.entityType }}</p>
           <div class="library-card__docs">
             @for (doc of user.documents; track doc.documentId) {
               <div class="library-doc">
                 <div>
-                  <strong>{{ doc.fileName }}</strong>
-                  <span>{{ doc.documentTypeName }}</span>
+                  <strong>{{ doc.fileName || 'Untitled document' }}</strong>
+                  <span>{{ doc.documentTypeName || 'Unclassified document' }}</span>
                 </div>
-                <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus }}</span>
+                <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus || 'Pending review' }}</span>
               </div>
             }
           </div>
@@ -43,12 +43,12 @@
         <article class="library-card">
           <div class="library-card__header">
             <div>
-              <h2>{{ doc.fileName }}</h2>
-              <p>{{ doc.documentTypeName }}</p>
+              <h2>{{ doc.fileName || 'Untitled document' }}</h2>
+              <p>{{ doc.documentTypeName || 'Unclassified document' }}</p>
             </div>
-            <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus }}</span>
+            <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus || 'Pending review' }}</span>
           </div>
-          <p class="library-card__entity">Uploaded {{ doc.uploadedDate | date:'mediumDate' }}</p>
+          <p class="library-card__entity">Uploaded {{ doc.uploadedDate | date:'mediumDate' }} · {{ doc.currentStatus || 'Pending review' }}</p>
         </article>
       }
     </div>

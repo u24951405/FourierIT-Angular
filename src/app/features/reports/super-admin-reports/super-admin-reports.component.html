@@ -1,0 +1,635 @@
+<section class="reports-page">
+  <header class="reports-header">
+    <div>
+      <h1>Reports</h1>
+      <p>Review live compliance status, request activity, and department risk insights from the current system data.</p>
+    </div>
+  </header>
+
+  <section class="report-cards">
+        <button
+          *ngFor="let card of reportCards"
+          type="button"
+          class="report-card"
+          [class.report-card--active]="activeTab === card.id"
+          (click)="setTab(card.id)">
+          <span class="report-card__icon">{{ card.icon }}</span>
+          <span class="report-card__content">
+            <strong>{{ card.title }}</strong>
+            <small>{{ card.description }}</small>
+          </span>
+        </button>
+      </section>
+
+      <section class="filters-card filters-card--toolbar">
+        <div class="filters-card__actions filters-card__actions--toolbar">
+          <button type="button" class="btn btn-primary" [disabled]="loading" (click)="refreshReports()">
+            {{ loading ? 'Generating…' : 'Generate Report' }}
+          </button>
+          <button type="button" class="btn btn-secondary" [disabled]="loading" (click)="clearFilters()">Clear Filters</button>
+        </div>
+
+        <div class="filters-grid">
+          <label *ngIf="isFilterVisible('startDate')">
+            <span>Start Date</span>
+            <input type="date" [(ngModel)]="filters.startDate" />
+          </label>
+
+          <label *ngIf="isFilterVisible('endDate')">
+            <span>End Date</span>
+            <input type="date" [(ngModel)]="filters.endDate" />
+          </label>
+
+          <label *ngIf="isFilterVisible('institutionId')">
+            <span>Institution</span>
+            <select [(ngModel)]="filters.institutionId">
+              <option [ngValue]="null">All Institutions</option>
+              <option *ngFor="let institution of institutions" [ngValue]="institution.institutionId">
+                {{ institution.institutionName }}
+              </option>
+            </select>
+          </label>
+
+          <label *ngIf="isFilterVisible('departmentId')">
+            <span>Department</span>
+            <select [(ngModel)]="filters.departmentId">
+              <option [ngValue]="null">All Departments</option>
+              <option *ngFor="let department of departments" [ngValue]="department.departmentId">
+                {{ department.departmentName }}
+              </option>
+            </select>
+          </label>
+
+          <label *ngIf="isFilterVisible('complianceStatus')">
+            <span>Compliance Status</span>
+            <select [(ngModel)]="filters.complianceStatus">
+              <option value="">All</option>
+              <option value="Compliant">Compliant</option>
+              <option value="Partial">Partial</option>
+              <option value="Non-Compliant">Non-Compliant</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </label>
+
+          <label *ngIf="isFilterVisible('requestStatus')">
+            <span>Request Status</span>
+            <select [(ngModel)]="filters.requestStatus">
+              <option value="">All</option>
+              <option value="Approved">Approved</option>
+              <option value="Pending">Pending</option>
+              <option value="Department_Pending">Department Pending</option>
+              <option value="Denied">Denied</option>
+            </select>
+          </label>
+
+          <label *ngIf="isFilterVisible('recipientType')">
+            <span>Recipient Type</span>
+            <select [(ngModel)]="filters.recipientType">
+              <option value="">All</option>
+              <option value="Department">Department</option>
+              <option value="Individual">Individual</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <div *ngIf="loading" class="state state-loading">
+        <span class="state__spinner" aria-hidden="true"></span>
+        <span>Loading live report data...</span>
+      </div>
+      <div *ngIf="!loading && error" class="state state-error">{{ error }}</div>
+
+      <ng-container *ngIf="!loading && !error">
+        <section class="report-panel" *ngIf="activeTab === 'owner'">
+      <div class="panel-header">
+        <h2>Document Owner Compliance Report</h2>
+        <div class="inline-actions">
+          <label>
+            Sort By
+            <select [(ngModel)]="ownerSortBy" (ngModelChange)="refreshReports()">
+              <option value="documentOwner">Document Owner</option>
+              <option value="email">Email</option>
+              <option value="entityType">Entity Type</option>
+              <option value="complianceStatus">Compliance Status</option>
+              <option value="uploadedDocuments">Uploaded Documents</option>
+              <option value="missingDocuments">Missing Documents</option>
+              <option value="lastUploadDate">Last Upload Date</option>
+              <option value="compliancePercentage">Compliance Percentage</option>
+              <option value="riskRating">Risk Rating</option>
+            </select>
+          </label>
+          <label>
+            Direction
+            <select [(ngModel)]="ownerSortDirection" (ngModelChange)="refreshReports()">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" (click)="exportOwnerCompliancePdf()">Download PDF</button>
+        </div>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Rows: {{ ownerRows.length }}</span>
+        <span>Total Uploaded: {{ ownerTotals().uploaded }}</span>
+        <span>Total Missing: {{ ownerTotals().missing }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Document Owner</th>
+              <th>Entity Type</th>
+              <th>Email</th>
+              <th>Compliance Status</th>
+              <th>Uploaded Documents</th>
+              <th>Missing Documents</th>
+              <th>Last Upload Date</th>
+              <th>Compliance Percentage</th>
+              <th>Risk Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of ownerRows">
+              <td>{{ row.documentOwner }}</td>
+              <td>{{ row.entityType || '-' }}</td>
+              <td>{{ row.email }}</td>
+              <td><span class="status-badge" [class]="statusBadgeClass(row.complianceStatus)">{{ row.complianceStatus }}</span></td>
+              <td>{{ row.uploadedDocuments }}</td>
+              <td>{{ row.missingDocuments }}</td>
+              <td>{{ formatDate(row.lastUploadDate) }}</td>
+              <td>{{ row.compliancePercentage.toFixed(2) }}%</td>
+              <td>{{ row.riskRating }}</td>
+            </tr>
+            <tr *ngIf="ownerRows.length === 0">
+              <td colspan="9" class="empty">
+                <div class="empty-state">
+                  <strong>No owner compliance records found.</strong>
+                  <span>Adjust the active filters to refresh the report view.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'requests'">
+      <div class="panel-header">
+        <h2>Institution Document Request Report</h2>
+        <div class="inline-actions">
+          <label>
+            Sort By
+            <select [(ngModel)]="requestSortBy" (ngModelChange)="refreshReports()">
+              <option value="requestDate">Request Date</option>
+              <option value="institution">Institution</option>
+              <option value="recipient">Recipient</option>
+              <option value="recipientType">Recipient Type</option>
+              <option value="submissionDeadline">Submission Deadline</option>
+              <option value="requestJustification">Request Justification</option>
+              <option value="status">Status</option>
+              <option value="approvalDenialDate">Approval / Denial Date</option>
+              <option value="referenceNumber">Reference Number</option>
+            </select>
+          </label>
+          <label>
+            Direction
+            <select [(ngModel)]="requestSortDirection" (ngModelChange)="refreshReports()">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" (click)="exportInstitutionRequestsPdf()">Download PDF</button>
+        </div>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Requests: {{ requestTotals().total }}</span>
+        <span>Approved: {{ requestTotals().approved }}</span>
+        <span>Pending: {{ requestTotals().pending }}</span>
+        <span>Denied: {{ requestTotals().denied }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Institution</th>
+              <th>Recipient</th>
+              <th>Recipient Type</th>
+              <th>Request Date</th>
+              <th>Submission Deadline</th>
+              <th>Reference Number</th>
+              <th>Request Justification</th>
+              <th>Status</th>
+              <th>Approval / Denial Date</th>
+              <th>Requested Documents</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of requestRows">
+              <td>{{ row.institution }}</td>
+              <td>{{ row.recipient }}</td>
+              <td>{{ row.recipientType }}</td>
+              <td>{{ formatDateTime(row.requestDate) }}</td>
+              <td>{{ formatDateTime(row.submissionDeadline) }}</td>
+              <td>{{ row.referenceNumber || '-' }}</td>
+              <td>{{ row.requestJustification || '-' }}</td>
+              <td>{{ row.status }}</td>
+              <td>{{ formatDateTime(row.approvalDenialDate) }}</td>
+              <td>{{ row.requestedDocuments.join(', ') || '-' }}</td>
+            </tr>
+            <tr *ngIf="requestRows.length === 0">
+              <td colspan="10" class="empty">
+                <div class="empty-state">
+                  <strong>No institution request records found.</strong>
+                  <span>Try broadening the date range or clearing filters.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'department'">
+      <div class="panel-header">
+        <h2>Department Compliance Report</h2>
+        <div class="inline-actions">
+          <label>
+            Sort By
+            <select [(ngModel)]="departmentSortBy" (ngModelChange)="refreshReports()">
+              <option value="department">Department</option>
+              <option value="departmentAdmin">Department Admin</option>
+              <option value="requiredDocuments">Required Documents</option>
+              <option value="uploadedDocuments">Uploaded Documents</option>
+              <option value="missingDocuments">Missing Documents</option>
+              <option value="compliancePercentage">Compliance Percentage</option>
+              <option value="riskRating">Risk Rating</option>
+            </select>
+          </label>
+          <label>
+            Direction
+            <select [(ngModel)]="departmentSortDirection" (ngModelChange)="refreshReports()">
+              <option value="asc">Ascending</option>
+              <option value="desc">Descending</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" (click)="exportDepartmentCompliancePdf()">Download PDF</button>
+        </div>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Required: {{ departmentTotals().required }}</span>
+        <span>Total Uploaded: {{ departmentTotals().uploaded }}</span>
+        <span>Total Missing: {{ departmentTotals().missing }}</span>
+        <span>Avg Compliance: {{ departmentTotals().avgCompliance.toFixed(2) }}%</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th>Department Admin</th>
+              <th>Required Documents</th>
+              <th>Uploaded Documents</th>
+              <th>Missing Documents</th>
+              <th>Compliance Percentage</th>
+              <th>Risk Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of departmentRows">
+              <td>{{ row.department }}</td>
+              <td>{{ row.departmentAdmin }}</td>
+              <td>{{ row.requiredDocuments }}</td>
+              <td>{{ row.uploadedDocuments }}</td>
+              <td>{{ row.missingDocuments }}</td>
+              <td>{{ row.compliancePercentage.toFixed(2) }}%</td>
+              <td>{{ row.riskRating }}</td>
+            </tr>
+            <tr *ngIf="departmentRows.length === 0">
+              <td colspan="7" class="empty">
+                <div class="empty-state">
+                  <strong>No department compliance records found.</strong>
+                  <span>Update the selected institution or department filter.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'cb-institution'">
+      <div class="panel-header">
+        <h2>Control Break: Document Requests by Institution</h2>
+        <button type="button" class="btn btn-primary" (click)="exportControlBreakInstitutionPdf()">Download PDF</button>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Requests: {{ controlBreakInstitutionTotals().total }}</span>
+        <span>Approved: {{ controlBreakInstitutionTotals().approved }}</span>
+        <span>Pending: {{ controlBreakInstitutionTotals().pending }}</span>
+        <span>Denied: {{ controlBreakInstitutionTotals().denied }}</span>
+      </div>
+
+      <div *ngFor="let group of controlBreakInstitutionRows" class="group-card">
+        <div class="group-header">
+          <h3>{{ group.institution }}</h3>
+          <div class="group-totals">
+            <span>Total Requests: {{ group.totalRequests }}</span>
+            <span>Approved: {{ group.approved }}</span>
+            <span>Pending: {{ group.pending }}</span>
+            <span>Denied: {{ group.denied }}</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Recipient</th>
+                <th>Recipient Type</th>
+                <th>Request Date</th>
+                <th>Submission Deadline</th>
+                <th>Reference Number</th>
+                <th>Request Justification</th>
+                <th>Status</th>
+                <th>Approval / Denial Date</th>
+                <th>Requested Documents</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of group.requests">
+                <td>{{ row.recipient }}</td>
+                <td>{{ row.recipientType }}</td>
+                <td>{{ formatDateTime(row.requestDate) }}</td>
+                <td>{{ formatDateTime(row.submissionDeadline) }}</td>
+                <td>{{ row.referenceNumber || '-' }}</td>
+                <td>{{ row.requestJustification || '-' }}</td>
+                <td><span class="status-badge" [class]="statusBadgeClass(row.status)">{{ row.status }}</span></td>
+                <td>{{ formatDateTime(row.approvalDenialDate) }}</td>
+                <td>{{ row.requestedDocuments.join(', ') || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="controlBreakInstitutionRows.length === 0" class="state state-empty">
+        <strong>No institution control-break records found.</strong>
+        <span>Choose a broader date range or clear the active filters.</span>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'cb-department'">
+      <div class="panel-header">
+        <h2>Control Break: Compliance by Department</h2>
+        <button type="button" class="btn btn-primary" (click)="exportControlBreakDepartmentPdf()">Download PDF</button>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Required: {{ controlBreakDepartmentTotals().required }}</span>
+        <span>Total Uploaded: {{ controlBreakDepartmentTotals().uploaded }}</span>
+        <span>Total Missing: {{ controlBreakDepartmentTotals().missing }}</span>
+      </div>
+
+      <div *ngFor="let group of controlBreakDepartmentRows" class="group-card">
+        <div class="group-header">
+          <h3>{{ group.department }} <small>({{ group.departmentAdmin }})</small></h3>
+          <div class="group-totals">
+            <span>Institution: {{ group.institution }}</span>
+            <span>Required: {{ group.requiredDocuments }}</span>
+            <span>Uploaded: {{ group.uploadedDocuments }}</span>
+            <span>Missing: {{ group.missingDocuments }}</span>
+            <span>Compliance: {{ group.compliancePercentage.toFixed(2) }}%</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Document Owner</th>
+                <th>Compliance Status</th>
+                <th>Uploaded Documents</th>
+                <th>Missing Documents</th>
+                <th>Compliance Percentage</th>
+                <th>Risk Rating</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let detail of group.details">
+                <td>{{ detail.documentOwner }}</td>
+                <td><span class="status-badge" [class]="statusBadgeClass(detail.complianceStatus)">{{ detail.complianceStatus }}</span></td>
+                <td>{{ detail.uploadedDocuments }}</td>
+                <td>{{ detail.missingDocuments }}</td>
+                <td>{{ detail.compliancePercentage.toFixed(2) }}%</td>
+                <td><span class="status-badge" [class]="statusBadgeClass(detail.riskRating)">{{ detail.riskRating }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="controlBreakDepartmentRows.length === 0" class="state state-empty">
+        <strong>No department control-break records found.</strong>
+        <span>Update the report filters to populate this view.</span>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'inventory'">
+      <div class="panel-header">
+        <h2>Department Document Inventory Report</h2>
+        <button type="button" class="btn btn-primary" (click)="exportDepartmentInventoryPdf()">Download PDF</button>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Required: {{ departmentInventoryTotals().required }}</span>
+        <span>Total Uploaded: {{ departmentInventoryTotals().uploaded }}</span>
+        <span>Total Missing: {{ departmentInventoryTotals().missing }}</span>
+        <span>Average Compliance: {{ departmentInventoryTotals().avgCompliance.toFixed(2) }}%</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Department</th>
+              <th>Department Admin</th>
+              <th>Institution</th>
+              <th>Required Document</th>
+              <th>Uploaded</th>
+              <th>Upload Date</th>
+              <th>Compliance Percentage</th>
+              <th>Risk Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of departmentInventoryRows">
+              <td>{{ row.department }}</td>
+              <td>{{ row.departmentAdmin }}</td>
+              <td>{{ row.institution }}</td>
+              <td>{{ row.requiredDocument }}</td>
+              <td>{{ row.isUploaded ? 'Yes' : 'No' }}</td>
+              <td>{{ formatDate(row.uploadDate) }}</td>
+              <td>{{ row.compliancePercentage.toFixed(2) }}%</td>
+              <td>{{ row.riskRating }}</td>
+            </tr>
+            <tr *ngIf="departmentInventoryRows.length === 0">
+              <td colspan="8" class="empty">
+                <div class="empty-state">
+                  <strong>No department inventory records found.</strong>
+                  <span>Adjust the report filters to populate this view.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'access'">
+      <div class="panel-header">
+        <h2>Institution Access History Report</h2>
+        <button type="button" class="btn btn-primary" (click)="exportAccessHistoryPdf()">Download PDF</button>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Access Entries: {{ accessHistoryTotals().total }}</span>
+        <span>Active: {{ accessHistoryTotals().active }}</span>
+        <span>Expired: {{ accessHistoryTotals().expired }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Institution</th>
+              <th>Recipient</th>
+              <th>Recipient Type</th>
+              <th>Access Granted Date</th>
+              <th>Access Expiry</th>
+              <th>Access Status</th>
+              <th>Documents Accessed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of accessHistoryRows">
+              <td>{{ row.institution }}</td>
+              <td>{{ row.recipient }}</td>
+              <td>{{ row.recipientType }}</td>
+              <td>{{ formatDateTime(row.accessGrantedDate) }}</td>
+              <td>{{ formatDateTime(row.accessExpiry) }}</td>
+              <td>{{ row.accessStatus }}</td>
+              <td>{{ row.documentsAccessed.join(', ') || '-' }}</td>
+            </tr>
+            <tr *ngIf="accessHistoryRows.length === 0">
+              <td colspan="7" class="empty">
+                <div class="empty-state">
+                  <strong>No access history records found.</strong>
+                  <span>Try widening the report range or clearing filters.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'expiring'">
+      <div class="panel-header">
+        <h2>Expiring Documents Report</h2>
+        <button type="button" class="btn btn-primary" (click)="exportExpiringDocumentsPdf()">Download PDF</button>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Near-Expiry Documents: {{ expiringDocumentsTotals().total }}</span>
+        <span>7 Days or Less: {{ expiringDocumentsTotals().severe }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Owner</th>
+              <th>Department</th>
+              <th>Document Type</th>
+              <th>Expiry Date</th>
+              <th>Days Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of expiringDocumentsRows">
+              <td>{{ row.owner }}</td>
+              <td>{{ row.department }}</td>
+              <td>{{ row.documentType }}</td>
+              <td>{{ formatDateTime(row.expiryDate) }}</td>
+              <td>{{ row.daysRemaining }}</td>
+            </tr>
+            <tr *ngIf="expiringDocumentsRows.length === 0">
+              <td colspan="5" class="empty">
+                <div class="empty-state">
+                  <strong>No expiring documents found.</strong>
+                  <span>Choose a broader date filter to surface a fuller expiry list.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="report-panel" *ngIf="activeTab === 'outstanding'">
+      <div class="panel-header">
+        <h2>Outstanding Compliance Report</h2>
+        <button type="button" class="btn btn-primary" (click)="exportOutstandingCompliancePdf()">Download PDF</button>
+      </div>
+
+      <div class="totals-strip">
+        <span>Total Outstanding Records: {{ outstandingComplianceTotals().total }}</span>
+        <span>Missing Documents: {{ outstandingComplianceTotals().missing }}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Entity Type</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Institution</th>
+              <th>Missing Documents</th>
+              <th>Compliance Percentage</th>
+              <th>Risk Rating</th>
+              <th>Outstanding Requirements</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of outstandingComplianceRows">
+              <td>{{ row.entityType }}</td>
+              <td>{{ row.name }}</td>
+              <td>{{ row.department }}</td>
+              <td>{{ row.institution }}</td>
+              <td>{{ row.missingDocuments }}</td>
+              <td>{{ row.compliancePercentage.toFixed(2) }}%</td>
+              <td>{{ row.riskRating }}</td>
+              <td>{{ row.outstandingRequirements.join(', ') || '-' }}</td>
+            </tr>
+            <tr *ngIf="outstandingComplianceRows.length === 0">
+              <td colspan="8" class="empty">
+                <div class="empty-state">
+                  <strong>No outstanding compliance records found.</strong>
+                  <span>Everything appears up to date for the selected scope.</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+      </ng-container>
+</section>

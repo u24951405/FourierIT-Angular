@@ -18,6 +18,10 @@ interface CombinedRequest {
   requestType: 'owner' | 'department';
   targetType: 'Individual' | 'Department';
   departmentName?: string;
+  senderName: string;
+  senderType: 'Institution';
+  recipientName: string;
+  recipientType: 'Individual' | 'Department';
   status: string;
   purposeNote: string;
   requestDate: string;
@@ -46,6 +50,7 @@ export class DocumentRequestsComponent implements OnInit {
   readonly requests = signal<CombinedRequest[]>([]);
   readonly userRoles = signal<string[]>([]);
   readonly departmentId = signal<number | null>(null);
+  readonly expandedRequestId = signal<number | null>(null);
 
   ngOnInit(): void {
     this.loadUserInfo();
@@ -60,12 +65,10 @@ export class DocumentRequestsComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    const isDocumentOwner = this.userRoles().some(
-      (r) => r.trim().toLowerCase() === 'document owner'
-    );
-    const isDepartmentAdmin = this.userRoles().some(
-      (r) => r.trim().toLowerCase() === 'department admin'
-    );
+    const token = this.auth.getToken();
+    const isSuperAdmin = this.auth.isSuperAdmin();
+    const isDocumentOwner = this.auth.hasRole('Document Owner') || isSuperAdmin;
+    const isDepartmentAdmin = this.auth.hasRole('Department Admin') || isSuperAdmin;
 
     const requests = [];
 
@@ -87,6 +90,12 @@ export class DocumentRequestsComponent implements OnInit {
             finalize(() => {})
           )
       );
+    }
+
+    if (!token) {
+      this.loading.set(false);
+      this.error.set('Please sign in to view document requests.');
+      return;
     }
 
     if (requests.length === 0) {
@@ -129,6 +138,10 @@ export class DocumentRequestsComponent implements OnInit {
           institutionName: req.institutionName,
           requestType: 'owner',
           targetType: 'Individual',
+          senderName: req.senderName || req.institutionName || 'Institution',
+          senderType: 'Institution',
+          recipientName: req.recipientName || 'Recipient not provided',
+          recipientType: req.recipientType || 'Individual',
           status: req.status,
           purposeNote: req.purposeNote,
           requestDate: req.requestDate,
@@ -149,6 +162,10 @@ export class DocumentRequestsComponent implements OnInit {
           requestType: 'department',
           targetType: 'Department',
           departmentName: req.departmentName,
+          senderName: req.senderName || req.institutionName || 'Institution',
+          senderType: 'Institution',
+          recipientName: req.recipientName || req.departmentName || 'Department',
+          recipientType: req.recipientType || 'Department',
           status: req.status,
           purposeNote: req.purposeNote,
           requestDate: req.requestDate,
@@ -225,5 +242,23 @@ export class DocumentRequestsComponent implements OnInit {
     return request.requestType === 'owner'
       ? 'You'
       : `${request.departmentName || 'Department'}`;
+  }
+
+  getSenderLabel(request: CombinedRequest): string {
+    return `Submitted by ${request.senderName || request.institutionName || 'Institution'}`;
+  }
+
+  getRecipientLabel(request: CombinedRequest): string {
+    return `Requested for ${request.recipientName || (request.requestType === 'department' ? request.departmentName || 'Department' : 'Recipient')}`;
+  }
+
+  toggleRequestDetails(request: CombinedRequest): void {
+    this.expandedRequestId.set(
+      this.expandedRequestId() === request.enquiryRequestId ? null : request.enquiryRequestId
+    );
+  }
+
+  isRequestExpanded(request: CombinedRequest): boolean {
+    return this.expandedRequestId() === request.enquiryRequestId;
   }
 }
