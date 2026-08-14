@@ -36,6 +36,18 @@ describe('AuthService', () => {
 
     expect(policy).toBeNull();
   });
+
+  it('prefers a profile image URL from the account payload when multiple image keys are present', () => {
+    const account = {
+      profileImageUrl: 'https://img.example/profile.png',
+      profileImage: 'https://img.example/ignored.png',
+      avatarUrl: 'https://img.example/avatar.png'
+    } as any;
+
+    const result = (AuthService as any).resolveProfileImageUrl(account);
+
+    expect(result).toBe('https://img.example/profile.png');
+  });
 });
 
 describe('auth role parsing', () => {

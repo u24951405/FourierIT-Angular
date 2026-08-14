@@ -329,22 +329,9 @@
         <button type="button" class="btn btn-primary" (click)="exportControlBreakInstitutionPdf()">Download PDF</button>
       </div>
 
-      <div class="totals-strip">
-        <span>Total Requests: {{ controlBreakInstitutionTotals().total }}</span>
-        <span>Approved: {{ controlBreakInstitutionTotals().approved }}</span>
-        <span>Pending: {{ controlBreakInstitutionTotals().pending }}</span>
-        <span>Denied: {{ controlBreakInstitutionTotals().denied }}</span>
-      </div>
-
       <div *ngFor="let group of controlBreakInstitutionRows" class="group-card">
         <div class="group-header">
           <h3>{{ group.institution }}</h3>
-          <div class="group-totals">
-            <span>Total Requests: {{ group.totalRequests }}</span>
-            <span>Approved: {{ group.approved }}</span>
-            <span>Pending: {{ group.pending }}</span>
-            <span>Denied: {{ group.denied }}</span>
-          </div>
         </div>
 
         <div class="table-wrap">
@@ -377,6 +364,15 @@
             </tbody>
           </table>
         </div>
+
+        <div class="group-footer">
+          <div class="group-totals group-totals--bottom">
+            <span>Total Requests: {{ group.totalRequests }}</span>
+            <span>Approved: {{ group.approved }}</span>
+            <span>Pending: {{ group.pending }}</span>
+            <span>Denied: {{ group.denied }}</span>
+          </div>
+        </div>
       </div>
 
       <div *ngIf="controlBreakInstitutionRows.length === 0" class="state state-empty">
@@ -391,21 +387,11 @@
         <button type="button" class="btn btn-primary" (click)="exportControlBreakDepartmentPdf()">Download PDF</button>
       </div>
 
-      <div class="totals-strip">
-        <span>Total Required: {{ controlBreakDepartmentTotals().required }}</span>
-        <span>Total Uploaded: {{ controlBreakDepartmentTotals().uploaded }}</span>
-        <span>Total Missing: {{ controlBreakDepartmentTotals().missing }}</span>
-      </div>
-
       <div *ngFor="let group of controlBreakDepartmentRows" class="group-card">
         <div class="group-header">
           <h3>{{ group.department }} <small>({{ group.departmentAdmin }})</small></h3>
-          <div class="group-totals">
+          <div class="group-totals group-totals--header">
             <span>Institution: {{ group.institution }}</span>
-            <span>Required: {{ group.requiredDocuments }}</span>
-            <span>Uploaded: {{ group.uploadedDocuments }}</span>
-            <span>Missing: {{ group.missingDocuments }}</span>
-            <span>Compliance: {{ group.compliancePercentage.toFixed(2) }}%</span>
           </div>
         </div>
 
@@ -432,6 +418,15 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div class="group-footer">
+          <div class="group-totals group-totals--bottom">
+            <span>Required: {{ group.requiredDocuments }}</span>
+            <span>Uploaded: {{ group.uploadedDocuments }}</span>
+            <span>Missing: {{ group.missingDocuments }}</span>
+            <span>Compliance: {{ group.compliancePercentage.toFixed(2) }}%</span>
+          </div>
         </div>
       </div>
 

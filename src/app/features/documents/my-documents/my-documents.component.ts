@@ -41,6 +41,7 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
   readonly documents = signal<DocumentListItem[]>([]);
   readonly error = signal<string | null>(null);
   readonly search = signal('');
+  readonly calendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   readonly detailDocument = signal<DocumentDetailItem | null>(null);
   readonly shareDocumentId = signal<number | null>(null);
   readonly shareRecipient = signal('');
@@ -49,6 +50,10 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
   readonly shareReason = signal('');
   readonly sharing = signal(false);
   readonly loadingDetail = signal(false);
+  readonly previewUrl = signal<string | null>(null);
+  readonly previewName = signal<string | null>(null);
+  readonly previewType = signal<'pdf' | 'image' | 'other'>('other');
+  readonly previewLoading = signal(false);
   readonly pendingRequests = signal<PendingDocumentAccessRequest[]>([]);
   readonly pendingRequestsLoading = signal(false);
   readonly pendingRequestsError = signal<string | null>(null);
@@ -94,6 +99,15 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
       .slice(0, 5)
   );
   readonly latestRequests = computed(() => this.pendingRequests().slice(0, 5));
+  readonly calendarDays = computed(() => this.buildCalendarDays(this.calendarMonth()));
+  readonly calendarEvents = computed(() => this.buildCalendarEvents(this.documents(), this.calendarMonth()));
+  readonly calendarSummary = computed(() => {
+    const events = this.calendarEvents();
+    return {
+      expiring: events.filter(item => item.type === 'expiring').length,
+      update: events.filter(item => item.type === 'update').length
+    };
+  });
 
   ngOnInit(): void {
     this.loadDocuments();
@@ -120,6 +134,16 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
 
   openTemporaryUploadPage(): void {
     this.router.navigate(['/documents/upload']);
+  }
+
+  previousMonth(): void {
+    const monthDate = this.calendarMonth();
+    this.calendarMonth.set(new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1));
+  }
+
+  nextMonth(): void {
+    const monthDate = this.calendarMonth();
+    this.calendarMonth.set(new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 1));
   }
 
   navigate(path: string): void {
@@ -153,6 +177,72 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
           this.toast.show(message, 'error');
         }
       });
+  }
+
+  openPreview(doc: DocumentListItem): void {
+    if (this.previewUrl()) {
+      URL.revokeObjectURL(this.previewUrl()!);
+    }
+
+    this.previewLoading.set(true);
+    this.previewName.set(doc.fileName);
+    this.previewType.set('other');
+    this.previewUrl.set(null);
+
+    this.docsApi.downloadDocument(doc.documentId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const type = (blob.type || '').toLowerCase();
+        if (type.includes('pdf')) {
+          this.previewType.set('pdf');
+        } else if (type.startsWith('image/')) {
+          this.previewType.set('image');
+        } else {
+          this.previewType.set('other');
+        }
+        this.previewUrl.set(url);
+        this.previewLoading.set(false);
+      },
+      error: err => {
+        this.previewLoading.set(false);
+        this.previewUrl.set(null);
+        const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not open the document preview.';
+        this.toast.show(message, 'error');
+      }
+    });
+  }
+
+  closePreview(): void {
+    const url = this.previewUrl();
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+    this.previewUrl.set(null);
+    this.previewName.set(null);
+    this.previewType.set('other');
+    this.previewLoading.set(false);
+  }
+
+  openPreviewInNewTab(): void {
+    const url = this.previewUrl();
+    if (!url) return;
+
+    if (this.previewType() === 'other') {
+      this.toast.show('This file type cannot be opened in a new tab.', 'error');
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  openEventDocument(event: { documentId: number; fileName: string }): void {
+    const doc = this.documents().find(item => item.documentId === event.documentId);
+    if (!doc) {
+      this.toast.show(`Could not find ${event.fileName}.`, 'error');
+      return;
+    }
+
+    this.openPreview(doc);
   }
 
   openShare(doc: DocumentListItem): void {
@@ -211,6 +301,74 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
         this.toast.show(message, 'error');
       }
     });
+  }
+
+  private buildCalendarDays(monthDate: Date): Date[] {
+    const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const startDay = start.getDay();
+    const offset = (startDay + 6) % 7;
+    const gridStart = new Date(start);
+    gridStart.setDate(start.getDate() - offset);
+
+    const days: Date[] = [];
+    for (let i = 0; i < 42; i++) {
+      const day = new Date(gridStart);
+      day.setDate(gridStart.getDate() + i);
+      days.push(day);
+    }
+
+    return days;
+  }
+
+  private buildCalendarEvents(documents: DocumentListItem[], monthDate: Date): Array<{ date: string; type: 'expiring' | 'update'; label: string; title: string; documentId: number; fileName: string }> {
+    const events: Array<{ date: string; type: 'expiring' | 'update'; label: string; title: string; documentId: number; fileName: string }> = [];
+    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+
+    for (const doc of documents) {
+      const status = (doc.currentStatus ?? '').toLowerCase();
+      const sourceDate = this.parseDate(doc.lastModifiedDate || doc.uploadedDate) ?? new Date();
+      let dueDate: Date | null = null;
+
+      if (status.includes('expiring') || status.includes('expires soon') || status.includes('expired')) {
+        dueDate = new Date(sourceDate);
+        dueDate.setDate(dueDate.getDate() + 365);
+      } else if (status.includes('rejected') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification')) {
+        dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 7);
+      }
+
+      if (!dueDate) {
+        continue;
+      }
+
+      if (dueDate < monthStart || dueDate > monthEnd) {
+        continue;
+      }
+
+      const eventType: 'expiring' | 'update' = status.includes('reject') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification') ? 'update' : 'expiring';
+      const title = `${doc.fileName} (${eventType === 'expiring' ? 'Expiring' : 'Needs update'})`;
+      events.push({
+        date: this.toIsoDate(dueDate),
+        type: eventType,
+        label: eventType === 'expiring' ? 'Expiring' : 'Update',
+        title,
+        documentId: doc.documentId,
+        fileName: doc.fileName
+      });
+    }
+
+    return events;
+  }
+
+  private parseDate(value: string | null): Date | null {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private toIsoDate(value: Date): string {
+    return new Date(value.getTime() - value.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }
 
   private loadDocuments(): void {

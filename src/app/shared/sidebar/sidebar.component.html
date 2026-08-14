@@ -66,7 +66,12 @@
             (click)="toggleProfile($event)"
             [attr.aria-expanded]="profileOpen()"
             aria-label="View profile details">
-      <div class="sidebar__avatar" aria-hidden="true">{{ userInitials }}</div>
+      <div class="sidebar__avatar"
+           [class.sidebar__avatar--image]="!!profileImageUrl()"
+           [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}"
+           aria-hidden="true">
+        <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
+      </div>
       <div class="sidebar__user-info">
         <div class="sidebar__user-name-row">
           <strong class="sidebar__user-name" [title]="userName">{{ userName }}</strong>
@@ -94,6 +99,13 @@
           <ng-template #accountContent>
             <ng-container *ngIf="accountDetails() as a; else noAccount">
               <ng-container *ngIf="!editingProfile(); else editProfileForm">
+                <div class="sidebar__profile-header">
+                  <div class="sidebar__profile-avatar"
+                       [class.sidebar__profile-avatar--image]="!!profileImageUrl()"
+                       [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}">
+                    <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
+                  </div>
+                </div>
                 <dl class="sidebar__profile-dl">
                   <dt>Username</dt>
                   <dd>{{ a.userName }}</dd>
@@ -119,12 +131,30 @@
                     <dt>Date of birth</dt>
                     <dd>{{ a.dateOfBirth }}</dd>
                   </ng-container>
+                  <ng-container *ngIf="canManageOtpExpiry()">
+                    <dt>OTP expiry</dt>
+                    <dd>{{ a.otpExpiryMinutes ?? 5 }} minutes</dd>
+                  </ng-container>
                 </dl>
                 <button type="button" class="sidebar__profile-action" (click)="startEditProfile()">Edit details</button>
               </ng-container>
 
               <ng-template #editProfileForm>
                 <form class="sidebar__profile-form" [formGroup]="editForm" (ngSubmit)="saveProfile()">
+                  <div class="sidebar__profile-upload">
+                    <div class="sidebar__profile-avatar"
+                         [class.sidebar__profile-avatar--image]="!!profileImageUrl()"
+                         [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}">
+                      <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
+                    </div>
+                    <label class="sidebar__profile-upload-button">
+                      <input type="file" accept="image/*" (change)="onProfileImageSelected($event)" hidden>
+                      Upload photo
+                    </label>
+                    <button *ngIf="selectedProfileFile() || profileImageUrl()" type="button" class="sidebar__profile-action sidebar__profile-action--secondary" (click)="clearProfileImage()">
+                      Remove
+                    </button>
+                  </div>
                   <label class="sidebar__profile-label">
                     First name
                     <input class="sidebar__profile-input" type="text" formControlName="firstName">
@@ -148,6 +178,10 @@
                   <label class="sidebar__profile-label">
                     Date of birth
                     <input class="sidebar__profile-input" type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
+                  </label>
+                  <label *ngIf="canManageOtpExpiry()" class="sidebar__profile-label">
+                    OTP expiry (minutes)
+                    <input class="sidebar__profile-input" type="number" min="1" max="60" formControlName="otpExpiryMinutes">
                   </label>
                   <p *ngIf="profileSaveError()" class="sidebar__profile-msg sidebar__profile-msg--error">{{ profileSaveError() }}</p>
                   <div class="sidebar__profile-actions">

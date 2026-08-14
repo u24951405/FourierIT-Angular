@@ -10,6 +10,47 @@
     </button>
   </div>
 
+  <section class="calendar-panel">
+    <div class="calendar-panel__header">
+      <div>
+        <p class="eyebrow eyebrow--dark">Document timeline</p>
+        <h2>Expiry & update calendar</h2>
+      </div>
+      <div class="calendar-panel__summary">
+        <span class="calendar-chip calendar-chip--expiring">{{ calendarSummary().expiring }} expiring</span>
+        <span class="calendar-chip calendar-chip--update">{{ calendarSummary().update }} updates</span>
+      </div>
+    </div>
+
+    <div class="calendar-panel__controls">
+      <button type="button" class="btn btn--outline" (click)="previousMonth()">Prev</button>
+      <strong>{{ calendarMonth() | date:'MMMM yyyy' }}</strong>
+      <button type="button" class="btn btn--outline" (click)="nextMonth()">Next</button>
+    </div>
+
+    <div class="calendar-grid" role="grid" aria-label="Document calendar">
+      <div class="calendar-grid__header">Mon</div>
+      <div class="calendar-grid__header">Tue</div>
+      <div class="calendar-grid__header">Wed</div>
+      <div class="calendar-grid__header">Thu</div>
+      <div class="calendar-grid__header">Fri</div>
+      <div class="calendar-grid__header">Sat</div>
+      <div class="calendar-grid__header">Sun</div>
+
+      @for (day of calendarDays(); track day.toISOString()) {
+        <div class="calendar-day" [class.calendar-day--outside-month]="day.getMonth() !== calendarMonth().getMonth()">
+          <span class="calendar-day__number">{{ day.getDate() }}</span>
+
+          @for (event of calendarEvents().filter(item => item.date === (day | date:'yyyy-MM-dd')); track event.title) {
+            <button type="button" class="calendar-event" [class.calendar-event--expiring]="event.type === 'expiring'" [class.calendar-event--update]="event.type === 'update'" [title]="event.fileName" (click)="openEventDocument(event)">
+              {{ event.label }}: {{ event.fileName }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
   <div class="documents-page__stats">
     <article>
       <span>Signed in as</span>
@@ -70,6 +111,7 @@
             </div>
           </dl>
           <div class="document-card__actions">
+            <button type="button" class="btn btn--outline" (click)="openPreview(doc)">View</button>
             <button type="button" class="btn btn--outline" (click)="openDetails(doc)">Details</button>
             <button type="button" class="btn btn--outline" (click)="download(doc)">Download</button>
             <button type="button" class="btn btn--ghost" (click)="openShare(doc)">Share</button>
@@ -77,6 +119,37 @@
           </div>
         </article>
       }
+    </div>
+  }
+
+  @if (previewUrl()) {
+    <div class="modal-overlay" (click)="closePreview()">
+      <div class="preview-modal" (click)="$event.stopPropagation()">
+        <div class="modal__header preview-modal__header">
+          <div>
+            <h2>{{ previewName() }}</h2>
+            <p>Document preview</p>
+          </div>
+          <div class="preview-modal__actions">
+            <button type="button" class="btn btn--outline btn--small" (click)="openPreviewInNewTab()" [disabled]="previewType() === 'other'">
+              Open in new tab
+            </button>
+            <button type="button" class="icon-btn" (click)="closePreview()">×</button>
+          </div>
+        </div>
+
+        @if (previewLoading()) {
+          <div class="documents-page__state">Loading preview…</div>
+        } @else if (previewType() === 'pdf') {
+          <iframe class="preview-modal__frame" [src]="previewUrl()" title="Document preview"></iframe>
+        } @else if (previewType() === 'image') {
+          <img class="preview-modal__image" [src]="previewUrl()" [alt]="previewName() || 'Document preview'">
+        } @else {
+          <div class="preview-modal__unsupported">
+            This file type cannot be previewed in-browser. Use Download to open it on your device.
+          </div>
+        }
+      </div>
     </div>
   }
 
