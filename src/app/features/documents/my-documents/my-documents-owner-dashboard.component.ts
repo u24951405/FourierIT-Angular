@@ -43,12 +43,6 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
   readonly error = signal<string | null>(null);
   readonly search = signal('');
   readonly detailDocument = signal<DocumentDetailItem | null>(null);
-  readonly shareDocumentId = signal<number | null>(null);
-  readonly shareRecipient = signal('');
-  readonly shareAccessLevel = signal('0');
-  readonly shareExpiryDate = signal('');
-  readonly shareReason = signal('');
-  readonly sharing = signal(false);
   readonly loadingDetail = signal(false);
   readonly pendingRequests = signal<PendingDocumentAccessRequest[]>([]);
   readonly pendingRequestsLoading = signal(false);
@@ -158,47 +152,8 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
       });
   }
 
-  openShare(doc: DocumentListItem): void {
-    this.shareDocumentId.set(doc.documentId);
-    this.shareRecipient.set('');
-    this.shareAccessLevel.set('0');
-    this.shareExpiryDate.set('');
-    this.shareReason.set('');
-  }
-
   closeDetail(): void {
     this.detailDocument.set(null);
-  }
-
-  closeShare(): void {
-    this.shareDocumentId.set(null);
-  }
-
-  submitShare(): void {
-    const documentId = this.shareDocumentId();
-    if (!documentId || !this.shareRecipient().trim()) {
-      this.toast.show('Enter a user id, username, or email to share with.', 'error');
-      return;
-    }
-
-    this.sharing.set(true);
-    this.docsApi.shareDocument(documentId, {
-      grantToUserId: this.shareRecipient().trim(),
-      accessLevel: Number(this.shareAccessLevel()),
-      expiryDate: this.shareExpiryDate() || null,
-      reason: this.shareReason().trim() || ''
-    })
-      .pipe(finalize(() => this.sharing.set(false)))
-      .subscribe({
-        next: response => {
-          this.toast.show(response.message || 'Document shared.', 'success');
-          this.closeShare();
-        },
-        error: err => {
-          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not share the document.';
-          this.toast.show(message, 'error');
-        }
-      });
   }
 
   delete(doc: DocumentListItem): void {

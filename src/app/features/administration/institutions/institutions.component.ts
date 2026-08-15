@@ -30,8 +30,7 @@ export class InstitutionsComponent implements OnInit {
   showInviteModal = signal(false);
   inviteInstitutionId = signal<number | null>(null);
   inviteInstitutionName = signal('');
-  inviteLink = signal<string | null>(null);
-  inviteExpiration = signal<string | null>(null);
+  inviteStatus = signal<string | null>(null);
   inviteSubmitting = signal(false);
   inviteError = signal('');
   inviteSuccess = signal('');
@@ -165,8 +164,7 @@ export class InstitutionsComponent implements OnInit {
   openInvite(inst?: InstitutionDto): void {
     this.inviteInstitutionId.set(inst?.institutionId ?? null);
     this.inviteInstitutionName.set(inst?.institutionName ?? '');
-    this.inviteLink.set(null);
-    this.inviteExpiration.set(null);
+    this.inviteStatus.set(null);
     this.inviteError.set('');
     this.inviteSuccess.set('');
     this.inviteForm.reset({
@@ -183,10 +181,12 @@ export class InstitutionsComponent implements OnInit {
     this.inviteSuccess.set('');
   }
 
-  openInviteLink(): void {
-    const link = this.inviteLink();
-    if (!link) return;
-    window.open(link, '_blank', 'noopener');
+  private formatExpiration(expiration: string): string {
+    const date = new Date(expiration);
+    if (isNaN(date.getTime()) || date.getFullYear() >= 3000) {
+      return 'Never expires';
+    }
+    return date.toLocaleString();
   }
 
   submitInvite(): void {
@@ -205,9 +205,7 @@ export class InstitutionsComponent implements OnInit {
       finalize(() => this.inviteSubmitting.set(false))
     ).subscribe({
       next: response => {
-        const url = `${window.location.origin}/institution/auth/access?token=${response.accessToken}`;
-        this.inviteLink.set(url);
-        this.inviteExpiration.set(new Date(response.expiresAt).toLocaleString());
+        this.inviteStatus.set(this.formatExpiration(response.expiresAt));
         this.inviteError.set('');
         this.inviteSuccess.set(`Invitation sent to ${response.maskedEmail}.`);
         this.toast.show(`Institution invite sent to ${response.maskedEmail}.`, 'success');

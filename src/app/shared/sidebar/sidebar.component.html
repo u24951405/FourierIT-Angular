@@ -10,7 +10,7 @@
   </div>
 
   <nav class="sidebar__nav">
-    <ng-container *ngFor="let item of visibleNavItems">
+    <ng-container *ngFor="let item of visibleNavItems(); trackBy: trackByNavItem">
       <ng-container *ngIf="!item.children">
         <a class="sidebar__link"
            [routerLink]="item.route"
@@ -48,7 +48,7 @@
         </div>
 
         <div class="sidebar__sub" *ngIf="openGroup() === item.label">
-          <a *ngFor="let child of item.children"
+           <a *ngFor="let child of item.children; trackBy: trackByNavChild"
              class="sidebar__sub-link"
              [routerLink]="child.route"
              routerLinkActive="sidebar__sub-link--active">

@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
-import { AuthService, EntityTypeOption, RegisterPayload } from '../../../core/services/auth.service';
+import { AuthService, EntityTypeOption, RegisterPayload, VerifyRegistrationOtpPayload } from '../../../core/services/auth.service';
 import { RoleService } from '../../../core/services/role.service';
 import {
   birthDateReasonable,
@@ -39,6 +39,10 @@ export class RegisterUserComponent implements OnInit {
   entityVerificationStatus = signal<'idle'|'verifying'|'valid'|'invalid'>('idle');
   entityVerificationMessage = signal('');
   passwordPolicy = signal<import('../../../core/services/auth.service').PasswordPolicy | null>(null);
+  otpStepVisible = signal(false);
+  pendingEmail = signal('');
+  otpCode = signal('');
+  isVerifyingOtp = signal(false);
   // Local view helpers for live password feedback
   passwordValue = signal('');
 
@@ -345,7 +349,15 @@ export class RegisterUserComponent implements OnInit {
     this.auth.register(payload)
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => {
+        next: (response) => {
+          if (response?.requiresVerification) {
+            this.pendingEmail.set(response.email ?? this.form.controls.email.value ?? '');
+            this.otpStepVisible.set(true);
+            this.otpCode.set('');
+            this.toast.show(response.message || 'Check your inbox for the verification code.', 'success');
+            return;
+          }
+
           this.toast.show('User registered successfully.', 'success');
           this.navigateAfterRegisterOrCancel();
         },
@@ -370,6 +382,35 @@ export class RegisterUserComponent implements OnInit {
             if (d) message = String(d);
           }
           this.toast.show(message || 'Registration failed. Please try again.', 'error');
+        }
+      });
+  }
+
+  verifyRegistrationOtp(): void {
+    const email = this.pendingEmail().trim();
+    const otp = this.otpCode().trim();
+
+    if (!email || otp.length !== 6) {
+      this.toast.show('Enter the 6-digit verification code sent to your email.', 'error');
+      return;
+    }
+
+    const payload: VerifyRegistrationOtpPayload = { emailAddress: email, otp };
+    this.isVerifyingOtp.set(true);
+    this.auth.verifyRegistrationOtp(payload)
+      .pipe(finalize(() => this.isVerifyingOtp.set(false)))
+      .subscribe({
+        next: (response) => {
+          this.toast.show(response.message || 'Email verified successfully.', 'success');
+          this.router.navigate(['/auth/login']);
+        },
+        error: (error) => {
+          const body = error?.error;
+          const message = (typeof body === 'string' ? body : null)
+            ?? body?.error
+            ?? body?.message
+            ?? 'The verification code could not be validated.';
+          this.toast.show(message, 'error');
         }
       });
   }

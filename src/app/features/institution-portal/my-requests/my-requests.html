@@ -41,12 +41,17 @@
             <div class="request-card__time">{{ request.requestDate | date:'medium' }}</div>
           </div>
           <div class="request-card__meta-line">
-            <small>To: <strong>{{ request.recipient?.name || request.departmentName || '—' }}</strong> <span class="recipient-type">({{ request.recipient?.type || request.requestType }})</span></small>
+            <small>To: <strong>{{ request.recipient.name || '—' }}</strong> <span class="recipient-type">({{ request.recipient.type || 'Unknown' }})</span></small>
           </div>
           <div class="request-card__purpose--compact">{{ request.purposeNote || 'No purpose provided' }}</div>
         </div>
         <div class="request-card__status-wrapper">
           <span class="request-card__status request-card__status--{{ request.status.toLowerCase() }}">{{ request.status }}</span>
+        </div>
+        <div class="request-card__checklist">
+          <span *ngIf="request.isComplete === true" class="request-card__checklist--complete">Complete</span>
+          <span *ngIf="request.isComplete === false" class="request-card__checklist--missing">{{ request.missingCount || 0 }} missing</span>
+          <span *ngIf="request.isComplete === undefined" class="request-card__checklist--loading">Checking checklist…</span>
         </div>
       </div>
 
@@ -55,6 +60,23 @@
           <span class="request-card__documents-title">Requested documents</span>
           <div class="request-card__doc-list">
             <span class="doc-chip" *ngFor="let doc of request.documents">{{ doc.documentTypeName }}<b *ngIf="doc.isMandatory" class="doc-chip--required">*</b></span>
+          </div>
+        </div>
+
+        <div *ngIf="request.requestedDocumentStatuses?.length" class="request-card__status-details">
+          <span class="request-card__status-details-title">Document checklist</span>
+          <div class="request-card__status-tags">
+            <span
+              class="doc-chip"
+              *ngFor="let status of request.requestedDocumentStatuses"
+              [ngClass]="{
+                'doc-chip--uploaded': status.state === 'Uploaded',
+                'doc-chip--rejected': status.state === 'Rejected',
+                'doc-chip--missing': status.state === 'Missing'
+              }"
+            >
+              {{ status.documentTypeName }} — {{ status.state }}
+            </span>
           </div>
         </div>
       </div>

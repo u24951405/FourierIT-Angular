@@ -119,16 +119,20 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.buildVerificationChart();
-      this.buildCategoryChart();
-      this.buildRiskChart();
-      this.loadDashboard();
-    }, 100);
+    setTimeout(() => this.loadDashboard(), 100);
   }
 
   ngOnDestroy(): void {
     this.charts.forEach(c => c.destroy());
+  }
+
+  private renderDashboardCharts(): void {
+    this.charts.forEach(chart => chart.destroy());
+    this.charts = [];
+
+    this.buildVerificationChart();
+    this.buildCategoryChart();
+    this.buildRiskChart();
   }
 
   // ── Verification Status Doughnut ──────────────────────────────────────────

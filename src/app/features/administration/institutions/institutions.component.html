@@ -167,18 +167,15 @@
           }
         </div>
         <div class="field">
-          <p class="field__hint">A secure access link and OTP code will be sent to the invited email.</p>
+          <p class="field__hint">A secure access link will be sent to the invited email. The OTP is generated and emailed only when the recipient opens the access link.</p>
           <span *ngIf="inviteError()" class="field__error">{{ inviteError() }}</span>
           <span *ngIf="inviteSuccess()" class="field__success">{{ inviteSuccess() }}</span>
-          @if (inviteLink()) {
+          @if (inviteStatus()) {
             <div class="field__notice">
-              <div class="field__notice-line">
-                <strong>Access Link:</strong>
-                <button type="button" class="btn btn--primary" (click)="openInviteLink()">
-                  Open invite link
-                </button>
-              </div>
-              <p class="field__notice-meta"><strong>Expires:</strong> {{ inviteExpiration() }}</p>
+              <p class="field__notice-line">
+                <strong>Access link sent.</strong>
+              </p>
+              <p class="field__notice-meta"><strong>Status:</strong> {{ inviteStatus() }}</p>
             </div>
           }
         </div>

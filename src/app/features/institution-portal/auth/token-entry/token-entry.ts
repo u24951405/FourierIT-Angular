@@ -67,11 +67,14 @@ export class TokenEntryComponent implements OnInit {
             this.router.navigate(['/institution/auth/verify']);
           });
         } else {
-          this.router.navigate(['/institution/auth/expired']);
+          this.validating = false;
+          this.error = 'This invitation link is invalid or no longer available. Please request a new link or contact your administrator.';
         }
       },
-      error: () => {
-        this.router.navigate(['/institution/auth/expired']);
+      error: (err) => {
+        this.validating = false;
+        const message = err?.error?.error ?? err?.error?.title ?? 'Unable to validate your invitation. Please try again later.';
+        this.error = message;
       },
     });
   }

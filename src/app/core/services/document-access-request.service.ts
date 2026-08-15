@@ -13,6 +13,7 @@ import {
   InstitutionRecipientDocumentType,
   InstitutionNotification,
   InstitutionRequestSummary,
+  InstitutionRequestChecklistResponse,
   PendingDepartmentAccessRequest,
   PendingDocumentAccessRequest,
   RouteRequestToOwnerPayload,
@@ -62,9 +63,14 @@ export class DocumentAccessRequestService {
     );
   }
 
-  getInstitutionRequests(token: string): Observable<any[]> {
+  getInstitutionRequests(token: string): Observable<PendingDocumentAccessRequest[]> {
     const params = new HttpParams().set('token', token);
-    return this.http.get<any[]>(`${this.base}/institution-access/requests`, { params });
+    return this.http.get<PendingDocumentAccessRequest[]>(`${this.base}/institution-access/requests`, { params });
+  }
+
+  getInstitutionRequestChecklist(token: string, requestId: number): Observable<InstitutionRequestChecklistResponse> {
+    const params = new HttpParams().set('token', token);
+    return this.http.get<InstitutionRequestChecklistResponse>(`${this.base}/institution-access/requests/${requestId}/checklist`, { params });
   }
 
   getInstitutionDepartments(token: string): Observable<{ departmentId: number; departmentName: string }[]> {

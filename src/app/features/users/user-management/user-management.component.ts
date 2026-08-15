@@ -15,6 +15,8 @@ import {
 
 export interface UserProfile {
   id: number;
+  userId: string;
+  profileId: number | null;
   userName: string;
   firstName: string;
   lastName: string;
@@ -103,11 +105,11 @@ export class UserManagementComponent {
   }
 
   openEdit(user: UserProfile): void {
-    if (this.isSuperAdmin(user)) {
+    if (this.isSuperAdmin(user) || user.profileId === null) {
       return;
     }
 
-    this.editId.set(user.id);
+    this.editId.set(user.profileId);
     this.form.patchValue({
       firstName: user.firstName,
       lastName: user.lastName,
@@ -186,9 +188,18 @@ export class UserManagementComponent {
       return;
     }
 
-    this.userManagementService.deleteUser(user.id).subscribe({
+    if (!user.userId) {
+      this.toast.show('Unable to delete this user because the user identifier is missing.', 'error');
+      return;
+    }
+
+    if (!confirm(`Delete user ${user.firstName} ${user.lastName}? This will remove the user and related records permanently.`)) {
+      return;
+    }
+
+    this.userManagementService.deleteUser(user.profileId, user.userId).subscribe({
       next: () => {
-        this.users.update(list => list.filter(item => item.id !== user.id));
+        this.users.update(list => list.filter(item => item.userId !== user.userId));
         this.toast.show('User deleted.', 'success');
       },
       error: (error) => {
@@ -240,22 +251,27 @@ export class UserManagementComponent {
   }
 
   private mapUserToProfile(user: ManagedUserDto): UserProfile {
-    const roles = user.roles ?? [];
+    const roles = (user.roles ?? (user as any).Roles ?? []) as string[];
     const roleName = roles.join(', ');
     const roleId = this.roles.find(r => r.name.toLowerCase() === roles[0]?.toLowerCase())?.id ?? '';
+    const profileId = user.profileId ?? (user as any).ProfileId ?? null;
+    const userId = user.id ?? (user as any).Id ?? '';
+    const profile = user.profile ?? (user as any).Profile ?? null;
     return {
-      id: user.profileId ?? 0,
-      userName: user.userName ?? '',
-      firstName: user.profile?.firstName ?? '',
-      lastName: user.profile?.lastName ?? '',
-      email: user.email ?? '',
-      phone: user.phoneNumber ?? '',
-      dateOfBirth: user.profile?.dateOfBirth ?? '',
-      jobTitle: user.profile?.jobTitle ?? '',
+      id: profileId ?? 0,
+      userId,
+      profileId,
+      userName: user.userName ?? (user as any).UserName ?? '',
+      firstName: profile?.firstName ?? profile?.FirstName ?? '',
+      lastName: profile?.lastName ?? profile?.LastName ?? '',
+      email: user.email ?? (user as any).Email ?? '',
+      phone: user.phoneNumber ?? (user as any).PhoneNumber ?? '',
+      dateOfBirth: profile?.dateOfBirth ?? profile?.DateOfBirth ?? '',
+      jobTitle: profile?.jobTitle ?? profile?.JobTitle ?? '',
       roleId,
       roleName,
       roles,
-      status: user.accountStatus ?? 'Active',
+      status: user.accountStatus ?? (user as any).AccountStatus ?? 'Active',
       createdAt: ''
     };
   }

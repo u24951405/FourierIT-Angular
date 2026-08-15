@@ -1,32 +1,26 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnInit, ViewChild, inject, signal, computed } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, DoughnutController, ArcElement, Tooltip, Legend } from 'chart.js';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
-import { DocumentsApiService, DocumentDetailItem, DocumentListItem } from '../../../core/services/documents-api.service';
+import {
+  DocumentAccessApprovalItem,
+  DocumentDetailItem,
+  DocumentListItem,
+  DocumentsApiService,
+} from '../../../core/services/documents-api.service';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
 import { ToastService } from '../../../core/services/toast.service';
 
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, DoughnutController, ArcElement, Tooltip, Legend);
-
 @Component({
   selector: 'app-my-documents',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule],
   templateUrl: './my-documents.component.html',
   styleUrls: ['./my-documents.component.scss', '../../../features/dashboard/dashboard/dashboard.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush
 })
-
-export class MyDocumentsComponent implements OnInit, AfterViewInit {
-  @ViewChild('verificationChart') verificationChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('riskChart') riskChartRef!: ElementRef<HTMLCanvasElement>;
-
-  private charts: Chart[] = [];
+export class MyDocumentsComponent {
   private router = inject(Router);
   private docsApi = inject(DocumentsApiService);
   private requestService = inject(DocumentAccessRequestService);
@@ -42,16 +36,18 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
   readonly error = signal<string | null>(null);
   readonly search = signal('');
   readonly detailDocument = signal<DocumentDetailItem | null>(null);
-  readonly shareDocumentId = signal<number | null>(null);
-  readonly shareRecipient = signal('');
-  readonly shareAccessLevel = signal('0');
-  readonly shareExpiryDate = signal('');
-  readonly shareReason = signal('');
-  readonly sharing = signal(false);
   readonly loadingDetail = signal(false);
   readonly pendingRequests = signal<PendingDocumentAccessRequest[]>([]);
   readonly pendingRequestsLoading = signal(false);
   readonly pendingRequestsError = signal<string | null>(null);
+  readonly accessLoading = signal(false);
+  readonly accessError = signal<string | null>(null);
+  readonly accessApprovals = signal<DocumentAccessApprovalItem[]>([]);
+  readonly selectedEditFile = signal<File | null>(null);
+  readonly savingEdit = signal(false);
+  readonly blockedDeletionDocument = signal<any | null>(null);
+  readonly blockedDeletionError = signal<string | null>(null);
+  readonly blockedDeletionApprovals = signal<DocumentAccessApprovalItem[]>([]);
 
   readonly documentCount = computed(() => this.documents().length);
   readonly approvedDocumentCount = computed(() => this.documents().filter(doc => doc.currentStatus?.toLowerCase() === 'approved').length);
@@ -100,22 +96,15 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
     this.loadPendingRequests();
   }
 
-  ngAfterViewInit(): void {
-    setTimeout(() => {
-      this.buildVerificationChart();
-      this.buildCategoryChart();
-      this.buildRiskChart();
-    }, 100);
-  }
-
   get filteredDocuments(): DocumentListItem[] {
     const query = this.search().trim().toLowerCase();
     if (!query) return this.documents();
-    return this.documents().filter(doc =>
-      doc.fileName.toLowerCase().includes(query) ||
-      doc.documentTypeName.toLowerCase().includes(query) ||
-      doc.currentStatus.toLowerCase().includes(query)
-    );
+    return this.documents().filter(doc => {
+      const fileName = doc.fileName?.toLowerCase() ?? '';
+      const typeName = doc.documentTypeName?.toLowerCase() ?? '';
+      const status = doc.currentStatus?.toLowerCase() ?? '';
+      return fileName.includes(query) || typeName.includes(query) || status.includes(query);
+    });
   }
 
   openTemporaryUploadPage(): void {
@@ -143,59 +132,81 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
   openDetails(doc: DocumentListItem): void {
     this.loadingDetail.set(true);
     this.detailDocument.set(null);
+    this.accessLoading.set(true);
+    this.accessError.set(null);
+    this.accessApprovals.set([]);
 
     this.docsApi.getDocumentById(doc.documentId)
       .pipe(finalize(() => this.loadingDetail.set(false)))
       .subscribe({
-        next: detail => this.detailDocument.set(detail),
+        next: detail => {
+          this.detailDocument.set(detail);
+          this.loadDocumentAccess(detail.documentId);
+        },
         error: err => {
           const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not load document details.';
           this.toast.show(message, 'error');
+          this.accessLoading.set(false);
         }
       });
-  }
-
-  openShare(doc: DocumentListItem): void {
-    this.shareDocumentId.set(doc.documentId);
-    this.shareRecipient.set('');
-    this.shareAccessLevel.set('0');
-    this.shareExpiryDate.set('');
-    this.shareReason.set('');
   }
 
   closeDetail(): void {
     this.detailDocument.set(null);
+    this.accessError.set(null);
+    this.accessApprovals.set([]);
   }
 
-  closeShare(): void {
-    this.shareDocumentId.set(null);
+  onEditFileSelected(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    const file = target?.files?.[0] ?? null;
+    this.selectedEditFile.set(file);
   }
 
-  submitShare(): void {
-    const documentId = this.shareDocumentId();
-    if (!documentId || !this.shareRecipient().trim()) {
-      this.toast.show('Enter a user id, username, or email to share with.', 'error');
+  saveDocumentEdit(): void {
+    const document = this.detailDocument();
+    const file = this.selectedEditFile();
+    if (!document || !file) {
+      this.toast.show('Choose a file before updating the document.', 'error');
       return;
     }
 
-    this.sharing.set(true);
-    this.docsApi.shareDocument(documentId, {
-      grantToUserId: this.shareRecipient().trim(),
-      accessLevel: Number(this.shareAccessLevel()),
-      expiryDate: this.shareExpiryDate() || null,
-      reason: this.shareReason().trim() || ''
+    this.savingEdit.set(true);
+    this.docsApi.updateDocument(document.documentId, {
+      file,
+      documentTypeId: document.documentTypeId,
+      isCertified: document.isCertified,
+      entityTypeId: null,
     })
-      .pipe(finalize(() => this.sharing.set(false)))
+      .pipe(finalize(() => this.savingEdit.set(false)))
       .subscribe({
-        next: response => {
-          this.toast.show(response.message || 'Document shared.', 'success');
-          this.closeShare();
+        next: updated => {
+          this.detailDocument.set(updated);
+          this.selectedEditFile.set(null);
+          this.toast.show('Document updated.', 'success');
+          this.loadDocuments();
         },
         error: err => {
-          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not share the document.';
+          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not update the document.';
           this.toast.show(message, 'error');
         }
       });
+  }
+
+  revokeDocumentAccess(approvalId: number): void {
+    const documentId = this.detailDocument()?.documentId;
+    if (!documentId) return;
+
+    this.docsApi.revokeDocumentAccess(documentId, approvalId).subscribe({
+      next: () => {
+        this.accessApprovals.update(list => list.filter(item => item.approvalId !== approvalId));
+        this.toast.show('Access approval revoked.', 'success');
+      },
+      error: err => {
+        const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not revoke access approval.';
+        this.toast.show(message, 'error');
+      }
+    });
   }
 
   delete(doc: DocumentListItem): void {
@@ -207,10 +218,47 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
         this.toast.show('Document deleted.', 'success');
       },
       error: err => {
-        const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not delete document.';
-        this.toast.show(message, 'error');
+        const payload = err?.error ?? {};
+        const errorMessage = payload.error ?? payload.message ?? payload.title ?? 'Could not delete document.';
+
+        if (err?.status === 409 || (typeof payload === 'object' && Array.isArray(payload.approvals))) {
+          this.blockedDeletionDocument.set({
+            documentId: doc.documentId,
+            fileName: doc.fileName,
+            documentTypeName: doc.documentTypeName,
+          });
+          this.blockedDeletionError.set(errorMessage);
+          this.blockedDeletionApprovals.set(Array.isArray(payload.approvals) ? payload.approvals : []);
+          return;
+        }
+
+        this.toast.show(errorMessage, 'error');
       }
     });
+  }
+
+  closeBlockedDeletionModal(): void {
+    this.blockedDeletionDocument.set(null);
+    this.blockedDeletionError.set(null);
+    this.blockedDeletionApprovals.set([]);
+  }
+
+  private loadDocumentAccess(documentId: number): void {
+    this.accessLoading.set(true);
+    this.accessError.set(null);
+
+    this.docsApi.getDocumentAccess(documentId)
+      .pipe(finalize(() => this.accessLoading.set(false)))
+      .subscribe({
+        next: approvals => {
+          this.accessApprovals.set(approvals ?? []);
+        },
+        error: err => {
+          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not load access details.';
+          this.accessApprovals.set([]);
+          this.accessError.set(message);
+        }
+      });
   }
 
   private loadDocuments(): void {
@@ -243,92 +291,6 @@ export class MyDocumentsComponent implements OnInit, AfterViewInit {
           this.pendingRequestsError.set(message);
         }
       });
-  }
-
-  private buildVerificationChart(): void {
-    const ctx = this.verificationChartRef?.nativeElement?.getContext('2d');
-    if (!ctx) return;
-
-    const approved = this.approvedDocumentCount();
-    const pending = this.documentsPendingReviewCount();
-    const rejected = this.rejectedDocumentCount();
-    const unreviewed = this.unreviewedDocumentCount();
-
-    const chart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Verified', 'Pending', 'Rejected', 'Unreviewed'],
-        datasets: [{
-          data: [approved, pending, rejected, unreviewed],
-          backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#d1d5db'],
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      },
-      options: {
-        responsive: true,
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
-
-    this.charts.push(chart);
-  }
-
-  private buildCategoryChart(): void {
-    const ctx = this.categoryChartRef?.nativeElement?.getContext('2d');
-    if (!ctx) return;
-
-    const counts = this.categoryCounts();
-    const chart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['KYC', 'FICA', 'Tax', 'Other'],
-        datasets: [{
-          data: [counts.kyc, counts.fica, counts.tax, counts.other],
-          backgroundColor: ['#1e2a3a', '#2d5282', '#7bafd4', '#b0cfe8'],
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      },
-      options: {
-        responsive: true,
-        cutout: '72%',
-        plugins: { legend: { display: false } }
-      }
-    });
-
-    this.charts.push(chart);
-  }
-
-  private buildRiskChart(): void {
-    const ctx = this.riskChartRef?.nativeElement?.getContext('2d');
-    if (!ctx) return;
-
-    const low = Math.max(this.approvedDocumentCount(), 1);
-    const medium = Math.max(this.documentsPendingReviewCount(), 1);
-    const high = Math.max(this.rejectedDocumentCount(), 1);
-    const critical = Math.max(this.unreviewedDocumentCount(), 1);
-
-    const chart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Low Risk', 'Medium Risk', 'High Risk', 'Critical Risk'],
-        datasets: [{
-          data: [low, medium, high, critical],
-          backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#991b1b'],
-          borderWidth: 2,
-          borderColor: '#fff'
-        }]
-      },
-      options: {
-        responsive: true,
-        cutout: '72%',
-        plugins: { legend: { display: false } }
-      }
-    });
-
-    this.charts.push(chart);
   }
 }
 

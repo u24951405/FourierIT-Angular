@@ -73,7 +73,11 @@ export class UserManagementService {
     return this.http.put<{ message: string }>(`${this.userBase}/profile/${profileId}`, payload);
   }
 
-  deleteUser(profileId: number): Observable<void> {
-    return this.http.delete<void>(`${this.userBase}/profile/${profileId}`);
+  deleteUser(profileId: number | null, userId: string): Observable<void> {
+    if (profileId && profileId > 0) {
+      return this.http.delete<void>(`${this.userBase}/profile/${profileId}`);
+    }
+
+    return this.http.delete<void>(`${this.userBase}/by-user/${encodeURIComponent(userId)}`);
   }
 }

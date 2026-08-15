@@ -205,5 +205,23 @@
       </button>
       <button type="button" class="btn btn--outline" (click)="cancel()">Cancel</button>
     </div>
+
+    @if (otpStepVisible()) {
+      <div class="form-card" style="margin-top:24px; padding:24px; border:1px solid #dbeafe;">
+        <h2 class="form-section-title">Email Verification</h2>
+        <p class="field__hint">We sent a 6-digit verification code to {{ pendingEmail() }}. Enter it below to activate your account.</p>
+        <div class="form-row">
+          <div class="field">
+            <label>Verification Code <span class="req">*</span></label>
+            <input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" [value]="otpCode()" (input)="otpCode.set($any($event.target).value)" placeholder="Enter 6-digit code">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--primary" (click)="verifyRegistrationOtp()" [disabled]="isVerifyingOtp()">
+            {{ isVerifyingOtp() ? 'Verifying...' : 'Verify Email' }}
+          </button>
+        </div>
+      </div>
+    }
   </form>
 </div>

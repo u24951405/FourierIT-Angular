@@ -102,19 +102,27 @@ export interface PendingDocumentAccessRequestDocument {
   ficaRuleId?: number;
 }
 
+export interface PendingRequestRecipient {
+  type: 'Department' | 'Individual';
+  name: string;
+}
+
 export interface PendingDocumentAccessRequest {
   enquiryRequestId: number;
   institutionId: number;
   institutionName: string;
-  targetUserId?: string;
+  requestType: 'Department' | 'Individual';
+  recipient: PendingRequestRecipient;
+  // Backward-compatible fields for components still using the legacy request shape
   senderName?: string;
-  senderType?: 'Institution';
   recipientName?: string;
   recipientType?: 'Department' | 'Individual';
   status: string;
   purposeNote: string;
   requestDate: string;
   documents: PendingDocumentAccessRequestDocument[];
+  isComplete?: boolean;
+  missingCount?: number;
 }
 
 export interface PendingDepartmentAccessRequest {
@@ -131,6 +139,29 @@ export interface PendingDepartmentAccessRequest {
   purposeNote: string;
   requestDate: string;
   documents: PendingDocumentAccessRequestDocument[];
+  isComplete?: boolean;
+  missingCount?: number;
+}
+
+export interface InstitutionRequestChecklistResponse {
+  enquiryRequestId: number;
+  requestType: 'Department' | 'Individual';
+  status: string;
+  recipient: {
+    type: 'Department' | 'Individual';
+    name: string;
+  };
+  isComplete: boolean;
+  missingCount: number;
+  requestedDocumentStatuses: Array<{
+    documentTypeId: number;
+    documentTypeName: string;
+    isMandatory: boolean;
+    state: 'Uploaded' | 'Rejected' | 'Missing';
+    isUploaded: boolean;
+    isRejected: boolean;
+    uploadCount: number;
+  }>;
 }
 
 export interface RouteRequestToOwnerPayload {

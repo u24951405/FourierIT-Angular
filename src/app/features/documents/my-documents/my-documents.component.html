@@ -72,7 +72,6 @@
           <div class="document-card__actions">
             <button type="button" class="btn btn--outline" (click)="openDetails(doc)">Details</button>
             <button type="button" class="btn btn--outline" (click)="download(doc)">Download</button>
-            <button type="button" class="btn btn--ghost" (click)="openShare(doc)">Share</button>
             <button type="button" class="btn btn--ghost" (click)="delete(doc)">Delete</button>
           </div>
         </article>
@@ -101,56 +100,114 @@
             <div><dt>Uploaded</dt><dd>{{ detailDocument()?.uploadedDate | date:'medium' }}</dd></div>
             <div><dt>Last modified</dt><dd>{{ detailDocument()?.lastModifiedDate ? (detailDocument()?.lastModifiedDate | date:'medium') : 'Never' }}</dd></div>
           </dl>
+
+          <section class="document-detail-access">
+            <h3>Institutions with access</h3>
+            @if (accessLoading()) {
+              <div class="documents-page__state">Loading institutions with access…</div>
+            } @else if (accessError()) {
+              <div class="documents-page__state documents-page__state--error">{{ accessError() }}</div>
+            } @else if (accessApprovals().length === 0) {
+              <div class="documents-page__state">No institutions currently have access to this document.</div>
+            } @else {
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Institution</th>
+                      <th>Approved by</th>
+                      <th>Date approved</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (approval of accessApprovals(); track approval.approvalId) {
+                      <tr>
+                        <td>{{ approval.institutionName }}</td>
+                        <td>{{ approval.approvedByUserName || 'System' }}</td>
+                        <td>{{ approval.approvedAt | date:'medium' }}</td>
+                        <td>
+                          <button type="button" class="btn btn--ghost" (click)="revokeDocumentAccess(approval.approvalId)">Revoke</button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <div class="field">
+            <label>Replace file</label>
+            <input type="file" (change)="onEditFileSelected($event)">
+            @if (selectedEditFile()) {
+              <p class="field__hint">Selected file: {{ selectedEditFile()?.name }}</p>
+            }
+          </div>
         }
-      </div>
-    </div>
-  }
-
-  @if (shareDocumentId()) {
-    <div class="modal-overlay" (click)="closeShare()">
-      <div class="modal" (click)="$event.stopPropagation()">
-        <div class="modal__header">
-          <div>
-            <h2>Share document</h2>
-            <p>Send this file to another user by id, username, or email.</p>
-          </div>
-          <button type="button" class="icon-btn" (click)="closeShare()">×</button>
-        </div>
-
-        <div class="field">
-          <label>Recipient <span class="req">*</span></label>
-          <input type="text" [value]="shareRecipient()" (input)="shareRecipient.set($any($event.target).value)" placeholder="user id, username, or email">
-        </div>
-
-        <div class="field-row">
-          <div class="field">
-            <label>Access level</label>
-            <select [value]="shareAccessLevel()" (change)="shareAccessLevel.set($any($event.target).value)">
-              <option value="0">View</option>
-              <option value="1">Download</option>
-              <option value="2">Edit</option>
-              <option value="3">Share</option>
-              <option value="4">Delete</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Expiry date</label>
-            <input type="date" [value]="shareExpiryDate()" (input)="shareExpiryDate.set($any($event.target).value)">
-          </div>
-        </div>
-
-        <div class="field">
-          <label>Reason</label>
-          <textarea rows="3" [value]="shareReason()" (input)="shareReason.set($any($event.target).value)" placeholder="Optional reason for sharing"></textarea>
-        </div>
 
         <div class="modal__footer">
-          <button type="button" class="btn btn--outline" (click)="closeShare()">Cancel</button>
-          <button type="button" class="btn btn--primary" [disabled]="sharing()" (click)="submitShare()">
-            {{ sharing() ? 'Sharing...' : 'Share document' }}
+          <button type="button" class="btn btn--outline" (click)="closeDetail()">Close</button>
+          <button type="button" class="btn btn--primary" [disabled]="!selectedEditFile() || savingEdit()" (click)="saveDocumentEdit()">
+            {{ savingEdit() ? 'Saving…' : 'Save changes' }}
           </button>
         </div>
       </div>
     </div>
   }
+
+  @if (blockedDeletionDocument()) {
+    <div class="modal-overlay" (click)="closeBlockedDeletionModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal__header">
+          <div>
+            <h2>Delete blocked</h2>
+            <p>This document cannot be deleted while the following access approvals exist.</p>
+          </div>
+          <button type="button" class="icon-btn" (click)="closeBlockedDeletionModal()">×</button>
+        </div>
+
+        @if (blockedDeletionError()) {
+          <div class="documents-page__state documents-page__state--error">{{ blockedDeletionError() }}</div>
+        }
+
+        @if (blockedDeletionApprovals().length === 0) {
+          <div class="documents-page__state">No active access blockers remain for this document.</div>
+        } @else {
+          @if (blockedDeletionApprovals().length > 0) {
+            <div class="table-wrapper">
+              <h4>Access approvals</h4>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Institution</th>
+                    <th>Approved by</th>
+                    <th>Date approved</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (approval of blockedDeletionApprovals(); track approval.approvalId) {
+                    <tr>
+                      <td>{{ approval.institutionName }}</td>
+                      <td>{{ approval.approvedByUserName || 'System' }}</td>
+                      <td>{{ approval.approvedAt | date:'medium' }}</td>
+                      <td>
+                        <button type="button" class="btn btn--ghost" (click)="revokeDocumentAccess(approval.approvalId)">Revoke</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        }
+
+        <div class="modal__footer">
+          <button type="button" class="btn btn--outline" (click)="closeBlockedDeletionModal()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
 </section>

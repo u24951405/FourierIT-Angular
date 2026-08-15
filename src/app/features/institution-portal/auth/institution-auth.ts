@@ -14,8 +14,9 @@ import {
   AuditEventType,
 } from '../../../core/models/institution.models';
 
-// Separate storage key — never conflicts with internal user JWT
+// Separate storage keys — never conflict with internal user JWT
 const INSTITUTION_SESSION_KEY = 'institution_session';
+const LAST_ACCESS_TOKEN_KEY = 'institution_last_access_token';
 
 // Max OTP attempts before session lock
 const MAX_OTP_ATTEMPTS = 3;
@@ -284,6 +285,9 @@ export class InstitutionAuthService {
     // Store in sessionStorage — clears automatically when tab closes
     sessionStorage.setItem(INSTITUTION_SESSION_KEY, JSON.stringify(session));
     this.session.set(session);
+
+    // Remember the access token so the user can return to sign-in and trigger a new OTP.
+    this.rememberLastAccessToken(this.pendingAccessToken);
   }
 
   private hydrateSession(): InstitutionSession | null {
@@ -334,6 +338,10 @@ export class InstitutionAuthService {
       });
     }
 
+    if (this.session()) {
+      this.rememberLastAccessToken(this.session()!.accessToken);
+    }
+
     sessionStorage.removeItem(INSTITUTION_SESSION_KEY);
     this.session.set(null);
     this.otpAttempts.set(0);
@@ -358,6 +366,10 @@ export class InstitutionAuthService {
       });
     }
 
+    if (this.session()) {
+      this.rememberLastAccessToken(this.session()!.accessToken);
+    }
+
     sessionStorage.removeItem(INSTITUTION_SESSION_KEY);
     this.session.set(null);
     this.otpAttempts.set(0);
@@ -378,6 +390,36 @@ export class InstitutionAuthService {
     if (!s) return 0;
     const diff = new Date(s.expiresAt).getTime() - Date.now();
     return Math.max(0, Math.floor(diff / 60000));
+  }
+
+  /**
+   * Remembers the last institution access token so the user can return to sign-in
+   * after ending their session and re-trigger OTP delivery.
+   */
+  rememberLastAccessToken(accessToken: string): void {
+    try {
+      localStorage.setItem(LAST_ACCESS_TOKEN_KEY, accessToken);
+    } catch {
+      // Ignore storage failures, fallback behavior still works.
+    }
+  }
+
+  consumeLastAccessToken(): string | null {
+    try {
+      const token = localStorage.getItem(LAST_ACCESS_TOKEN_KEY);
+      localStorage.removeItem(LAST_ACCESS_TOKEN_KEY);
+      return token;
+    } catch {
+      return null;
+    }
+  }
+
+  getLastAccessToken(): string | null {
+    try {
+      return localStorage.getItem(LAST_ACCESS_TOKEN_KEY);
+    } catch {
+      return null;
+    }
   }
 
   /**

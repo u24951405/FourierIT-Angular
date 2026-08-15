@@ -30,7 +30,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (user of filtered; track user.id) {
+          @for (user of filtered; track user.userId) {
             <tr>
               <td class="td-name">{{ user.firstName }} {{ user.lastName }}</td>
               <td class="td-light">{{ user.email }}</td>

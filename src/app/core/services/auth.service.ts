@@ -23,6 +23,18 @@ export interface RegisterPayload {
   roles: string[];
 }
 
+export interface RegisterResponse {
+  message?: string;
+  email?: string;
+  requiresVerification?: boolean;
+  token?: string;
+}
+
+export interface VerifyRegistrationOtpPayload {
+  emailAddress: string;
+  otp: string;
+}
+
 export interface EntityVerificationResponse {
   isValid: boolean;
   message?: string;
@@ -110,8 +122,12 @@ export class AuthService {
     );
   }
 
-  register(payload: RegisterPayload): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/register`, payload);
+  register(payload: RegisterPayload): Observable<RegisterResponse> {
+    return this.http.post<RegisterResponse>(`${this.base}/register`, payload);
+  }
+
+  verifyRegistrationOtp(payload: VerifyRegistrationOtpPayload): Observable<{ message: string; token?: string }> {
+    return this.http.post<{ message: string; token?: string }>(`${this.base}/verify-registration-otp`, payload);
   }
 
   verifyEntity(entityTypeId: number, identificationNumber: string): Observable<EntityVerificationResponse> {

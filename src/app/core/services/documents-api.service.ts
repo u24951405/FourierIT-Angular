@@ -13,11 +13,13 @@ export interface DocumentListItem {
   fileSizeBytes: number;
   uploadedDate: string;
   lastModifiedDate: string | null;
+  documentTypeId: number;
   documentTypeName: string;
 }
 
 export interface DocumentDetailItem {
   documentId: number;
+  documentTypeId: number;
   fileName: string;
   currentStatus: string;
   isCertified: boolean;
@@ -27,6 +29,14 @@ export interface DocumentDetailItem {
   uploadedDate: string;
   lastModifiedDate: string | null;
   documentTypeName: string;
+}
+
+export interface DocumentAccessApprovalItem {
+  approvalId: number;
+  institutionId: number;
+  institutionName: string;
+  approvedByUserName: string;
+  approvedAt: string;
 }
 
 export interface RequiredDocumentStatusItem {
@@ -67,13 +77,6 @@ export interface UploadDocumentPayload {
   commissionerName?: string;
   certificationDate?: string | null;
   entityTypeId?: number | null;
-}
-
-export interface ShareDocumentPayload {
-  grantToUserId: string;
-  accessLevel: number;
-  expiryDate?: string | null;
-  reason?: string;
 }
 
 export interface AllUserDocumentsItem {
@@ -165,13 +168,12 @@ export class DocumentsApiService {
     return this.http.get<DocumentDetailItem>(`${this.base}/${documentId}`);
   }
 
-  shareDocument(documentId: number, payload: ShareDocumentPayload): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.base}/${documentId}/share`, {
-      GrantToUserId: payload.grantToUserId,
-      AccessLevel: payload.accessLevel,
-      ExpiryDate: payload.expiryDate,
-      Reason: payload.reason ?? ''
-    });
+  getDocumentAccess(documentId: number): Observable<DocumentAccessApprovalItem[]> {
+    return this.http.get<DocumentAccessApprovalItem[]>(`${this.base}/${documentId}/access`);
+  }
+
+  revokeDocumentAccess(documentId: number, approvalId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${documentId}/access/${approvalId}`);
   }
 
   getAllUsersDocuments(): Observable<AllUserDocumentsItem[]> {

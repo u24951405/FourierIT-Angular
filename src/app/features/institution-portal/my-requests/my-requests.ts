@@ -2,9 +2,16 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
-import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
+import {
+  PendingDocumentAccessRequest,
+  InstitutionRequestChecklistResponse,
+} from '../../../core/models/institution.models';
 import { Router } from '@angular/router';
 import { InstitutionAuthService } from '../auth/institution-auth';
+
+type PendingRequestWithChecklist = PendingDocumentAccessRequest & {
+  requestedDocumentStatuses?: InstitutionRequestChecklistResponse['requestedDocumentStatuses'];
+};
 
 @Component({
   selector: 'app-my-requests',
@@ -20,7 +27,7 @@ export class MyRequests implements OnInit {
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly pendingRequests = signal<any[]>([]);
+  readonly pendingRequests = signal<PendingRequestWithChecklist[]>([]);
 
   ngOnInit(): void {
     this.loadPendingRequests();
@@ -45,8 +52,35 @@ export class MyRequests implements OnInit {
       .getInstitutionRequests(token)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (requests) => {
-          this.pendingRequests.set(requests ?? []);
+        next: (requests: PendingDocumentAccessRequest[]) => {
+          this.pendingRequests.set((requests ?? []) as PendingRequestWithChecklist[]);
+
+          // Fetch checklist details for each request and merge into the list
+          const list = this.pendingRequests();
+          for (const req of list) {
+            try {
+              this.requestService.getInstitutionRequestChecklist(token, req.enquiryRequestId).subscribe({
+                next: (check) => {
+                  const current = this.pendingRequests();
+                  const idx = current.findIndex((r) => r.enquiryRequestId === req.enquiryRequestId);
+                  if (idx >= 0) {
+                    current[idx] = {
+                      ...current[idx],
+                      isComplete: check.isComplete,
+                      missingCount: check.missingCount,
+                      requestedDocumentStatuses: check.requestedDocumentStatuses,
+                    };
+                    this.pendingRequests.set([...current]);
+                  }
+                },
+                error: (err) => {
+                  console.debug('[MyRequests] checklist fetch failed for request', req.enquiryRequestId, err?.message ?? err);
+                },
+              });
+            } catch (ex) {
+              console.debug('[MyRequests] checklist subscription error', ex);
+            }
+          }
         },
         error: (err) => {
           const message = err?.error?.error ?? err?.error?.message ?? 'Could not load your pending requests.';
