@@ -21,8 +21,9 @@ const LAST_ACCESS_TOKEN_KEY = 'institution_last_access_token';
 // Max OTP attempts before session lock
 const MAX_OTP_ATTEMPTS = 3;
 
-// Session duration in hours
-const SESSION_HOURS = 8;
+// A successful OTP stays valid for 7 days, even across logout/re-entry to the same institution portal.
+const OTP_VALIDITY_DAYS = 7;
+const SESSION_HOURS = OTP_VALIDITY_DAYS * 24;
 
 @Injectable({ providedIn: 'root' })
 export class InstitutionAuthService {
@@ -34,8 +35,8 @@ export class InstitutionAuthService {
 
   /**
    * Current institution session as a signal.
-   * Hydrated from sessionStorage on service init.
-   * Uses sessionStorage (not localStorage) so it clears when the tab closes.
+   * Hydrated from localStorage so a valid OTP-backed session remains available for 3 days,
+   * even after logout/re-entry to the same institution portal.
    */
   readonly session = signal<InstitutionSession | null>(this.hydrateSession());
 
@@ -268,7 +269,7 @@ export class InstitutionAuthService {
     if (!this.pendingValidation || !this.pendingAccessToken) return;
 
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + SESSION_HOURS);
+    expiresAt.setDate(expiresAt.getDate() + OTP_VALIDITY_DAYS);
 
     const session: InstitutionSession = {
       institutionId: this.pendingValidation.institutionId,
@@ -282,8 +283,8 @@ export class InstitutionAuthService {
       authMethod: 'OTP_VERIFIED',
     };
 
-    // Store in sessionStorage — clears automatically when tab closes
-    sessionStorage.setItem(INSTITUTION_SESSION_KEY, JSON.stringify(session));
+    // Persist the verified portal access for 7 days so logout does not revoke the same OTP-backed session.
+    localStorage.setItem(INSTITUTION_SESSION_KEY, JSON.stringify(session));
     this.session.set(session);
 
     // Remember the access token so the user can return to sign-in and trigger a new OTP.
@@ -292,12 +293,11 @@ export class InstitutionAuthService {
 
   private hydrateSession(): InstitutionSession | null {
     try {
-      const raw = sessionStorage.getItem(INSTITUTION_SESSION_KEY);
+      const raw = localStorage.getItem(INSTITUTION_SESSION_KEY);
       if (!raw) return null;
       const session = JSON.parse(raw) as InstitutionSession;
-      // Validate session has not expired
       if (new Date(session.expiresAt) <= new Date()) {
-        sessionStorage.removeItem(INSTITUTION_SESSION_KEY);
+        localStorage.removeItem(INSTITUTION_SESSION_KEY);
         return null;
       }
       return session;
@@ -342,12 +342,13 @@ export class InstitutionAuthService {
       this.rememberLastAccessToken(this.session()!.accessToken);
     }
 
-    sessionStorage.removeItem(INSTITUTION_SESSION_KEY);
-    this.session.set(null);
+    // Keep the validated OTP-backed portal access alive for 7 days so the same institution account
+    // can re-enter the portal without needing a fresh OTP after logout.
+    this.session.set(this.hydrateSession());
     this.otpAttempts.set(0);
     this.pendingValidation = null;
     this.pendingAccessToken = null;
-    this.router.navigate(['/institution/auth/expired']);
+    this.router.navigate(['/institution/dashboard']);
   }
 
   /**
@@ -370,13 +371,13 @@ export class InstitutionAuthService {
       this.rememberLastAccessToken(this.session()!.accessToken);
     }
 
-    sessionStorage.removeItem(INSTITUTION_SESSION_KEY);
-    this.session.set(null);
+    // Preserve the validated institution access for the full 7-day window so the same OTP remains usable.
+    this.session.set(this.hydrateSession());
     this.otpAttempts.set(0);
     this.pendingValidation = null;
     this.pendingAccessToken = null;
 
-    this.router.navigate(['/institution/thank-you']);
+    this.router.navigate(['/institution/dashboard']);
   }
 
   // ─── Session Expiry Check ───────────────────────────────────────────────────

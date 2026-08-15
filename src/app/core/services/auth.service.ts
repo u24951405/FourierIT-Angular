@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, map, of, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -81,6 +81,10 @@ export interface CurrentAccount {
   dateOfBirth: string | null;
   departmentId: number | null;
   departmentName: string | null;
+  profileImageUrl?: string | null;
+  profileImage?: string | null;
+  avatarUrl?: string | null;
+  otpExpiryMinutes?: number | null;
 }
 
 export interface UpdateCurrentAccountPayload {
@@ -92,10 +96,28 @@ export interface UpdateCurrentAccountPayload {
   emailAddress: string;
   role: string;
   accountStatus: string;
+  profileImageUrl?: string | null;
+  otpExpiryMinutes?: number | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  static resolveProfileImageUrl(account: Partial<CurrentAccount> | null | undefined): string | null {
+    if (!account) return null;
+    const candidates = [
+      account.profileImageUrl,
+      account.profileImage,
+      account.avatarUrl
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+
+    return null;
+  }
   private http = inject(HttpClient);
   private router = inject(Router);
   private base = `${environment.apiUrl}/user`;
@@ -266,6 +288,17 @@ export class AuthService {
 
   getCurrentAccount(): Observable<CurrentAccount> {
     return this.http.get<CurrentAccount>(`${this.base}/me`);
+  }
+
+  uploadProfileImage(file: File): Observable<{ message: string; imageUrl?: string | null }> {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('File', file, file.name);
+    formData.append('profileImage', file, file.name);
+
+    return this.http.post<{ message: string; imageUrl?: string | null }>(`${this.base}/profile-image`, formData).pipe(
+      catchError(() => this.http.post<{ message: string; imageUrl?: string | null }>(`${this.base}/profile-image-upload`, formData))
+    );
   }
 
   updateCurrentAccount(profileId: number, payload: UpdateCurrentAccountPayload): Observable<{ message: string }> {

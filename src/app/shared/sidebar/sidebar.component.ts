@@ -39,6 +39,9 @@ export class SidebarComponent {
   editingProfile = signal(false);
   savingProfile = signal(false);
   profileSaveError = signal<string | null>(null);
+  selectedProfileFile = signal<File | null>(null);
+  selectedProfileImage = signal<string | null>(null);
+  readonly profileImageUrl = computed(() => this.selectedProfileImage() ?? AuthService.resolveProfileImageUrl(this.accountDetails()));
   readonly maxBirthDate = formatIsoDateLocal(new Date());
   readonly minBirthDate = formatIsoDateLocal((() => {
     const d = new Date();
@@ -52,7 +55,8 @@ export class SidebarComponent {
     emailAddress: ['', [Validators.required, Validators.email]],
     phoneNumber: ['', saMobilePhoneOptional()],
     jobTitle: [''],
-    dateOfBirth: ['', birthDateReasonable()]
+    dateOfBirth: ['', birthDateReasonable()],
+    otpExpiryMinutes: [5, [Validators.min(1), Validators.max(60)]]
   });
 
   private readonly iconSvgMap: Readonly<Record<string, string>> = {
@@ -258,17 +262,24 @@ export class SidebarComponent {
       });
   }
 
+  canManageOtpExpiry(): boolean {
+    return this.auth.isSuperAdmin();
+  }
+
   startEditProfile(): void {
     const account = this.accountDetails();
     if (!account) return;
     this.profileSaveError.set(null);
+    this.selectedProfileFile.set(null);
+    this.selectedProfileImage.set(AuthService.resolveProfileImageUrl(account));
     this.editForm.reset({
       firstName: account.firstName ?? '',
       lastName: account.lastName ?? '',
       emailAddress: account.email ?? '',
       phoneNumber: this.displayPhone(account),
       jobTitle: account.jobTitle ?? '',
-      dateOfBirth: this.toDateInputValue(account.dateOfBirth)
+      dateOfBirth: this.toDateInputValue(account.dateOfBirth),
+      otpExpiryMinutes: this.getOtpExpiryMinutes(account)
     });
     this.editingProfile.set(true);
   }
@@ -276,6 +287,30 @@ export class SidebarComponent {
   cancelEditProfile(): void {
     this.editingProfile.set(false);
     this.profileSaveError.set(null);
+    this.selectedProfileFile.set(null);
+    this.selectedProfileImage.set(AuthService.resolveProfileImageUrl(this.accountDetails()));
+  }
+
+  onProfileImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      this.profileSaveError.set('Please choose an image file.');
+      input.value = '';
+      return;
+    }
+
+    this.selectedProfileFile.set(file);
+    this.selectedProfileImage.set(URL.createObjectURL(file));
+    this.profileSaveError.set(null);
+    input.value = '';
+  }
+
+  clearProfileImage(): void {
+    this.selectedProfileFile.set(null);
+    this.selectedProfileImage.set(AuthService.resolveProfileImageUrl(this.accountDetails()));
   }
 
   saveProfile(): void {
@@ -291,38 +326,59 @@ export class SidebarComponent {
     }
 
     const formValue = this.editForm.getRawValue();
-    const payload: UpdateCurrentAccountPayload = {
-      firstName: (formValue.firstName ?? '').trim(),
-      lastName: (formValue.lastName ?? '').trim(),
-      dateOfBirth: formValue.dateOfBirth || '',
-      phoneNumber: (formValue.phoneNumber ?? '').trim(),
-      jobTitle: (formValue.jobTitle ?? '').trim(),
-      emailAddress: (formValue.emailAddress ?? '').trim(),
-      role: account.roles[0] ?? '',
-      accountStatus: account.accountStatus ?? 'Active'
+    const finalizeSave = (uploadedImageUrl: string | null) => {
+      const payload: UpdateCurrentAccountPayload = {
+        firstName: (formValue.firstName ?? '').trim(),
+        lastName: (formValue.lastName ?? '').trim(),
+        dateOfBirth: formValue.dateOfBirth || '',
+        phoneNumber: (formValue.phoneNumber ?? '').trim(),
+        jobTitle: (formValue.jobTitle ?? '').trim(),
+        emailAddress: (formValue.emailAddress ?? '').trim(),
+        role: account.roles[0] ?? '',
+        accountStatus: account.accountStatus ?? 'Active',
+        profileImageUrl: uploadedImageUrl ?? AuthService.resolveProfileImageUrl(account),
+        otpExpiryMinutes: this.canManageOtpExpiry() ? Number(formValue.otpExpiryMinutes ?? 5) : account.otpExpiryMinutes ?? 5
+      };
+
+      this.auth.updateCurrentAccount(account.profileId!, payload)
+        .pipe(finalize(() => this.savingProfile.set(false)))
+        .subscribe({
+          next: () => {
+            this.editingProfile.set(false);
+            this.loadAccount();
+            this.selectedProfileFile.set(null);
+            this.selectedProfileImage.set(null);
+          },
+          error: (err) => {
+            const body = err?.error;
+            const msg =
+              (typeof body === 'string' ? body : null)
+              ?? body?.error
+              ?? body?.title
+              ?? body?.message
+              ?? (err?.message as string | undefined)
+              ?? 'Could not update your profile.';
+            this.profileSaveError.set(typeof msg === 'string' ? msg : 'Could not update your profile.');
+          }
+        });
     };
 
     this.savingProfile.set(true);
     this.profileSaveError.set(null);
-    this.auth.updateCurrentAccount(account.profileId, payload)
-      .pipe(finalize(() => this.savingProfile.set(false)))
-      .subscribe({
-        next: () => {
-          this.editingProfile.set(false);
-          this.loadAccount();
-        },
-        error: (err) => {
-          const body = err?.error;
-          const msg =
-            (typeof body === 'string' ? body : null)
-            ?? body?.error
-            ?? body?.title
-            ?? body?.message
-            ?? (err?.message as string | undefined)
-            ?? 'Could not update your profile.';
-          this.profileSaveError.set(typeof msg === 'string' ? msg : 'Could not update your profile.');
+
+    const pendingFile = this.selectedProfileFile();
+    if (pendingFile) {
+      this.auth.uploadProfileImage(pendingFile).subscribe({
+        next: (response) => finalizeSave(response.imageUrl ?? AuthService.resolveProfileImageUrl(account) ?? null),
+        error: () => {
+          this.savingProfile.set(false);
+          this.profileSaveError.set('Could not upload your profile image.');
         }
       });
+      return;
+    }
+
+    finalizeSave(AuthService.resolveProfileImageUrl(account));
   }
 
   get userInitials(): string {
@@ -346,6 +402,12 @@ export class SidebarComponent {
 
   displayPhone(a: CurrentAccount): string {
     return (a.profilePhoneNumber || a.phoneNumber || '').trim();
+  }
+
+  getOtpExpiryMinutes(a: CurrentAccount): number {
+    const value = Number(a.otpExpiryMinutes ?? 5);
+    if (!Number.isFinite(value) || value < 1) return 5;
+    return Math.min(Math.max(value, 1), 60);
   }
 
   profileFullName(a: CurrentAccount): string {

@@ -257,6 +257,12 @@ th {
   font-weight: 500;
 }
 
+.group-footer {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e9eef7;
+}
+
 .group-totals {
   display: flex;
   gap: 0.7rem;
@@ -264,6 +270,18 @@ th {
   color: #263a60;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.group-totals--header {
+  justify-content: flex-end;
+}
+
+.group-totals--bottom {
+  justify-content: flex-start;
+  background: #f8fbff;
+  border: 1px solid #e4edf8;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.75rem;
 }
 
 .state {
