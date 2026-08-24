@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, catchError, map, of, tap } from 'rxjs';
+import { Observable, map, of, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User } from '../models/user.model';
 
@@ -293,12 +293,12 @@ export class AuthService {
   uploadProfileImage(file: File): Observable<{ message: string; imageUrl?: string | null }> {
     const formData = new FormData();
     formData.append('file', file, file.name);
-    formData.append('File', file, file.name);
-    formData.append('profileImage', file, file.name);
 
-    return this.http.post<{ message: string; imageUrl?: string | null }>(`${this.base}/profile-image`, formData).pipe(
-      catchError(() => this.http.post<{ message: string; imageUrl?: string | null }>(`${this.base}/profile-image-upload`, formData))
-    );
+    return this.http.post<{ message: string; imageUrl?: string | null }>(`${this.base}/profile-image`, formData);
+  }
+
+  removeProfileImage(): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.base}/profile-image`);
   }
 
   updateCurrentAccount(profileId: number, payload: UpdateCurrentAccountPayload): Observable<{ message: string }> {

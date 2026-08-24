@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
@@ -25,6 +26,7 @@ export class MyDocumentsComponent {
   private docsApi = inject(DocumentsApiService);
   private requestService = inject(DocumentAccessRequestService);
   private toast = inject(ToastService);
+  private sanitizer = inject(DomSanitizer);
   readonly auth = inject(AuthService);
 
   today = new Date().toLocaleDateString('en-ZA', {
@@ -38,7 +40,8 @@ export class MyDocumentsComponent {
   readonly calendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   readonly detailDocument = signal<DocumentDetailItem | null>(null);
   readonly loadingDetail = signal(false);
-  readonly previewUrl = signal<string | null>(null);
+  readonly previewUrl = signal<SafeResourceUrl | null>(null);
+  readonly previewRawUrl = signal<string | null>(null);
   readonly previewName = signal<string | null>(null);
   readonly previewType = signal<'pdf' | 'image' | 'other'>('other');
   readonly previewLoading = signal(false);
@@ -175,12 +178,53 @@ export class MyDocumentsComponent {
       });
   }
 
-  openShare(doc: DocumentListItem): void {
-    this.shareDocumentId.set(doc.documentId);
-    this.shareRecipient.set('');
-    this.shareAccessLevel.set('0');
-    this.shareExpiryDate.set('');
-    this.shareReason.set('');
+  openEventDocument(event: { documentId: number; fileName: string; title: string; type: 'expiring' | 'update'; date: string }): void {
+    const document = this.documents().find(item => item.documentId === event.documentId);
+    if (document) {
+      this.openDetails(document);
+    }
+  }
+
+  openPreview(doc: DocumentListItem): void {
+    this.previewLoading.set(true);
+    this.previewName.set(doc.fileName);
+    this.previewType.set(this.getPreviewType(doc.fileName));
+    this.previewUrl.set(null);
+    this.previewRawUrl.set(null);
+
+    this.docsApi.previewDocument(doc.documentId).subscribe({
+      next: blob => {
+        const fileBlob = blob.type ? blob : new Blob([blob], { type: this.getMimeType(doc.fileName) });
+        const rawUrl = URL.createObjectURL(fileBlob);
+        this.previewRawUrl.set(rawUrl);
+        this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl));
+        this.previewLoading.set(false);
+      },
+      error: () => {
+        this.previewUrl.set(null);
+        this.previewRawUrl.set(null);
+        this.previewLoading.set(false);
+        this.toast.show(`Could not preview ${doc.fileName}.`, 'error');
+      }
+    });
+  }
+
+  closePreview(): void {
+    const currentUrl = this.previewRawUrl();
+    if (currentUrl) {
+      URL.revokeObjectURL(currentUrl);
+    }
+    this.previewRawUrl.set(null);
+    this.previewUrl.set(null);
+    this.previewName.set(null);
+    this.previewType.set('other');
+    this.previewLoading.set(false);
+  }
+
+  openPreviewInNewTab(): void {
+    const currentUrl = this.previewRawUrl();
+    if (!currentUrl) return;
+    window.open(currentUrl, '_blank', 'noopener,noreferrer');
   }
 
   closeDetail(): void {
@@ -355,6 +399,33 @@ export class MyDocumentsComponent {
     if (!value) return null;
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  formatCalendarDate(value: Date): string {
+    return this.toIsoDate(value);
+  }
+
+  private getPreviewType(fileName: string): 'pdf' | 'image' | 'other' {
+    const lowered = fileName.toLowerCase();
+    if (lowered.endsWith('.pdf')) return 'pdf';
+    if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(lowered)) return 'image';
+    return 'other';
+  }
+
+  private getMimeType(fileName: string): string {
+    const lowered = fileName.toLowerCase();
+    if (lowered.endsWith('.pdf')) return 'application/pdf';
+    if (lowered.endsWith('.png')) return 'image/png';
+    if (lowered.endsWith('.jpg') || lowered.endsWith('.jpeg')) return 'image/jpeg';
+    if (lowered.endsWith('.gif')) return 'image/gif';
+    if (lowered.endsWith('.webp')) return 'image/webp';
+    if (lowered.endsWith('.bmp')) return 'image/bmp';
+    if (lowered.endsWith('.svg')) return 'image/svg+xml';
+    if (lowered.endsWith('.txt')) return 'text/plain';
+    if (lowered.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (lowered.endsWith('.doc')) return 'application/msword';
+    if (lowered.endsWith('.xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    return 'application/octet-stream';
   }
 
   private toIsoDate(value: Date): string {

@@ -1,4 +1,12 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+  AfterViewInit,
+  ViewChild,
+  ElementRef
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -14,14 +22,33 @@ import { AuditEventType } from '../../../core/models/institution.models';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
   private fb     = inject(FormBuilder);
   private auth   = inject(AuthService);
   private router = inject(Router);
 
+  @ViewChild('backgroundVideo') backgroundVideo?: ElementRef<HTMLVideoElement>;
+
   isLoading  = signal(false);
   errorMsg   = signal<string | null>(null);
   showPass   = signal(false);
+
+  ngAfterViewInit(): void {
+    const video = this.backgroundVideo?.nativeElement;
+    if (!video) {
+      return;
+    }
+
+    video.muted = true;
+    video.volume = 0;
+    video.setAttribute('muted', 'true');
+    video.setAttribute('playsinline', 'true');
+
+    video.play().catch(() => {
+      // Browsers may block autoplay until the user interacts; the video remains muted
+      // and can still be started later without sound if the user chooses to play it.
+    });
+  }
 
   //create the login form  builder
   //uses the email and password

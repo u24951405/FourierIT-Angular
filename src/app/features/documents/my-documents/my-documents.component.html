@@ -41,7 +41,7 @@
         <div class="calendar-day" [class.calendar-day--outside-month]="day.getMonth() !== calendarMonth().getMonth()">
           <span class="calendar-day__number">{{ day.getDate() }}</span>
 
-          @for (event of calendarEvents().filter(item => item.date === (day | date:'yyyy-MM-dd')); track event.title) {
+          @for (event of calendarEvents().filter(item => item.date === formatCalendarDate(day)); track event.title) {
             <button type="button" class="calendar-event" [class.calendar-event--expiring]="event.type === 'expiring'" [class.calendar-event--update]="event.type === 'update'" [title]="event.fileName" (click)="openEventDocument(event)">
               {{ event.label }}: {{ event.fileName }}
             </button>
@@ -130,7 +130,7 @@
             <p>Document preview</p>
           </div>
           <div class="preview-modal__actions">
-            <button type="button" class="btn btn--outline btn--small" (click)="openPreviewInNewTab()" [disabled]="previewType() === 'other'">
+            <button type="button" class="btn btn--outline btn--small" (click)="openPreviewInNewTab()" [disabled]="!previewRawUrl()">
               Open in new tab
             </button>
             <button type="button" class="icon-btn" (click)="closePreview()">×</button>

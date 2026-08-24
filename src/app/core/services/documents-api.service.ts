@@ -156,6 +156,10 @@ export class DocumentsApiService {
     return this.http.put<DocumentDetailItem>(`${this.base}/${documentId}`, formData);
   }
 
+  previewDocument(documentId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/${documentId}/preview`, { responseType: 'blob' });
+  }
+
   downloadDocument(documentId: number): Observable<Blob> {
     return this.http.get(`${this.base}/${documentId}/download`, { responseType: 'blob' });
   }

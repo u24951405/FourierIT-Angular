@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -26,7 +26,7 @@ export interface NavItem {
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   auth = inject(AuthService);
   private host = inject(ElementRef<HTMLElement>);
   private fb = inject(FormBuilder);
@@ -70,6 +70,10 @@ export class SidebarComponent {
   private readonly iconCache = new Map<string, SafeHtml>();
 
   readonly visibleNavItems = computed(() => this.buildVisibleNavItems());
+
+  ngOnInit(): void {
+    this.loadAccount();
+  }
 
   //these are the icons used in the sidebar, they are stored as svg strings and rendered using innerHTML in the template
   getIcon(name: string): SafeHtml {
@@ -309,8 +313,28 @@ export class SidebarComponent {
   }
 
   clearProfileImage(): void {
-    this.selectedProfileFile.set(null);
-    this.selectedProfileImage.set(AuthService.resolveProfileImageUrl(this.accountDetails()));
+    const pendingFile = this.selectedProfileFile();
+    if (pendingFile && !AuthService.resolveProfileImageUrl(this.accountDetails())) {
+      this.selectedProfileFile.set(null);
+      this.selectedProfileImage.set(null);
+      return;
+    }
+
+    this.savingProfile.set(true);
+    this.profileSaveError.set(null);
+    this.auth.removeProfileImage()
+      .pipe(finalize(() => this.savingProfile.set(false)))
+      .subscribe({
+        next: () => {
+          this.selectedProfileFile.set(null);
+          this.selectedProfileImage.set(null);
+          this.loadAccount();
+        },
+        error: (err) => {
+          const body = err?.error;
+          this.profileSaveError.set(body?.error ?? 'Could not remove your profile image.');
+        }
+      });
   }
 
   saveProfile(): void {
@@ -322,6 +346,11 @@ export class SidebarComponent {
 
     if (this.editForm.invalid) {
       this.editForm.markAllAsTouched();
+      const invalidControls = Object.entries(this.editForm.controls)
+        .filter(([, control]) => control.invalid)
+        .map(([name, control]) => `${name}: ${Object.keys(control.errors ?? {}).join(', ')}`)
+        .join('; ');
+      this.profileSaveError.set(`Please correct the following fields: ${invalidControls || 'form is invalid'}.`);
       return;
     }
 
