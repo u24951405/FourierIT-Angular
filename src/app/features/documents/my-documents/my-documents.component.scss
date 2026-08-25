@@ -131,6 +131,11 @@
   color: #b45309;
 }
 
+.calendar-event:not(.calendar-event--expiring):not(.calendar-event--update) {
+  background: #f3f4f6;
+  color: var(--text-light);
+}
+
 .calendar-event--update {
   background: #eff6ff;
   color: #1d4ed8;

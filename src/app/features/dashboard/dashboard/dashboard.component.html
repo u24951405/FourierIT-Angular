@@ -75,13 +75,21 @@
             <div class="compliance-label">Compliance %</div>
             <div class="compliance-value">{{ complianceSummary?.compliancePercentage ?? 0 }}%</div>
           </div>
-          <div>
+          <div *ngIf="dashboardScope !== 'department'">
             <div class="compliance-label">Uploaded</div>
             <div class="compliance-value">{{ complianceSummary?.uploaded ?? 0 }}</div>
           </div>
-          <div>
+          <div *ngIf="dashboardScope === 'department'">
+            <div class="compliance-label">Department Members</div>
+            <div class="compliance-value">{{ complianceSummary?.totalUsers ?? 0 }}</div>
+          </div>
+          <div *ngIf="dashboardScope !== 'department'">
             <div class="compliance-label">Missing</div>
             <div class="compliance-value">{{ complianceSummary?.missing ?? 0 }}</div>
+          </div>
+          <div *ngIf="dashboardScope === 'department'">
+            <div class="compliance-label">Non-Compliant Members</div>
+            <div class="compliance-value">{{ complianceSummary?.nonCompliantCount ?? 0 }}</div>
           </div>
         </div>
       </div>
@@ -150,7 +158,7 @@
     <!-- Documents by Category -->
     <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/reports/activity')">
       <h3 class="dash-chart-card__title">Compliance Status Breakdown</h3>
-      <p class="dash-chart-card__subtitle">Real dashboard counts from backend compliance status data</p>
+      <p class="dash-chart-card__subtitle">Risk-tier composition across users in the current scope</p>
       <div class="dash-doughnut-wrap">
         <canvas #categoryChart></canvas>
       </div>

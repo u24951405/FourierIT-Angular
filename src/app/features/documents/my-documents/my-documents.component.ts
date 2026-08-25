@@ -13,6 +13,8 @@ import {
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
 import { ToastService } from '../../../core/services/toast.service';
+import { buildExpiryCalendarEvents, CalendarEvent } from './calendar-events';
+import { ComplianceService } from '../../../core/services/compliance.service';
 
 @Component({
   selector: 'app-my-documents',
@@ -25,6 +27,7 @@ export class MyDocumentsComponent {
   private router = inject(Router);
   private docsApi = inject(DocumentsApiService);
   private requestService = inject(DocumentAccessRequestService);
+  private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
   private sanitizer = inject(DomSanitizer);
   readonly auth = inject(AuthService);
@@ -48,6 +51,7 @@ export class MyDocumentsComponent {
   readonly pendingRequests = signal<PendingDocumentAccessRequest[]>([]);
   readonly pendingRequestsLoading = signal(false);
   readonly pendingRequestsError = signal<string | null>(null);
+  readonly warningThresholdDays = signal<number | null>(null);
   readonly accessLoading = signal(false);
   readonly accessError = signal<string | null>(null);
   readonly accessApprovals = signal<DocumentAccessApprovalItem[]>([]);
@@ -99,7 +103,23 @@ export class MyDocumentsComponent {
   );
   readonly latestRequests = computed(() => this.pendingRequests().slice(0, 5));
   readonly calendarDays = computed(() => this.buildCalendarDays(this.calendarMonth()));
-  readonly calendarEvents = computed(() => this.buildCalendarEvents(this.documents(), this.calendarMonth()));
+  readonly calendarEvents = computed(() => {
+    const threshold = this.warningThresholdDays();
+    const documents = this.documents();
+    console.log('[TEMP DIAGNOSTIC] calendarEvents inputs', {
+      threshold,
+      documentCount: documents.length
+    });
+
+    if (threshold == null) {
+      console.log('[TEMP DIAGNOSTIC] calendarEvents output', { eventCount: 0 });
+      return [];
+    }
+
+    const events = this.buildCalendarEvents(documents, this.calendarMonth(), threshold);
+    console.log('[TEMP DIAGNOSTIC] calendarEvents output', { eventCount: events.length });
+    return events;
+  });
   readonly calendarSummary = computed(() => {
     const events = this.calendarEvents();
     return {
@@ -109,8 +129,10 @@ export class MyDocumentsComponent {
   });
 
   ngOnInit(): void {
+    console.log('[TEMP DIAGNOSTIC] calendarMonth initialized', this.calendarMonth());
     this.loadDocuments();
     this.loadPendingRequests();
+    this.loadWarningThreshold();
   }
 
   get filteredDocuments(): DocumentListItem[] {
@@ -178,7 +200,7 @@ export class MyDocumentsComponent {
       });
   }
 
-  openEventDocument(event: { documentId: number; fileName: string; title: string; type: 'expiring' | 'update'; date: string }): void {
+  openEventDocument(event: CalendarEvent): void {
     const document = this.documents().find(item => item.documentId === event.documentId);
     if (document) {
       this.openDetails(document);
@@ -354,20 +376,18 @@ export class MyDocumentsComponent {
     return days;
   }
 
-  private buildCalendarEvents(documents: DocumentListItem[], monthDate: Date): Array<{ date: string; type: 'expiring' | 'update'; label: string; title: string; documentId: number; fileName: string }> {
-    const events: Array<{ date: string; type: 'expiring' | 'update'; label: string; title: string; documentId: number; fileName: string }> = [];
+  private buildCalendarEvents(documents: DocumentListItem[], monthDate: Date, warningWindowDays: number): CalendarEvent[] {
+    const events: CalendarEvent[] = [
+      ...buildExpiryCalendarEvents(documents, monthDate, new Date(), warningWindowDays)
+    ];
     const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
     const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
 
     for (const doc of documents) {
       const status = (doc.currentStatus ?? '').toLowerCase();
-      const sourceDate = this.parseDate(doc.lastModifiedDate || doc.uploadedDate) ?? new Date();
       let dueDate: Date | null = null;
 
-      if (status.includes('expiring') || status.includes('expires soon') || status.includes('expired')) {
-        dueDate = new Date(sourceDate);
-        dueDate.setDate(dueDate.getDate() + 365);
-      } else if (status.includes('rejected') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification')) {
+      if (status.includes('rejected') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification')) {
         dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 7);
       }
@@ -388,17 +408,12 @@ export class MyDocumentsComponent {
         label: eventType === 'expiring' ? 'Expiring' : 'Update',
         title,
         documentId: doc.documentId,
-        fileName: doc.fileName
+        fileName: doc.fileName,
+        certified: doc.isCertified
       });
     }
 
     return events;
-  }
-
-  private parseDate(value: string | null): Date | null {
-    if (!value) return null;
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   formatCalendarDate(value: Date): string {
@@ -439,13 +454,40 @@ export class MyDocumentsComponent {
     this.docsApi.getMyDocuments()
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: docs => this.documents.set(docs ?? []),
+        next: docs => {
+          this.documents.set(docs ?? []);
+          console.log('[TEMP DIAGNOSTIC] raw documents received', (docs ?? []).slice(0, 5).map(doc => ({
+            documentId: doc.documentId,
+            fileName: doc.fileName,
+            expiryDate: doc.expiryDate,
+            isCertified: doc.isCertified
+          })));
+        },
         error: err => {
           this.documents.set([]);
           const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not load your documents.';
           this.error.set(message);
         }
       });
+  }
+
+  private loadWarningThreshold(): void {
+    const userId = this.auth.getCurrentUserId();
+    if (!userId) return;
+
+    this.complianceService.getUserCompliance(userId).subscribe({
+      next: response => {
+        const payload = response?.data ?? response;
+        const threshold = Number(payload?.warningThresholdDays ?? payload?.WarningThresholdDays);
+        if (Number.isFinite(threshold)) {
+          this.warningThresholdDays.set(threshold);
+          console.log('[TEMP DIAGNOSTIC] warningThresholdDays set', {
+            value: this.warningThresholdDays(),
+            type: typeof this.warningThresholdDays()
+          });
+        }
+      }
+    });
   }
 
   private loadPendingRequests(): void {
