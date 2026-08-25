@@ -57,6 +57,14 @@
         </div>
       </ng-container>
     </ng-container>
+
+    <a *ngIf="auth.hasRole('Compliance Officer') || auth.hasRole('Admin')"
+       class="sidebar__link"
+       routerLink="/compliance/review-queue"
+       routerLinkActive="sidebar__link--active">
+      <span class="sidebar__icon" [innerHTML]="getIcon('file')"></span>
+      <span>Review Queue</span>
+    </a>
   </nav>
 
   <footer class="sidebar__footer">

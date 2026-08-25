@@ -33,6 +33,8 @@ export class DashboardRedirectComponent implements OnInit {
       ? '/dashboard/department'
       : this.auth.isDocumentOwnerOnly()
         ? '/dashboard/owner'
+        : this.auth.hasRole('Compliance Officer')
+          ? '/compliance/review-queue'
         : (this.auth.hasRole('Admin') || this.auth.isSuperAdmin())
           ? '/dashboard/system'
           : '/auth/login';
@@ -45,6 +47,8 @@ export class DashboardRedirectComponent implements OnInit {
       ? '/dashboard/department'
       : this.auth.isDocumentOwnerOnly()
         ? '/dashboard/owner'
+        : this.auth.hasRole('Compliance Officer')
+          ? '/compliance/review-queue'
         : (this.auth.hasRole('Admin') || this.auth.isSuperAdmin())
           ? '/dashboard/system'
           : '/auth/login';

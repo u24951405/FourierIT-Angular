@@ -1,5 +1,6 @@
 import {
   Component,
+  OnInit,
   AfterViewInit,
   OnDestroy,
   ViewChild,
@@ -8,6 +9,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import {
   Chart,
   DoughnutController,
@@ -58,7 +60,7 @@ interface StatCard {
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
-export class DashboardComponent implements AfterViewInit, OnDestroy {
+export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('verificationChart') verificationChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('categoryChart') categoryChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('riskChart') riskChartRef!: ElementRef<HTMLCanvasElement>;
@@ -68,6 +70,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
   private complianceService = inject(ComplianceService);
+  private routeDataSubscription?: Subscription;
 
   today = new Date().toLocaleDateString('en-ZA', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -75,7 +78,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
   dashboardData: ComplianceDashboard | null = null;
   account: CurrentAccount | null = null;
-  dashboardScope: 'system' | 'department' = 'system';
+  dashboardScope: 'system' | 'department' = this.route.snapshot.data['dashboardScope'] as 'system' | 'department' ?? 'system';
   dashboardLoading = false;
   dashboardError = '';
 
@@ -103,9 +106,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
   get categoryLegendItems() {
     return [
       { label: 'Partial Compliant', value: this.dashboardData?.partialCompliantUsers ?? 0, color: '#1e2a3a' },
-      { label: 'Open Alerts', value: this.dashboardData?.totalOpenAlerts ?? 0, color: '#2d5282' },
-      { label: 'Critical Risk', value: this.dashboardData?.criticalRiskUsers ?? 0, color: '#7bafd4' },
-      { label: 'High Risk', value: this.dashboardData?.highRiskUsers ?? 0, color: '#b0cfe8' },
+      { label: 'Critical Risk', value: this.dashboardData?.criticalRiskUsers ?? 0, color: '#2d5282' },
+      { label: 'High Risk', value: this.dashboardData?.highRiskUsers ?? 0, color: '#7bafd4' },
+      { label: 'Medium Risk', value: this.dashboardData?.mediumRiskUsers ?? 0, color: '#b0cfe8' },
     ];
   }
 
@@ -118,11 +121,18 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     ];
   }
 
+  ngOnInit(): void {
+    this.routeDataSubscription = this.route.data.subscribe(data => {
+      this.loadDashboard(data['dashboardScope'] as 'system' | 'department' | undefined);
+    });
+  }
+
   ngAfterViewInit(): void {
-    setTimeout(() => this.loadDashboard(), 100);
+    setTimeout(() => this.renderDashboardCharts(), 100);
   }
 
   ngOnDestroy(): void {
+    this.routeDataSubscription?.unsubscribe();
     this.charts.forEach(c => c.destroy());
   }
 
@@ -186,15 +196,15 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     const data = this.dashboardData ? [
       this.dashboardData.partialCompliantUsers,
-      this.dashboardData.totalOpenAlerts,
       this.dashboardData.criticalRiskUsers,
       this.dashboardData.highRiskUsers,
+      this.dashboardData.mediumRiskUsers ?? 0,
     ] : [0, 0, 0, 0];
 
     const chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Partial', 'Open Alerts', 'Critical Risk', 'High Risk'],
+        labels: ['Partial', 'Critical Risk', 'High Risk', 'Medium Risk'],
         datasets: [{
           data,
           backgroundColor: ['#1e2a3a', '#2d5282', '#7bafd4', '#b0cfe8'],
@@ -249,12 +259,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
     this.charts.push(chart);
   }
 
-  private loadDashboard(): void {
+  private loadDashboard(routeScope?: 'system' | 'department'): void {
     this.dashboardLoading = true;
     this.dashboardError = '';
     this.dashboardData = null;
-
-    const routeScope = this.route.snapshot.data['dashboardScope'] as 'system' | 'department' | undefined;
 
     this.auth.getCurrentAccount().subscribe({
       next: account => {
@@ -269,6 +277,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
             next: dashboard => {
               this.applyDashboard(dashboard);
               this.loadComplianceData();
+              this.complianceAlerts = (dashboard as any).criticalAlerts ?? [];
             },
             error: (error) => {
               console.warn('Department dashboard error:', error);
@@ -290,6 +299,7 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
                   next: dashboard => {
                     this.applyDashboard(dashboard);
                     this.loadComplianceData();
+                    this.complianceAlerts = (dashboard as any).criticalAlerts ?? [];
                   },
                   error: () => this.handleDashboardError('Unable to load dashboard. Please refresh the page.')
                 });
@@ -434,9 +444,9 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
 
     chart.data.datasets[0].data = [
       dashboard.partialCompliantUsers,
-      dashboard.totalOpenAlerts,
       dashboard.criticalRiskUsers,
       dashboard.highRiskUsers,
+      dashboard.mediumRiskUsers ?? 0,
     ];
     chart.update();
   }
@@ -571,10 +581,10 @@ export class DashboardComponent implements AfterViewInit, OnDestroy {
       riskLevel,
       compliancePercentage,
       complianceScore: averageScore,
-      uploaded: totalUsers,
+      totalUsers,
       compliant: compliantUsers,
       nonCompliant: nonCompliantUsers,
-      missing: Math.max(0, totalUsers - compliantUsers),
+      nonCompliantCount: Math.max(0, totalUsers - compliantUsers),
       pendingReviewDocuments: reviewRequiredUsers,
       totalRequired: totalUsers,
     };

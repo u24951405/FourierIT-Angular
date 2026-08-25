@@ -1,0 +1,113 @@
+<div class="dash-wrapper">
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-header__title">Department Documents Dashboard</h1>
+      <p class="dash-header__subtitle">Your department compliance workspace · {{ today }}</p>
+    </div>
+    <div class="dash-header__badge">
+      <span class="compliance-active-badge">
+        <span class="compliance-active-badge__dot"></span>
+        Compliance monitoring active
+      </span>
+    </div>
+  </div>
+
+  <div class="dash-stat-grid">
+    <ng-container *ngIf="loading()">
+      <div class="stat-card stat-card--loading">Loading department metrics…</div>
+    </ng-container>
+    <ng-container *ngIf="error()">
+      <div class="stat-card stat-card--error">{{ error() }}</div>
+    </ng-container>
+    <ng-container *ngIf="!loading() && !error()">
+      <div class="stat-card stat-card--clickable" (click)="navigate('/documents/all')">
+        <div class="stat-card__body"><span class="stat-card__value">{{ totalDocuments() }}</span><span class="stat-card__label">Total Documents</span><span class="stat-card__sub">All department documents on file</span></div>
+      </div>
+      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+        <div class="stat-card__body"><span class="stat-card__value">{{ verifiedDocuments() }}</span><span class="stat-card__label">Verified Documents</span><span class="stat-card__sub">Approved and ready for use</span></div>
+      </div>
+      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+        <div class="stat-card__body"><span class="stat-card__value">{{ pendingReview() }}</span><span class="stat-card__label">Pending Review</span><span class="stat-card__sub">Awaiting compliance verification</span></div>
+      </div>
+      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+        <div class="stat-card__body"><span class="stat-card__value">{{ rejectedDocuments() }}</span><span class="stat-card__label">Rejected</span><span class="stat-card__sub">Needs follow-up to resolve</span></div>
+      </div>
+      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+        <div class="stat-card__body"><span class="stat-card__value">{{ expiringSoon() }}</span><span class="stat-card__label">Expiring Soon</span><span class="stat-card__sub">Documents due within the warning threshold</span></div>
+      </div>
+      <div class="stat-card stat-card--clickable" (click)="navigate('/documents/requests')">
+        <div class="stat-card__body"><span class="stat-card__value">{{ pendingRequests().length }}</span><span class="stat-card__label">Access Requests</span><span class="stat-card__sub">Pending requests addressed to the department</span></div>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="dash-chart-card dash-chart-card--wide">
+    <div class="dash-chart-card__header">
+      <div>
+        <h3 class="dash-chart-card__title">Compliance Check</h3>
+        <p class="dash-chart-card__subtitle">Live compliance status from the department API response</p>
+      </div>
+      <button class="btn btn--outline" type="button" (click)="navigate('/reports/compliance')">View all compliance</button>
+    </div>
+    <div class="compliance-overview" *ngIf="dashboard() as summary">
+      <div class="compliance-summary-card">
+        <div class="compliance-summary-card__header">
+          <span class="compliance-pill">{{ overallStatus() }}</span>
+          <span class="compliance-pill compliance-pill--muted">Risk: {{ riskLevel() }}</span>
+        </div>
+        <div class="compliance-grid">
+          <div><div class="compliance-label">Compliance Score</div><div class="compliance-value">{{ summary.averageComplianceScore }}</div></div>
+          <div><div class="compliance-label">Compliance %</div><div class="compliance-value">{{ summary.overallCompliancePercentage }}%</div></div>
+          <div><div class="compliance-label">Uploaded</div><div class="compliance-value">{{ totalDocuments() }}</div></div>
+          <div><div class="compliance-label">Missing</div><div class="compliance-value">{{ missingDocuments() }}</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-chart-grid">
+    <div class="dash-chart-card dash-chart-card--clickable">
+      <h3 class="dash-chart-card__title">Verification Status</h3>
+      <p class="dash-chart-card__subtitle">Department document approval breakdown</p>
+      <div class="dash-doughnut-wrap"><canvas #verificationChart></canvas></div>
+      <div class="dash-legend">
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#10b981"></span><span class="dash-legend-label">Verified</span><span class="dash-legend-val">{{ verifiedDocuments() }}</span></div>
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#f59e0b"></span><span class="dash-legend-label">Pending</span><span class="dash-legend-val">{{ pendingReview() }}</span></div>
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#ef4444"></span><span class="dash-legend-label">Rejected</span><span class="dash-legend-val">{{ rejectedDocuments() }}</span></div>
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#d1d5db"></span><span class="dash-legend-label">Unreviewed</span><span class="dash-legend-val">{{ unreviewedDocuments() }}</span></div>
+      </div>
+    </div>
+
+    <div class="dash-chart-card dash-chart-card--clickable">
+      <h3 class="dash-chart-card__title">Documents by Category</h3>
+      <p class="dash-chart-card__subtitle">Department documents grouped by type</p>
+      <div class="dash-doughnut-wrap"><canvas #categoryChart></canvas></div>
+      <div class="dash-legend">
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#1e2a3a"></span><span class="dash-legend-label">KYC</span><span class="dash-legend-val">{{ categoryCounts().kyc }}</span></div>
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#2d5282"></span><span class="dash-legend-label">FICA</span><span class="dash-legend-val">{{ categoryCounts().fica }}</span></div>
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#7bafd4"></span><span class="dash-legend-label">Tax</span><span class="dash-legend-val">{{ categoryCounts().tax }}</span></div>
+        <div class="dash-legend-item"><span class="dash-legend-dot" style="background:#b0cfe8"></span><span class="dash-legend-label">Other</span><span class="dash-legend-val">{{ categoryCounts().other }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dash-chart-grid">
+    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/documents/all')">
+      <h3 class="dash-chart-card__title">Recent Documents</h3>
+      <p class="dash-chart-card__subtitle">Latest documents uploaded in the department</p>
+      <div class="documents-table">
+        <div class="documents-table__row documents-table__head"><span>Document</span><span>Status</span><span>Uploaded</span><span>Type</span></div>
+        <div class="documents-table__row" *ngFor="let doc of recentDocuments()"><span>{{ doc.fileName }}</span><span>{{ doc.currentStatus }}</span><span>{{ doc.uploadedDate | date:'mediumDate' }}</span><span>{{ doc.documentTypeName }}</span></div>
+      </div>
+    </div>
+
+    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/documents/requests')">
+      <h3 class="dash-chart-card__title">Recent Access Requests</h3>
+      <p class="dash-chart-card__subtitle">Pending requests addressed to the department</p>
+      <div class="documents-table">
+        <div class="documents-table__row documents-table__head"><span>Request #</span><span>Institution</span><span>Date</span><span>Status</span></div>
+        <div class="documents-table__row" *ngFor="let request of pendingRequests().slice(0, 5)"><span>{{ request.enquiryRequestId }}</span><span>{{ request.institutionName }}</span><span>{{ request.requestDate | date:'mediumDate' }}</span><span>{{ request.status }}</span></div>
+      </div>
+    </div>
+  </div>
+</div>

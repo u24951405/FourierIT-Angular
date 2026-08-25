@@ -42,7 +42,7 @@
           <span class="calendar-day__number">{{ day.getDate() }}</span>
 
           @for (event of calendarEvents().filter(item => item.date === formatCalendarDate(day)); track event.title) {
-            <button type="button" class="calendar-event" [class.calendar-event--expiring]="event.type === 'expiring'" [class.calendar-event--update]="event.type === 'update'" [title]="event.fileName" (click)="openEventDocument(event)">
+            <button type="button" class="calendar-event" [class.calendar-event--expiring]="event.type === 'expiring'" [class.calendar-event--update]="event.type === 'update'" [title]="event.title" (click)="openEventDocument(event)">
               {{ event.label }}: {{ event.fileName }}
             </button>
           }

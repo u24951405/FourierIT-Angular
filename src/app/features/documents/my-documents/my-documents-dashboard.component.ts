@@ -53,12 +53,9 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
   readonly complianceSummary = signal<ComplianceUserSummary | null>(null);
 
   readonly documentCount = computed(() => this.complianceSummary()?.uploaded ?? this.documents().length);
-  readonly approvedDocumentCount = computed(() => this.complianceSummary()?.compliant ?? this.documents().filter(doc => doc.currentStatus?.toLowerCase() === 'approved').length);
+  readonly approvedDocumentCount = computed(() => this.complianceSummary()?.compliant ?? 0);
   readonly rejectedDocumentCount = computed(() => this.complianceSummary()?.nonCompliant ?? this.documents().filter(doc => doc.currentStatus?.toLowerCase() === 'rejected').length);
-  readonly documentsPendingReviewCount = computed(() => this.complianceSummary()?.pendingReviewDocuments ?? this.documents().filter(doc => {
-    const status = doc.currentStatus?.toLowerCase() ?? '';
-    return status === 'pending' || status === 'under review' || status === 'awaiting verification';
-  }).length);
+  readonly documentsPendingReviewCount = computed(() => this.complianceSummary()?.pendingReviewDocuments ?? 0);
   readonly expiringDocumentCount = computed(() => this.complianceSummary()?.expired ?? this.documents().filter(doc => doc.currentStatus?.toLowerCase() === 'expiring' || doc.currentStatus?.toLowerCase() === 'expires soon').length);
   readonly pendingRequestCount = computed(() => this.pendingRequests().length);
   readonly recentDocuments = computed(() => [...this.documents()].sort((a, b) => new Date(b.uploadedDate).getTime() - new Date(a.uploadedDate).getTime()).slice(0, 5));
