@@ -7,7 +7,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ApiRoleDto, RolesManagementService } from '../../../core/services/roles-management.service';
 
 // ERD: Role(RoleID, RoleName)
-export interface Role { id: string; name: string; }
+export interface Role { id: string; name: string; permissions: string[]; }
 
 @Component({
   selector: 'app-roles-management',
@@ -27,6 +27,8 @@ export class RolesManagementComponent {
   editId       = signal<string | null>(null);
   isSubmitting = signal(false);
   isLoading = signal(false);
+  permissions = signal<string[]>([]);
+  selectedPermissions = signal<string[]>([]);
 
   form = this.fb.group({
     roleId:      ['', [Validators.required, Validators.maxLength(450)]],
@@ -42,12 +44,14 @@ export class RolesManagementComponent {
   openCreate(): void {
     this.form.reset({ roleId: '', roleName: '' });
     this.editId.set(null);
+    this.selectedPermissions.set([]);
     this.showModal.set(true);
   }
 
   openEdit(role: Role): void {
     this.editId.set(role.id);
     this.form.patchValue({ roleId: role.id, roleName: role.name });
+    this.selectedPermissions.set([...role.permissions]);
     this.form.controls.roleId.disable();
     this.showModal.set(true);
   }
@@ -63,11 +67,12 @@ export class RolesManagementComponent {
     const raw = this.form.getRawValue();
     const roleId = (raw.roleId ?? '').trim();
     const roleName = (raw.roleName ?? '').trim();
+    const permissions = this.selectedPermissions();
 
     this.isSubmitting.set(true);
     const request$ = this.editId()
-      ? this.rolesService.update(this.editId()!, { roleName, newRoleId: this.editId()! })
-      : this.rolesService.create({ roleId, roleName });
+      ? this.rolesService.update(this.editId()!, { roleName, newRoleId: this.editId()!, permissions })
+      : this.rolesService.create({ roleId, roleName, permissions });
 
     request$
       .pipe(finalize(() => this.isSubmitting.set(false)))
@@ -99,11 +104,15 @@ export class RolesManagementComponent {
 
   private loadRoles(): void {
     this.isLoading.set(true);
+    this.rolesService.getPermissions().subscribe({
+      next: permissions => this.permissions.set(permissions ?? []),
+      error: () => this.permissions.set([])
+    });
     this.rolesService.getAll()
       .pipe(finalize(() => this.isLoading.set(false)))
       .subscribe({
         next: (roles) => {
-          this.roles.set((roles ?? []).map((r: ApiRoleDto) => ({ id: r.roleId, name: r.roleName })));
+          this.roles.set((roles ?? []).map((r: ApiRoleDto) => ({ id: r.roleId, name: r.roleName, permissions: r.permissions ?? [] })));
         },
         error: (error) => {
           this.roles.set([]);
@@ -111,5 +120,15 @@ export class RolesManagementComponent {
           this.toast.show(message, 'error');
         }
       });
+  }
+
+  togglePermission(permission: string): void {
+    this.selectedPermissions.update(selected => selected.includes(permission)
+      ? selected.filter(item => item !== permission)
+      : [...selected, permission]);
+  }
+
+  hasPermission(permission: string): boolean {
+    return this.selectedPermissions().includes(permission);
   }
 }

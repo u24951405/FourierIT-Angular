@@ -21,13 +21,14 @@ describe('adminGuard', () => {
     TestBed.overrideProvider(AuthService, { useValue: auth });
     TestBed.overrideProvider(Router, { useValue: { createUrlTree: () => '/auth/login' } });
 
-    expect(executeGuard()).toBe(true);
+    expect(executeGuard({} as any, {} as any)).toBe(true);
   });
 
   it('redirects unauthorised users to login', () => {
     const auth = {
       isLoggedIn: () => true,
-      hasRole: () => false
+      hasRole: () => false,
+      isSuperAdmin: () => false
     } as unknown as AuthService;
 
     const router = { createUrlTree: () => '/auth/login' } as unknown as Router;
@@ -35,6 +36,6 @@ describe('adminGuard', () => {
     TestBed.overrideProvider(AuthService, { useValue: auth });
     TestBed.overrideProvider(Router, { useValue: router });
 
-    expect(executeGuard()).toBe('/auth/login');
+    expect(executeGuard({} as any, {} as any) as any).toBe('/auth/login');
   });
 });

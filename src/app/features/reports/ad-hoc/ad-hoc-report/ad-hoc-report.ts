@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -20,7 +20,7 @@ import { environment } from '../../../../../environments/environment';
   templateUrl: './ad-hoc-report.html',
   styleUrls: ['./ad-hoc-report.scss'],
 })
-export class AdHocReportComponent {
+export class AdHocReportComponent implements OnInit {
   private http = inject(HttpClient);
   private router = inject(Router);
   private base = `${environment.apiUrl}/reports`;
@@ -43,12 +43,14 @@ export class AdHocReportComponent {
   generating = false;
   error: string | null = null;
 
-  recentReports: RecentReport[] = [
-    { id: 'r1', title: 'Document Processing — June 2026', date: '2026-06-30', sizeKb: 312, status: 'ready' },
-    { id: 'r2', title: 'Security & Anomalies — Q2 2026', date: '2026-06-20', sizeKb: 178, status: 'ready' },
-    { id: 'r3', title: 'Upload Volume — May 2026', date: '2026-05-31', sizeKb: 224, status: 'ready' },
-    { id: 'r4', title: 'System Storage — May 2026', date: '2026-05-28', sizeKb: 156, status: 'generating' },
-  ];
+  recentReports: RecentReport[] = [];
+
+  ngOnInit(): void {
+    this.http.get<RecentReport[]>(`${this.base}/ad-hoc/recent`).subscribe({
+      next: reports => this.recentReports = reports,
+      error: () => this.recentReports = [],
+    });
+  }
 
   get todayString(): string {
     return new Date().toISOString().split('T')[0];
@@ -89,8 +91,11 @@ export class AdHocReportComponent {
     this.http.post<{ reportId: string }>(`${this.base}/ad-hoc`, this.config).subscribe({
       next: (res) => {
         this.generating = false;
-        // Navigate to the generated report or download it
-        this.router.navigate(['/reports/monthly'], { queryParams: { id: res.reportId } });
+        if (this.config.exportFormat === ExportFormat.EXCEL) {
+          this.downloadExcel(res.reportId);
+        } else {
+          this.router.navigate(['/reports/ad-hoc-results', res.reportId]);
+        }
       },
       error: () => {
         this.generating = false;
@@ -113,5 +118,19 @@ export class AdHocReportComponent {
   downloadRecent(report: RecentReport): void {
     if (report.status !== 'ready') return;
     window.open(`${this.base}/download/${report.id}`, '_blank');
+  }
+
+  private downloadExcel(reportId: string): void {
+    this.http.get(`${this.base}/ad-hoc/${reportId}/excel`, { responseType: 'blob' }).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${this.config.title.trim() || 'ad-hoc-report'}.xlsx`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.error = 'Report was saved, but the Excel download failed.'
+    });
   }
 }

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { BackupRestore } from './backup-restore';
+import { BackupRestoreComponent } from './backup-restore';
 
-describe('BackupRestore', () => {
-  let component: BackupRestore;
-  let fixture: ComponentFixture<BackupRestore>;
+describe('BackupRestoreComponent', () => {
+  let component: BackupRestoreComponent;
+  let fixture: ComponentFixture<BackupRestoreComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BackupRestore]
+      imports: [BackupRestoreComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(BackupRestore);
+    fixture = TestBed.createComponent(BackupRestoreComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

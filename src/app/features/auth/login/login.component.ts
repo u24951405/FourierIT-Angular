@@ -44,7 +44,7 @@ export class LoginComponent implements AfterViewInit {
     video.setAttribute('muted', 'true');
     video.setAttribute('playsinline', 'true');
 
-    video.play().catch(() => {
+    video.play()?.catch(() => {
       // Browsers may block autoplay until the user interacts; the video remains muted
       // and can still be started later without sound if the user chooses to play it.
     });

@@ -37,6 +37,10 @@ export class MyRequests implements OnInit {
     this.router.navigate(['/institution/dashboard']);
   }
 
+  editRequest(requestId: number): void {
+    this.router.navigate(['/institution/request-documents'], { queryParams: { edit: requestId } });
+  }
+
   loadPendingRequests(): void {
     const token = this.authService.getSessionToken();
     if (!token) {
@@ -114,11 +118,17 @@ export class MyRequests implements OnInit {
       return;
     }
 
+    const token = this.authService.getSessionToken();
+    if (!token) {
+      this.error.set('No institution session found. Please sign in again.');
+      return;
+    }
+
     this.loading.set(true);
     this.error.set(null);
 
     this.requestService
-      .revokeInstitutionRequest(requestId)
+      .revokeInstitutionRequest(token, requestId)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => this.loadPendingRequests(),

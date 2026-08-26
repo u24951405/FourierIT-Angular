@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { DepartmentService, ApiDepartmentDto } from '../../../core/services/department.service';
@@ -14,11 +15,38 @@ import {
   DepartmentComplianceReportRow,
   InstitutionRequestControlBreakGroup,
   DepartmentComplianceControlBreakGroup,
+  DepartmentComplianceControlBreakDetail,
   DepartmentDocumentInventoryReportRow,
   InstitutionAccessHistoryReportRow,
   ExpiringDocumentsReportRow,
   OutstandingComplianceReportRow,
 } from '../../../core/services/reports.service';
+
+type ReportTab = 'owner' | 'requests' | 'department' | 'cb-institution' | 'cb-department' | 'inventory' | 'access' | 'expiring' | 'outstanding';
+interface ReportCard {
+  id: ReportTab;
+  icon: string;
+  title: string;
+  description: string;
+  children?: { id: ReportTab; label: string }[];
+}
+
+interface RequestDocumentTypeGroup {
+  documentType: string;
+  requests: InstitutionDocumentRequestReportRow[];
+  totalRequests: number;
+  approved: number;
+  pending: number;
+  denied: number;
+}
+
+interface DepartmentStatusGroup {
+  complianceStatus: string;
+  details: DepartmentComplianceControlBreakDetail[];
+  uploadedDocuments: number;
+  missingDocuments: number;
+  averageCompliance: number;
+}
 
 @Component({
   selector: 'app-super-admin-reports',
@@ -32,8 +60,9 @@ export class SuperAdminReportsComponent {
   private institutionService = inject(InstitutionService);
   private departmentService = inject(DepartmentService);
   private authService = inject(AuthService);
+  private router = inject(Router);
 
-  activeTab: 'owner' | 'requests' | 'department' | 'cb-institution' | 'cb-department' | 'inventory' | 'access' | 'expiring' | 'outstanding' = 'owner';
+  activeTab: ReportTab = 'owner';
   loading = false;
   error: string | null = null;
 
@@ -69,57 +98,50 @@ export class SuperAdminReportsComponent {
   expiringDocumentsRows: ExpiringDocumentsReportRow[] = [];
   outstandingComplianceRows: OutstandingComplianceReportRow[] = [];
 
-  readonly reportCards = [
+  readonly reportCards: ReportCard[] = [
     {
-      id: 'owner' as const,
+      id: 'owner',
       icon: '📊',
-      title: 'Document Owner Compliance',
+      title: 'View Client Risk Rating Report',
       description: 'Tracks every document owner against required uploads, missing records and current compliance posture.',
     },
     {
-      id: 'requests' as const,
+      id: 'requests',
       icon: '📥',
-      title: 'Institution Document Requests',
-      description: 'Shows all institution request activity, deadlines, recipients and status progress for follow-up.',
+      title: 'View Enquiry Audit Report',
+      description: 'Review institution requests, request control breaks, and institution access history.',
+      children: [
+        { id: 'requests', label: 'Institution Document Request Report' },
+        { id: 'cb-institution', label: 'Document Requests by Institution' },
+        { id: 'access', label: 'Institution Access History Report' },
+      ],
     },
     {
-      id: 'department' as const,
+      id: 'department',
       icon: '🏢',
-      title: 'Department Compliance',
+      title: 'View Compliance Certificate',
       description: 'Summarises department-wide document coverage, compliance percentage and risk rating at a glance.',
     },
     {
-      id: 'cb-institution' as const,
-      icon: '🏛️',
-      title: 'Requests by Institution',
-      description: 'Breaks request volume down by institution with grouped totals and drill-down request detail.',
-    },
-    {
-      id: 'cb-department' as const,
+      id: 'cb-department',
       icon: '🧭',
-      title: 'Compliance by Department',
+      title: 'View Compliance History Report',
       description: 'Provides a department control-break view with owner-level compliance detail and supporting totals.',
     },
     {
-      id: 'inventory' as const,
+      id: 'inventory',
       icon: '📦',
       title: 'Department Document Inventory',
       description: 'Lists each department’s required KYC/FICA documents with upload state and compliance posture.',
     },
     {
-      id: 'access' as const,
-      icon: '🔐',
-      title: 'Institution Access History',
-      description: 'Surface institution access approvals, expiry, and the documents that were accessed for each request.',
-    },
-    {
-      id: 'expiring' as const,
+      id: 'expiring',
       icon: '⏳',
-      title: 'Expiring Documents',
+      title: 'View Operational Report',
       description: 'Shows near-expiry documents by owner and department with the remaining days to expiry.',
     },
     {
-      id: 'outstanding' as const,
+      id: 'outstanding',
       icon: '⚠️',
       title: 'Outstanding Compliance',
       description: 'Highlights current non-compliance by document owner and department with missing requirements.',
@@ -206,8 +228,12 @@ export class SuperAdminReportsComponent {
     this.refreshReports();
   }
 
-  setTab(tab: 'owner' | 'requests' | 'department' | 'cb-institution' | 'cb-department' | 'inventory' | 'access' | 'expiring' | 'outstanding'): void {
+  setTab(tab: ReportTab): void {
     this.activeTab = tab;
+  }
+
+  openActivityReport(): void {
+    this.router.navigate(['/reports/activity']);
   }
 
   isFilterVisible(key: 'startDate' | 'endDate' | 'institutionId' | 'departmentId' | 'complianceStatus' | 'requestStatus' | 'recipientType'): boolean {
@@ -266,6 +292,51 @@ export class SuperAdminReportsComponent {
       uploaded: this.controlBreakDepartmentRows.reduce((sum, group) => sum + group.uploadedDocuments, 0),
       missing: this.controlBreakDepartmentRows.reduce((sum, group) => sum + group.missingDocuments, 0),
     };
+  }
+
+  requestDocumentTypeGroups(group: InstitutionRequestControlBreakGroup): RequestDocumentTypeGroup[] {
+    const grouped = new Map<string, InstitutionDocumentRequestReportRow[]>();
+    for (const request of group.requests) {
+      const documentTypes = request.requestedDocuments.length ? request.requestedDocuments : ['Unspecified document type'];
+      for (const documentType of documentTypes) {
+        const requests = grouped.get(documentType) ?? [];
+        requests.push(request);
+        grouped.set(documentType, requests);
+      }
+    }
+
+    return Array.from(grouped.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([documentType, requests]) => ({
+        documentType,
+        requests,
+        totalRequests: requests.length,
+        approved: requests.filter(r => this.statusBucket(r.status) === 'approved').length,
+        pending: requests.filter(r => this.statusBucket(r.status) === 'pending').length,
+        denied: requests.filter(r => this.statusBucket(r.status) === 'denied').length,
+      }));
+  }
+
+  departmentStatusGroups(group: DepartmentComplianceControlBreakGroup): DepartmentStatusGroup[] {
+    const grouped = new Map<string, DepartmentComplianceControlBreakDetail[]>();
+    for (const detail of group.details) {
+      const status = detail.complianceStatus || 'Unknown';
+      const details = grouped.get(status) ?? [];
+      details.push(detail);
+      grouped.set(status, details);
+    }
+
+    return Array.from(grouped.entries())
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([complianceStatus, details]) => ({
+        complianceStatus,
+        details,
+        uploadedDocuments: details.reduce((sum, detail) => sum + detail.uploadedDocuments, 0),
+        missingDocuments: details.reduce((sum, detail) => sum + detail.missingDocuments, 0),
+        averageCompliance: details.length
+          ? details.reduce((sum, detail) => sum + detail.compliancePercentage, 0) / details.length
+          : 0,
+      }));
   }
 
   requestTotals(): { total: number; approved: number; pending: number; denied: number } {
@@ -337,7 +408,7 @@ export class SuperAdminReportsComponent {
     const totals = this.ownerTotals();
     await this.exportTablePdf({
       fileName: 'document-owner-compliance-report.pdf',
-      title: 'Document Owner Compliance Report',
+      title: 'View Client Risk Rating Report',
       columns: ['Document Owner', 'Entity Type', 'Email', 'Compliance Status', 'Uploaded', 'Missing', 'Compliance %', 'Last Upload Date', 'Risk Rating'],
       body: this.ownerRows.map(r => [
         r.documentOwner,
@@ -388,7 +459,7 @@ export class SuperAdminReportsComponent {
     const totals = this.departmentTotals();
     await this.exportTablePdf({
       fileName: 'department-compliance-report.pdf',
-      title: 'Department Compliance Report',
+      title: 'View Compliance Certificate',
       columns: ['Department', 'Department Admin', 'Required Documents', 'Uploaded Documents', 'Missing Documents', 'Compliance %', 'Risk Rating'],
       body: this.departmentRows.map(r => [
         r.department,
@@ -413,22 +484,32 @@ export class SuperAdminReportsComponent {
     const totals = this.controlBreakInstitutionTotals();
 
     for (const group of this.controlBreakInstitutionRows) {
+      for (const documentGroup of this.requestDocumentTypeGroups(group)) {
+        body.push([`Document type: ${documentGroup.documentType}`, '', '', '', '']);
+        for (const request of documentGroup.requests) {
+          body.push([
+            '',
+            request.recipient,
+            request.recipientType,
+            this.formatDateTime(request.requestDate),
+            `${request.status} (${request.referenceNumber || '-'})`,
+          ]);
+        }
+        body.push([
+          `Document type subtotal: ${documentGroup.documentType}`,
+          `Requests: ${documentGroup.totalRequests}`,
+          `Approved: ${documentGroup.approved}`,
+          `Pending: ${documentGroup.pending}`,
+          `Denied: ${documentGroup.denied}`,
+        ]);
+      }
       body.push([
-        `Institution: ${group.institution}`,
+        `Institution subtotal: ${group.institution}`,
         `Requests: ${group.totalRequests}`,
         `Approved: ${group.approved}`,
         `Pending: ${group.pending}`,
         `Denied: ${group.denied}`,
       ]);
-      for (const request of group.requests) {
-        body.push([
-          '',
-          request.recipient,
-          request.recipientType,
-          this.formatDateTime(request.requestDate),
-          `${request.status} (${request.referenceNumber || '-'})`,
-        ]);
-      }
     }
 
     await this.exportTablePdf({
@@ -451,27 +532,37 @@ export class SuperAdminReportsComponent {
     const totals = this.controlBreakDepartmentTotals();
 
     for (const group of this.controlBreakDepartmentRows) {
+      for (const statusGroup of this.departmentStatusGroups(group)) {
+        body.push([`Compliance status: ${statusGroup.complianceStatus}`, '', '', '', '']);
+        for (const detail of statusGroup.details) {
+          body.push([
+            '',
+            detail.documentOwner,
+            detail.complianceStatus,
+            `Uploaded ${detail.uploadedDocuments} / Missing ${detail.missingDocuments}`,
+            `${detail.compliancePercentage.toFixed(2)}% (${detail.riskRating})`,
+          ]);
+        }
+        body.push([
+          `Compliance status subtotal: ${statusGroup.complianceStatus}`,
+          `Owners: ${statusGroup.details.length}`,
+          `Uploaded: ${statusGroup.uploadedDocuments}`,
+          `Missing: ${statusGroup.missingDocuments}`,
+          `Average: ${statusGroup.averageCompliance.toFixed(2)}%`,
+        ]);
+      }
       body.push([
-        `Department: ${group.department} (${group.departmentAdmin}) - ${group.institution}`,
+        `Department subtotal: ${group.department}`,
         `Required: ${group.requiredDocuments}`,
         `Uploaded: ${group.uploadedDocuments}`,
         `Missing: ${group.missingDocuments}`,
         `Compliance: ${group.compliancePercentage.toFixed(2)}%`,
       ]);
-      for (const detail of group.details) {
-        body.push([
-          '',
-          detail.documentOwner,
-          detail.complianceStatus,
-          `Uploaded ${detail.uploadedDocuments} / Missing ${detail.missingDocuments}`,
-          `${detail.compliancePercentage.toFixed(2)}% (${detail.riskRating})`,
-        ]);
-      }
     }
 
     await this.exportTablePdf({
       fileName: 'control-break-compliance-by-department.pdf',
-      title: 'Control Break - Compliance by Department',
+      title: 'View Compliance History Report',
       columns: ['Department / Group', 'Owner', 'Compliance Status', 'Documents', 'Compliance % / Risk'],
       body,
       totals: [
@@ -535,7 +626,7 @@ export class SuperAdminReportsComponent {
     const totals = this.expiringDocumentsTotals();
     await this.exportTablePdf({
       fileName: 'expiring-documents-report.pdf',
-      title: 'Expiring Documents Report',
+      title: 'View Operational Report',
       columns: ['Owner', 'Department', 'Document Type', 'Expiry Date', 'Days Remaining'],
       body: this.expiringDocumentsRows.map(r => [
         r.owner,

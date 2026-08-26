@@ -58,6 +58,7 @@
       <div class="request-card__body">
         <div class="request-card__documents">
           <span class="request-card__documents-title">Requested documents</span>
+          <p class="request-card__scope-note">If approved, access covers all of the recipient's documents in each requested type, not individual files.</p>
           <div class="request-card__doc-list">
             <span class="doc-chip" *ngFor="let doc of request.documents">{{ doc.documentTypeName }}<b *ngIf="doc.isMandatory" class="doc-chip--required">*</b></span>
           </div>
@@ -82,6 +83,7 @@
       </div>
 
       <div class="request-card__actions">
+        <button class="rd-btn rd-btn--outline" type="button" (click)="editRequest(request.enquiryRequestId)">Edit Request</button>
         <button class="rd-btn rd-btn--outline" type="button" (click)="revokeRequest(request.enquiryRequestId)">Revoke</button>
       </div>
     </div>

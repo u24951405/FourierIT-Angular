@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { EntitySelect } from './entity-select';
+import { EntitySelectComponent } from './entity-select';
 
-describe('EntitySelect', () => {
-  let component: EntitySelect;
-  let fixture: ComponentFixture<EntitySelect>;
+describe('EntitySelectComponent', () => {
+  let component: EntitySelectComponent;
+  let fixture: ComponentFixture<EntitySelectComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EntitySelect]
+      imports: [EntitySelectComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(EntitySelect);
+    fixture = TestBed.createComponent(EntitySelectComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

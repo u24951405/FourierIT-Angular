@@ -16,6 +16,7 @@ export enum ExportFormat {
  
 export enum ReportFocus {
   DOCUMENT_PROCESSING = 'DOCUMENT_PROCESSING',
+  COMPLIANCE = 'COMPLIANCE',
   SECURITY_ANOMALIES = 'SECURITY_ANOMALIES',
   DOCUMENT_DISTRIBUTION = 'DOCUMENT_DISTRIBUTION',
   SYSTEM_STORAGE = 'SYSTEM_STORAGE',
@@ -36,6 +37,69 @@ export interface AdHocReportConfig {
   dateTo: string;
   focusAreas: ReportFocus[];
   exportFormat: ExportFormat;
+}
+
+export interface AdHocReportData {
+  reportId: number;
+  title: string;
+  dateFrom: string;
+  dateTo: string;
+  dateGenerated: string;
+  createdBy: string;
+  focusAreas: string[];
+  complianceResults: AdHocComplianceResult[];
+  documentResults: AdHocDocumentResult[];
+  securityResults: AdHocSecurityResult[];
+  distributionResults: AdHocDistributionResult[];
+  uploadVolumeResults: AdHocUploadVolumeResult[];
+  storageResult: AdHocStorageResult | null;
+}
+
+export interface AdHocComplianceResult {
+  statusId: number;
+  userId: string;
+  overallStatus: string;
+  riskLevel: string;
+  compliancePercentage: number;
+  overallRiskScore: number;
+  lastChecked: string;
+}
+
+export interface AdHocDocumentResult {
+  documentId: number;
+  fileName: string;
+  documentType: string;
+  status: string;
+  uploadedDate: string;
+  fileSizeBytes: number;
+  certified: boolean;
+}
+
+export interface AdHocSecurityResult {
+  auditLogId: number;
+  userId: string;
+  action: string;
+  timestamp: string;
+  description: string;
+  table: string;
+}
+
+export interface AdHocDistributionResult {
+  documentType: string;
+  documentCount: number;
+  totalSizeBytes: number;
+}
+
+export interface AdHocUploadVolumeResult {
+  uploadDate: string;
+  uploadCount: number;
+}
+
+export interface AdHocStorageResult {
+  dateFrom: string;
+  dateTo: string;
+  documentCount: number;
+  totalSizeBytes: number;
 }
  
 export interface RecentReport {
@@ -227,6 +291,7 @@ export interface ClientRiskReportData {
  
 export const REPORT_FOCUS_LABELS: Record<ReportFocus, string> = {
   [ReportFocus.DOCUMENT_PROCESSING]: 'Document Processing Activity',
+  [ReportFocus.COMPLIANCE]: 'Compliance Status',
   [ReportFocus.SECURITY_ANOMALIES]: 'Security & Anomalies',
   [ReportFocus.DOCUMENT_DISTRIBUTION]: 'Document Distribution by Category',
   [ReportFocus.SYSTEM_STORAGE]: 'System Storage',
@@ -235,6 +300,7 @@ export const REPORT_FOCUS_LABELS: Record<ReportFocus, string> = {
  
 export const REPORT_FOCUS_DESCRIPTIONS: Record<ReportFocus, string> = {
   [ReportFocus.DOCUMENT_PROCESSING]: 'Uploads, verifications, rejections and re-submissions over the period',
+  [ReportFocus.COMPLIANCE]: 'Compliance status, risk level and compliance scores over the period',
   [ReportFocus.SECURITY_ANOMALIES]: 'Suspicious access events, failed logins and flagged activity',
   [ReportFocus.DOCUMENT_DISTRIBUTION]: 'Breakdown of documents across KYC, FICA, Tax, Legal and other categories',
   [ReportFocus.SYSTEM_STORAGE]: 'Storage consumption, growth trends and capacity utilisation',

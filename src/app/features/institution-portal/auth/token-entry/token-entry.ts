@@ -34,12 +34,6 @@ export class TokenEntryComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    // If already authenticated, go straight to dashboard
-    if (this.authService.isAuthenticated()) {
-      this.router.navigate(['/institution/dashboard']);
-      return;
-    }
-
     const token = this.route.snapshot.queryParamMap.get('token');
 
     if (!token) {

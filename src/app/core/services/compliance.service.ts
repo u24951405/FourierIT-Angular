@@ -107,6 +107,17 @@ export interface ComplianceDashboard {
   lastUpdated?: string;
 }
 
+export interface InstitutionComplianceSummary {
+  institutionId: number;
+  institutionName: string;
+  complianceStatus: string;
+  requestCount: number;
+  requiredDocumentTypeCount: number;
+  submittedOrApprovedDocumentTypeCount: number;
+  missingDocumentTypeCount: number;
+  missingDocumentTypes: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ComplianceService {
   private http = inject(HttpClient);
@@ -132,6 +143,12 @@ export class ComplianceService {
   getDepartmentDashboard(departmentId: number): Observable<ComplianceDashboard> {
     return this.http.get<{ success: boolean; data: ComplianceDashboard }>(`${this.base}/departments/${departmentId}/dashboard`)
       .pipe(map(response => response.data));
+  }
+
+  getInstitutionComplianceSummary(institutionId: number): Observable<{ success: boolean; data: InstitutionComplianceSummary[] }> {
+    return this.http.get<{ success: boolean; data: InstitutionComplianceSummary[] }>(
+      `${this.base}/institutions/${institutionId}/summary`
+    );
   }
 
   getComplianceRules(): Observable<ComplianceRuleSummary[]> {

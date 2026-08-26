@@ -22,6 +22,7 @@
             <div class="role-card__info">
               <h3>{{ role.name }}</h3>
               <span class="role-card__count">ID: {{ role.id }}</span>
+              <small>{{ role.permissions.length }} permission(s)</small>
             </div>
             @if (!auth.isStakeholderViewer()) {
               <div class="role-card__actions">
@@ -70,6 +71,13 @@
             <span class="field__error">Role name is required.</span>
           }
         </div>
+        <fieldset class="permission-field" *ngIf="permissions().length">
+          <legend>Permissions</legend>
+          <label class="permission-option" *ngFor="let permission of permissions()">
+            <input type="checkbox" [checked]="hasPermission(permission)" (change)="togglePermission(permission)">
+            <span>{{ permission }}</span>
+          </label>
+        </fieldset>
         <div class="modal__footer">
           <button type="button" class="btn btn--outline" (click)="closeModal()">Cancel</button>
           <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">

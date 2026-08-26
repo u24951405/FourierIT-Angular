@@ -1,6 +1,7 @@
 import {Component,Input,OnInit,inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
 export interface ReportFrameConfig {
   reportId: string;
@@ -25,8 +26,10 @@ export class ReportFrameComponent implements OnInit {
   @Input() title!: string;
   @Input() subtitle?: string;
   @Input() backPath = '/reports';
+  @Input() pdfUrl?: string;
 
   private router = inject(Router);
+  private http = inject(HttpClient);
 
   formattedDate = '';
 
@@ -63,25 +66,18 @@ export class ReportFrameComponent implements OnInit {
     window.print();
   }
 
-  async downloadPdf(): Promise<void> {
-    // Uses jsPDF + html2canvas
-    // Dynamically imported to avoid affecting initial bundle
-    const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-      import('jspdf'),
-      import('html2canvas'),
-    ]);
+  downloadPdf(): void {
+    if (!this.pdfUrl) return;
 
-    const element = document.getElementById('report-printable-area');
-    if (!element) return;
-
-    const canvas = await html2canvas(element, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
-
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${this.config.reportId}.pdf`);
+    this.http.get(this.pdfUrl, { responseType: 'blob' }).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${this.config.reportId}.pdf`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+    });
   }
 }

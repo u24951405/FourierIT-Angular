@@ -181,7 +181,8 @@ export class DocumentRequestsComponent implements OnInit {
   }
 
   approveRequest(request: CombinedRequest): void {
-    const message = `Approve this request from ${request.institutionName}?`;
+    const requestedTypes = request.documents.map(document => document.documentTypeName).join(', ');
+    const message = `Approve this request from ${request.institutionName}? This grants access to all of your documents in the requested type(s): ${requestedTypes}. It does not grant access to selected files only.`;
     if (!confirm(message)) {
       return;
     }
@@ -198,12 +199,20 @@ export class DocumentRequestsComponent implements OnInit {
           this.loadAllRequests();
         },
         error: (err) => {
-          const errorMessage =
-            err?.error?.error ?? err?.error?.message ?? 'Could not approve the request.';
+          const missingDocumentTypeIds: number[] | undefined = err?.error?.missingDocumentTypeIds;
+          const errorMessage = missingDocumentTypeIds?.length
+            ? `${err.error.error} Missing: ${this.describeDocumentTypes(request, missingDocumentTypeIds)}.`
+            : err?.error?.error ?? err?.error?.message ?? 'Could not approve the request.';
           this.error.set(errorMessage);
           this.toast.show(errorMessage, 'error');
         },
       });
+  }
+
+  private describeDocumentTypes(request: CombinedRequest, documentTypeIds: number[]): string {
+    return documentTypeIds
+      .map(id => request.documents.find(doc => doc.documentTypeId === id)?.documentTypeName ?? `Type #${id}`)
+      .join(', ');
   }
 
   denyRequest(request: CombinedRequest): void {

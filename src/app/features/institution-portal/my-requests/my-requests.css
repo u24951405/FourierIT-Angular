@@ -36,6 +36,12 @@
 .my-requests-header h1{ margin:0; font-size:1.125rem }
 .my-requests-subtitle{ margin:0; color:var(--text-sub); font-size:0.9rem }
 
+.request-card__scope-note {
+    margin: 0.5rem 0 0;
+    color: var(--text-sub);
+    font-size: 0.82rem;
+}
+
 .my-requests-logo{ height:36px; width:auto }
 
 .my-requests-loading,

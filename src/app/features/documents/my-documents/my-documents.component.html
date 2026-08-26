@@ -91,6 +91,9 @@
               <h2>{{ doc.fileName }}</h2>
             </div>
             <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus }}</span>
+            @if (isDocumentFlagged(doc)) {
+              <span class="badge badge--rejected" title="An institution has flagged this document">⚑ Flagged</span>
+            }
           </div>
           <dl class="document-card__meta">
             <div>
@@ -201,6 +204,44 @@
                         <td>{{ approval.approvedAt | date:'medium' }}</td>
                         <td>
                           <button type="button" class="btn btn--ghost" (click)="revokeDocumentAccess(approval.approvalId)">Revoke</button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <section class="document-detail-access">
+            <h3>Flags from institutions</h3>
+            @if (detailFlags().length === 0) {
+              <div class="documents-page__state">No institution has flagged this document.</div>
+            } @else {
+              <div class="table-wrapper">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Institution</th>
+                      <th>Reason</th>
+                      <th>Flagged on</th>
+                      <th>Status</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (flag of detailFlags(); track flag.enquiryFlagId) {
+                      <tr>
+                        <td>{{ flag.institutionName }}</td>
+                        <td>{{ flag.flagReason }}</td>
+                        <td>{{ flag.flaggedAt | date:'medium' }}</td>
+                        <td>{{ flag.isResolved ? 'Resolved' : 'Unresolved' }}</td>
+                        <td>
+                          @if (!flag.isResolved) {
+                            <button type="button" class="btn btn--ghost" [disabled]="resolvingFlagId() === flag.enquiryFlagId" (click)="resolveFlag(flag)">
+                              {{ resolvingFlagId() === flag.enquiryFlagId ? 'Resolving…' : 'Mark resolved' }}
+                            </button>
+                          }
                         </td>
                       </tr>
                     }

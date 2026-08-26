@@ -15,6 +15,20 @@ export interface SaveDepartmentPayload {
   branchId: number;
 }
 
+export interface DepartmentHierarchyNode {
+  departmentId: number;
+  parentId: number | null;
+  departmentName: string;
+  branchId: number;
+  children: DepartmentHierarchyNode[];
+}
+
+export interface DepartmentHierarchyRequest {
+  departmentName: string;
+  branchId: number;
+  parentId?: number | null;
+}
+
 export interface BranchListDto {
   branchId: number;
   branchName: string;
@@ -75,6 +89,22 @@ export class DepartmentService {
 
   getAll(): Observable<ApiDepartmentDto[]> {
     return this.http.get<ApiDepartmentDto[]>(this.base);
+  }
+
+  getHierarchy(): Observable<DepartmentHierarchyNode[]> {
+    return this.http.get<DepartmentHierarchyNode[]>(`${this.base}/hierarchy`);
+  }
+
+  createHierarchyNode(payload: DepartmentHierarchyRequest): Observable<DepartmentHierarchyNode> {
+    return this.http.post<DepartmentHierarchyNode>(`${this.base}/hierarchy`, payload);
+  }
+
+  updateHierarchyNode(id: number, payload: DepartmentHierarchyRequest): Observable<DepartmentHierarchyNode> {
+    return this.http.put<DepartmentHierarchyNode>(`${this.base}/hierarchy/${id}`, payload);
+  }
+
+  deleteHierarchyNode(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/hierarchy/${id}`);
   }
 
   create(payload: SaveDepartmentPayload): Observable<ApiDepartmentDto> {

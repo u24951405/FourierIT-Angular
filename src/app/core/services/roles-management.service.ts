@@ -6,11 +6,13 @@ import { environment } from '../../../environments/environment';
 export interface ApiRoleDto {
   roleId: string;
   roleName: string;
+  permissions: string[];
 }
 
 export interface SaveRolePayload {
   roleId?: string;
   roleName: string;
+  permissions: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,8 +28,12 @@ export class RolesManagementService {
     return this.http.post<ApiRoleDto>(this.base, payload);
   }
 
-  update(roleId: string, payload: { roleName: string; newRoleId?: string }): Observable<ApiRoleDto> {
+  update(roleId: string, payload: { roleName: string; newRoleId?: string; permissions: string[] }): Observable<ApiRoleDto> {
     return this.http.put<ApiRoleDto>(`${this.base}/${roleId}`, payload);
+  }
+
+  getPermissions(): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/permissions`);
   }
 
   delete(roleId: string): Observable<void> {

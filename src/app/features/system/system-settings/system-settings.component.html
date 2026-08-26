@@ -1,0 +1,29 @@
+<section class="settings-page">
+  <header class="page-header">
+    <p class="eyebrow">System Administration</p>
+    <h1>Timer Settings</h1>
+    <p class="subtitle">Adjust institution portal security timers.</p>
+  </header>
+
+  <div *ngIf="loading" class="status">Loading settings...</div>
+  <div *ngIf="error" class="status status--error">{{ error }}</div>
+  <div *ngIf="message" class="status status--success">{{ message }}</div>
+
+  <section class="settings-list" *ngIf="!loading">
+    <article class="setting-row card" *ngFor="let setting of settings">
+      <div>
+        <h2>{{ setting.key }}</h2>
+        <p>{{ setting.description }}</p>
+      </div>
+      <div class="setting-control">
+        <label>
+          Minutes
+          <input type="number" min="1" max="1440" [(ngModel)]="setting.value">
+        </label>
+        <button class="btn btn-primary" type="button" [disabled]="savingKey === setting.key" (click)="save(setting)">
+          {{ savingKey === setting.key ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </article>
+  </section>
+</section>

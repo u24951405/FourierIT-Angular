@@ -33,6 +33,11 @@ export const REPORTS_ROUTES: Routes = [
       import('./monthly/monthly-report/monthly-report').then(m => m.MonthlyReportComponent),
   },
   {
+    path: 'ad-hoc-results/:id',
+    loadComponent: () =>
+      import('./ad-hoc/ad-hoc-results/ad-hoc-results').then(m => m.AdHocResultsComponent),
+  },
+  {
     path: 'compliance',
     loadComponent: () =>
       import('./compliance/compliance-report/compliance-report').then((m: any) => m.ComplianceReportComponent),

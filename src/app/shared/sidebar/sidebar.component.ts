@@ -95,9 +95,12 @@ export class SidebarComponent implements OnInit {
         { label: 'Institutions',     route: '/administration/institutions' }
     ]},
     { label: 'Dashboard',    icon: 'grid',    route: '/dashboard' },
-    { label: 'Reports', icon: 'file', route: '/reports', requiresSuperAdmin: true },
+    { label: 'Reports', icon: 'file', route: '/reports', requiresSuperAdmin: true, children: [
+      { label: 'View Document Activity Report', route: '/reports/activity', requiresSuperAdmin: true }
+    ] },
     { label: 'Departments', icon: 'building', children: [
         { label: 'All Departments', route: '/departments/all' },
+        { label: 'Department Hierarchy', route: '/departments/hierarchy' },
         { label: 'Assign Department Admin', route: '/departments/admins' }
     ]},
     { label: 'Documents', icon: 'folder', children: [
@@ -114,7 +117,9 @@ export class SidebarComponent implements OnInit {
         { label: 'Register Stakeholder or Compliance Officer', route: '/users/register-role-user' }
     ]},
     { label: 'Audit Log', icon: 'file', route: '/audit-logs', requiresSuperAdmin: true },
-    { label: 'Backup & Restore', icon: 'folder', route: '/backup-restore', requiresSuperAdmin: true }
+    { label: 'Backup & Restore', icon: 'folder', route: '/backup-restore', requiresSuperAdmin: true },
+    { label: 'Timer Settings', icon: 'settings', route: '/system-settings', requiresSuperAdmin: true },
+    { label: 'Help', icon: 'file', route: '/help' }
   ];
 
   trackByNavItem(_: number, item: NavItem): string {
@@ -133,7 +138,8 @@ export class SidebarComponent implements OnInit {
         { label: 'Documents', icon: 'folder', children: [
           { label: 'Upload Document', route: '/documents/upload' },
           { label: 'Document Requests', route: '/documents/requests' }
-        ]}
+        ]},
+        { label: 'Help', icon: 'file', route: '/help' }
       ];
     }
     let items = this.navItems.filter(item =>

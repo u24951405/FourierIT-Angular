@@ -14,6 +14,7 @@ import {
   InstitutionNotification,
   InstitutionRequestSummary,
   InstitutionRequestChecklistResponse,
+  InstitutionRequestEditData,
   PendingDepartmentAccessRequest,
   PendingDocumentAccessRequest,
   RouteRequestToOwnerPayload,
@@ -26,22 +27,13 @@ export class DocumentAccessRequestService {
   private base = `${environment.apiUrl}`;
 
   createRequest(
+    token: string,
     payload: InstitutionDocumentRequestPayload
   ): Observable<InstitutionDocumentRequestResponse> {
-    const sessionJson = sessionStorage.getItem('institution_session');
-    const sessionToken = sessionJson ? JSON.parse(sessionJson).sessionToken : '';
-    
-    console.debug('[DocumentAccessRequestService] Creating request', {
-      sessionJson,
-      sessionToken,
-      endpoint: `${this.base}/institution-access/requests`,
-      payload
-    });
-    
     return this.http.post<InstitutionDocumentRequestResponse>(
       `${this.base}/institution-access/requests`,
       payload,
-      { params: new HttpParams().set('token', sessionToken) }
+      { params: new HttpParams().set('token', token) }
     );
   }
 
@@ -66,6 +58,25 @@ export class DocumentAccessRequestService {
   getInstitutionRequests(token: string): Observable<PendingDocumentAccessRequest[]> {
     const params = new HttpParams().set('token', token);
     return this.http.get<PendingDocumentAccessRequest[]>(`${this.base}/institution-access/requests`, { params });
+  }
+
+  getInstitutionRequest(token: string, requestId: number): Observable<InstitutionRequestEditData> {
+    return this.http.get<InstitutionRequestEditData>(`${this.base}/institution-access/requests/${requestId}`, {
+      params: new HttpParams().set('token', token),
+    });
+  }
+
+  updateInstitutionRequest(token: string, requestId: number, payload: {
+    purposeNote: string;
+    requestedDocuments: DocumentRequestedType[];
+    submissionDeadline?: string | null;
+    referenceNumber?: string;
+  }): Observable<{ enquiryRequestId: number; status: string; requestedDocumentTypeIds: number[] }> {
+    return this.http.put<{ enquiryRequestId: number; status: string; requestedDocumentTypeIds: number[] }>(
+      `${this.base}/institution-access/requests/${requestId}`,
+      payload,
+      { params: new HttpParams().set('token', token) }
+    );
   }
 
   getInstitutionRequestChecklist(token: string, requestId: number): Observable<InstitutionRequestChecklistResponse> {
@@ -136,10 +147,8 @@ export class DocumentAccessRequestService {
     );
   }
 
-  revokeInstitutionRequest(requestId: number): Observable<any> {
-    const sessionJson = sessionStorage.getItem('institution_session');
-    const sessionToken = sessionJson ? JSON.parse(sessionJson).sessionToken : '';
-    const params = new HttpParams().set('token', sessionToken);
+  revokeInstitutionRequest(token: string, requestId: number): Observable<any> {
+    const params = new HttpParams().set('token', token);
     return this.http.post<any>(`${this.base}/institution-access/requests/${requestId}/revoke`, null, { params });
   }
 

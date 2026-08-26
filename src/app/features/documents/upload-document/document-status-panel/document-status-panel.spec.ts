@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DocumentStatusPanel } from './document-status-panel';
+import { DocumentStatusPanelComponent } from './document-status-panel';
 
-describe('DocumentStatusPanel', () => {
-  let component: DocumentStatusPanel;
-  let fixture: ComponentFixture<DocumentStatusPanel>;
+describe('DocumentStatusPanelComponent', () => {
+  let component: DocumentStatusPanelComponent;
+  let fixture: ComponentFixture<DocumentStatusPanelComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DocumentStatusPanel]
+      imports: [DocumentStatusPanelComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(DocumentStatusPanel);
+    fixture = TestBed.createComponent(DocumentStatusPanelComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

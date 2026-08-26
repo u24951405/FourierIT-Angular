@@ -20,13 +20,14 @@ describe('DocumentRequestsComponent', () => {
       'denyRequest',
     ]);
     mockToastService = jasmine.createSpyObj('ToastService', ['show']);
-    mockAuthService = jasmine.createSpyObj('AuthService', ['getUserRoles', 'isSuperAdmin', 'hasRole']);
+    mockAuthService = jasmine.createSpyObj('AuthService', ['getUserRoles', 'getToken', 'isSuperAdmin', 'hasRole']);
 
     mockRequestService.getPendingRequests.and.returnValue(of([]));
     mockRequestService.getPendingDepartmentRequests.and.returnValue(of([]));
     mockAuthService.getUserRoles.and.returnValue(['Document Owner']);
+    mockAuthService.getToken.and.returnValue('test-token');
     mockAuthService.isSuperAdmin.and.returnValue(false);
-    mockAuthService.hasRole.and.returnValue(false);
+    mockAuthService.hasRole.and.callFake((role: string) => role === 'Document Owner');
 
     await TestBed.configureTestingModule({
       imports: [DocumentRequestsComponent],

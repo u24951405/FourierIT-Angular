@@ -1,0 +1,83 @@
+<section class="hierarchy-page">
+  <header class="hierarchy-header">
+    <div>
+      <p class="eyebrow">Department structure</p>
+      <h1>Department Hierarchy</h1>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="addRootNode()">Add root node</button>
+  </header>
+
+  <div class="hierarchy-form" [formGroup]="form">
+    <div class="field">
+      <label for="departmentName">Department name</label>
+      <input id="departmentName" type="text" formControlName="departmentName" placeholder="e.g. Operations" />
+    </div>
+
+    <div class="field">
+      <label for="parentId">Parent node</label>
+      <select id="parentId" formControlName="parentId">
+        <option [ngValue]="null">Root node</option>
+        <option *ngFor="let item of flatOptions()" [ngValue]="item.id">{{ item.label }}</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="branchId">Branch</label>
+      <select id="branchId" formControlName="branchId">
+        <option value="">Select branch</option>
+        <option *ngFor="let branch of branchOptions()" [ngValue]="branch.id">{{ branch.name }}</option>
+      </select>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="form.reset({ departmentName: '', branchId: null, parentId: null }); editingId.set(null);">Clear</button>
+      <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="submit()">
+        {{ editingId() !== null ? 'Update node' : 'Add node' }}
+      </button>
+    </div>
+  </div>
+
+  <p *ngIf="error()" class="alert alert-error">{{ error() }}</p>
+  <p *ngIf="success()" class="alert alert-success">{{ success() }}</p>
+
+  <div class="tree-panel">
+    <ng-container *ngIf="loading(); else treeContent">
+      <p>Loading hierarchy…</p>
+    </ng-container>
+
+    <ng-template #treeContent>
+      <ul class="tree" *ngIf="hierarchy().length; else emptyState">
+        <ng-container *ngFor="let node of hierarchy(); trackBy: trackByNode">
+          <ng-container *ngTemplateOutlet="treeNode; context: { $implicit: node }"></ng-container>
+        </ng-container>
+      </ul>
+
+      <ng-template #emptyState>
+        <p>No hierarchy items yet.</p>
+      </ng-template>
+    </ng-template>
+  </div>
+</section>
+
+<ng-template #treeNode let-node>
+  <li class="tree-node">
+    <div class="tree-node__row">
+      <div class="tree-node__label-wrap">
+        <span class="tree-node__dot"></span>
+        <strong>{{ node.departmentName }}</strong>
+      </div>
+
+      <div class="tree-node__actions">
+        <button type="button" class="btn btn-small" (click)="beginEdit(node)">Rename</button>
+        <button type="button" class="btn btn-small btn-secondary" (click)="beginAddChild(node)">Add child</button>
+        <button type="button" class="btn btn-small btn-danger" [disabled]="node.children.length > 0" (click)="deleteNode(node)">Delete</button>
+      </div>
+    </div>
+
+    <ul class="tree-node__children" *ngIf="node.children?.length">
+      <ng-container *ngFor="let child of node.children; trackBy: trackByNode">
+        <ng-container *ngTemplateOutlet="treeNode; context: { $implicit: child }"></ng-container>
+      </ng-container>
+    </ul>
+  </li>
+</ng-template>

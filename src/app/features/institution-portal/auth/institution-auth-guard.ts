@@ -32,12 +32,6 @@ export const institutionOtpGuard: CanActivateFn = () => {
   const authService = inject(InstitutionAuthService);
   const router = inject(Router);
 
-  // If already authenticated, go straight to dashboard
-  if (authService.isAuthenticated()) {
-    router.navigate(['/institution/dashboard']);
-    return false;
-  }
-
   // Must have a pending validation to be on the OTP screen
   if (!authService.getPendingValidation()) {
     router.navigate(['/institution/auth/expired']);

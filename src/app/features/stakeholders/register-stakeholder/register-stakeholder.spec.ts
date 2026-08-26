@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { RegisterStakeholder } from './register-stakeholder';
+import { RegisterStakeholderComponent } from './register-stakeholder.component';
 
-describe('RegisterStakeholder', () => {
-  let component: RegisterStakeholder;
-  let fixture: ComponentFixture<RegisterStakeholder>;
+describe('RegisterStakeholderComponent', () => {
+  let component: RegisterStakeholderComponent;
+  let fixture: ComponentFixture<RegisterStakeholderComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RegisterStakeholder]
+      imports: [RegisterStakeholderComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(RegisterStakeholder);
+    fixture = TestBed.createComponent(RegisterStakeholderComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

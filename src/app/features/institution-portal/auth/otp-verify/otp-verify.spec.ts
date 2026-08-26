@@ -21,6 +21,7 @@ describe('OtpVerifyComponent', () => {
       'requestNewAccessToken',
     ]);
     authService.verifyOtp.and.returnValue(of({ success: true, sessionToken: 'token', expiresAt: new Date().toISOString() }));
+    authService.resendOtp.and.returnValue(of(void 0));
     authService.getPendingValidation.and.returnValue(null);
     authService.isSessionLocked.and.returnValue(false);
     authService.remainingAttempts.and.returnValue(3);

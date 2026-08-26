@@ -81,6 +81,20 @@ export interface InstitutionDocumentRequestResponse {
   message?: string;
 }
 
+export interface InstitutionRequestEditData {
+  enquiryRequestId: number;
+  institutionId: number;
+  requestType: 'Department' | 'Individual';
+  targetDepartmentId?: number;
+  targetUserId?: string;
+  recipientName: string;
+  status: string;
+  purposeNote: string;
+  submissionDeadline?: string;
+  referenceNumber?: string;
+  documents: Array<{ documentTypeId: number; documentTypeName: string; isMandatory: boolean }>;
+}
+
 export interface InstitutionRequestSummary {
   pendingRequests: number;
   approvedRequests: number;

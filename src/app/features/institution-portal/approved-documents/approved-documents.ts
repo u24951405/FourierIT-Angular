@@ -37,6 +37,14 @@ export class ApprovedDocuments implements OnInit {
     }
     return Array.from(groups.values());
   });
+
+  documentTypeSummaries(documents: ApprovedInstitutionDocument[]): { name: string; count: number }[] {
+    const counts = new Map<string, number>();
+    for (const document of documents) {
+      counts.set(document.documentTypeName, (counts.get(document.documentTypeName) ?? 0) + 1);
+    }
+    return Array.from(counts, ([name, count]) => ({ name, count }));
+  }
   readonly selectedDocumentId = signal<number | null>(null);
   readonly flagReason = signal('');
   readonly showingFlagForm = signal(false);

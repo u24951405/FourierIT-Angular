@@ -1,6 +1,6 @@
-import { Component, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
 import { InstitutionAuthService } from '../auth/institution-auth';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
@@ -18,7 +18,8 @@ type RequestType = 'Department' | 'Individual';
   templateUrl: './request-documents.html',
   styleUrl: './request-documents.css',
 })
-export class RequestDocuments {
+export class RequestDocuments implements OnInit {
+  private route = inject(ActivatedRoute);
   private router = inject(Router);
   private authService = inject(InstitutionAuthService);
   private requestService = inject(DocumentAccessRequestService);
@@ -27,6 +28,7 @@ export class RequestDocuments {
   institutionName = this.authService.institutionName();
   currentStep = 1;
   submitting = false;
+  editingRequestId: number | null = null;
   requestTypes: RequestType[] = ['Department', 'Individual'];
   REQUEST_TYPE_LABELS: Record<RequestType, string> = {
     Department: 'Company / Department',
@@ -37,6 +39,7 @@ export class RequestDocuments {
     selectedRecipientId: '',
     recipientName: '',
     selectedDocumentTypeIds: [] as number[],
+    mandatoryDocumentTypeIds: [] as number[],
     submissionDeadline: '',
     referenceNumber: '',
     justification: '',
@@ -51,8 +54,63 @@ export class RequestDocuments {
   documentLoadError: string | null = null;
   submitError: string | null = null;
 
+  ngOnInit(): void {
+    const requestId = Number(this.route.snapshot.queryParamMap.get('edit'));
+    if (Number.isInteger(requestId) && requestId > 0) {
+      this.loadExistingRequest(requestId);
+    }
+  }
+
+  get isEditing(): boolean {
+    return this.editingRequestId !== null;
+  }
+
+  private loadExistingRequest(requestId: number): void {
+    const token = this.getPortalSessionToken();
+    if (!token) {
+      this.submitError = 'Unable to load the request. Please sign in again.';
+      return;
+    }
+
+    this.requestService.getInstitutionRequest(token, requestId).subscribe({
+      next: request => {
+        this.editingRequestId = request.enquiryRequestId;
+        this.currentStep = 4;
+        this.wizard.requestType = request.requestType;
+        this.wizard.selectedRecipientId = request.targetDepartmentId?.toString() ?? request.targetUserId ?? '';
+        this.wizard.recipientName = request.recipientName;
+        this.wizard.selectedDocumentTypeIds = request.documents.map(document => document.documentTypeId);
+        this.wizard.mandatoryDocumentTypeIds = request.documents
+          .filter(document => document.isMandatory)
+          .map(document => document.documentTypeId);
+        this.wizard.submissionDeadline = request.submissionDeadline?.slice(0, 10) ?? '';
+        this.wizard.referenceNumber = request.referenceNumber ?? '';
+        this.wizard.justification = request.purposeNote;
+        this.loadDocumentTypesForExistingRequest(token, request);
+      },
+      error: () => this.submitError = 'The existing request could not be loaded.',
+    });
+  }
+
+  private loadDocumentTypesForExistingRequest(token: string, request: { requestType: RequestType; targetDepartmentId?: number; targetUserId?: string }): void {
+    const recipientId = request.targetDepartmentId?.toString() ?? request.targetUserId ?? '';
+    this.loadingDocuments = true;
+    this.requestService.getInstitutionRecipientDocumentTypes(token, request.requestType, recipientId)
+      .pipe(finalize(() => this.loadingDocuments = false))
+      .subscribe({
+        next: response => {
+          this.documentTypes = Array.isArray(response) ? response : response.documentTypes ?? [];
+        },
+        error: () => this.documentLoadError = 'Available document types could not be loaded.',
+      });
+  }
+
   get selectedCount(): number {
     return this.wizard.selectedDocumentTypeIds.length;
+  }
+
+  get availableDocumentTypesToAdd(): InstitutionRecipientDocumentType[] {
+    return this.documentTypes.filter((doc) => !this.isDocSelected(doc.documentTypeId));
   }
 
   showAllSelectedDocuments = false;
@@ -185,6 +243,7 @@ export class RequestDocuments {
     this.wizard.selectedRecipientId = '';
     this.wizard.recipientName = '';
     this.wizard.selectedDocumentTypeIds = [];
+    this.wizard.mandatoryDocumentTypeIds = [];
     this.documentTypes = [];
 
     if (this.wizard.requestType === 'Department') {
@@ -229,10 +288,13 @@ export class RequestDocuments {
               } else {
                 this.users = [];
               }
+              if (!this.users.length) {
+                this.recipientLoadError = 'No document owners are currently registered in the system.';
+              }
             },
           error: () => {
             this.users = [];
-            this.recipientLoadError = 'Failed to load users. Please try again.';
+            this.recipientLoadError = 'Something went wrong loading users, please try again.';
           },
         });
     }
@@ -256,6 +318,7 @@ export class RequestDocuments {
     this.documentLoadError = null;
     this.documentTypes = [];
     this.wizard.selectedDocumentTypeIds = [];
+    this.wizard.mandatoryDocumentTypeIds = [];
 
     this.requestService
       .getInstitutionRecipientDocumentTypes(token, this.wizard.requestType, this.wizard.selectedRecipientId)
@@ -305,6 +368,9 @@ export class RequestDocuments {
     this.wizard.selectedDocumentTypeIds = ids.includes(documentTypeId)
       ? ids.filter((id) => id !== documentTypeId)
       : [...ids, documentTypeId];
+    if (!this.wizard.selectedDocumentTypeIds.includes(documentTypeId)) {
+      this.wizard.mandatoryDocumentTypeIds = this.wizard.mandatoryDocumentTypeIds.filter((id) => id !== documentTypeId);
+    }
     this.cdr.detectChanges();
   }
 
@@ -325,6 +391,35 @@ export class RequestDocuments {
 
   isDocSelected(documentTypeId: number): boolean {
     return this.wizard.selectedDocumentTypeIds.includes(documentTypeId);
+  }
+
+  isDocumentMandatory(documentTypeId: number): boolean {
+    return this.wizard.mandatoryDocumentTypeIds.includes(documentTypeId);
+  }
+
+  toggleDocumentMandatory(documentTypeId: number): void {
+    const ids = this.wizard.mandatoryDocumentTypeIds;
+    this.wizard.mandatoryDocumentTypeIds = ids.includes(documentTypeId)
+      ? ids.filter((id) => id !== documentTypeId)
+      : [...ids, documentTypeId];
+  }
+
+  addRequestedDocument(documentTypeId: number): void {
+    if (!documentTypeId || this.isDocSelected(documentTypeId)) {
+      return;
+    }
+    this.wizard.selectedDocumentTypeIds = [...this.wizard.selectedDocumentTypeIds, documentTypeId];
+    this.cdr.detectChanges();
+  }
+
+  removeRequestedDocument(documentTypeId: number): void {
+    this.wizard.selectedDocumentTypeIds = this.wizard.selectedDocumentTypeIds.filter((id) => id !== documentTypeId);
+    this.wizard.mandatoryDocumentTypeIds = this.wizard.mandatoryDocumentTypeIds.filter((id) => id !== documentTypeId);
+    this.cdr.detectChanges();
+  }
+
+  documentTypeName(documentTypeId: number): string {
+    return this.documentTypes.find((doc) => doc.documentTypeId === documentTypeId)?.typeName ?? 'Unknown document type';
   }
 
   onDeadlineChange(value: string): void {
@@ -370,7 +465,7 @@ export class RequestDocuments {
       referenceNumber: this.wizard.referenceNumber.trim(),
       requestedDocuments: this.wizard.selectedDocumentTypeIds.map((documentTypeId) => ({
         documentTypeId,
-        isMandatory: false,
+        isMandatory: this.isDocumentMandatory(documentTypeId),
       })),
     };
 
@@ -390,8 +485,16 @@ export class RequestDocuments {
 
     console.debug('Submitting institution document access request', { institutionId, payload });
 
-    this.requestService
-      .createRequest(payload)
+    const requestOperation = this.editingRequestId
+      ? this.requestService.updateInstitutionRequest(sessionToken ?? '', this.editingRequestId, {
+          purposeNote: payload.purposeNote ?? '',
+          requestedDocuments: payload.requestedDocuments,
+          submissionDeadline: payload.submissionDeadline,
+          referenceNumber: payload.referenceNumber,
+        })
+      : this.requestService.createRequest(sessionToken ?? '', payload);
+
+    requestOperation
       .pipe(finalize(() => {
         this.submitting = false;
         try { this.cdr.detectChanges(); } catch {}

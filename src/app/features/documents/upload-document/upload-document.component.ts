@@ -97,7 +97,9 @@ export class UploadDocumentComponent implements OnInit {
           this.loadDocumentContext();
         },
         error: err => {
-          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Upload failed.';
+          const message = typeof err?.error === 'string'
+            ? err.error
+            : err?.error?.message ?? err?.error?.error ?? err?.error?.title ?? 'Upload failed.';
           this.error.set(message);
           this.toast.show(message, 'error');
         }

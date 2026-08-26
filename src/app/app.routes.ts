@@ -161,6 +161,10 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard],
         loadComponent: () => import('./features/departments/departments/departments.component')
           .then(m => m.DepartmentsComponent) },
+      { path: 'departments/hierarchy',
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        loadComponent: () => import('./features/departments/department-hierarchy/department-hierarchy.component')
+          .then(m => m.DepartmentHierarchyComponent) },
       { path: 'documents/all',
         canActivate: [restrictDocumentOwnerOnlyGuard],
         data: { documentPageTitle: 'All Documents' },
@@ -184,6 +188,14 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/backup-restore/backup-restore')
           .then(m => m.BackupRestoreComponent) },
+      { path: 'system-settings',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        loadComponent: () => import('./features/system/system-settings/system-settings.component')
+          .then(m => m.SystemSettingsComponent) },
+      { path: 'help',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/help/help.component')
+          .then(m => m.HelpComponent) },
       {
         path: 'reports',
         canActivate: [superAdminGuard],

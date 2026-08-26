@@ -51,8 +51,8 @@
 
   <!-- ── Step 1: Request Type ─────────────────────────────────────────────────── -->
   <div class="rd-card" *ngIf="currentStep === 1">
-    <h2 class="rd-card__title">Choose Request Type</h2>
-    <p class="rd-card__subtitle">Request documents for either a department or an individual.</p>
+    <h2 class="rd-card__title">Request Type</h2>
+    <p class="rd-card__subtitle">Choose the type of recipient for this document request.</p>
 
     <div class="rd-category-grid">
       <button
@@ -170,7 +170,7 @@
     <p class="rd-card__subtitle">
       Recipient: <strong>{{ wizard.recipientName }}</strong>
     </p>
-    <p class="rd-card__hint">Select one or more document types to include in the request.</p>
+    <p class="rd-card__hint">Select one or more document types. Approval grants access to all of {{ wizard.recipientName }}'s documents in each selected type, not to individual files.</p>
 
     <div *ngIf="loadingDocuments" class="rd-loading-message">
       Loading document types for the selected recipient...
@@ -214,6 +214,10 @@
         </div>
       </label>
     </div>
+
+    <p class="rd-card__hint" *ngIf="selectedCount > 0">
+      Scope: all documents of the selected type{{ selectedCount === 1 ? '' : 's' }} belonging to {{ wizard.recipientName }}.
+    </p>
 
     <div *ngIf="!loadingDocuments && documentTypes.length === 0" class="rd-empty-state">
       No document types are available for this recipient.
@@ -348,7 +352,7 @@
         (click)="submitRequest()"
       >
         <span *ngIf="!submitting">
-          Submit Request
+          {{ isEditing ? 'Save Request Changes' : 'Submit Request' }}
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>

@@ -416,3 +416,41 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Align this operational surface with the shared DocuVault palette. */
+:host {
+  --backup-ink: var(--text, #1c2b3a);
+  --backup-muted: var(--text-mid, #4a6278);
+  --backup-line: var(--border, #d0dce8);
+  --backup-soft: var(--input-bg, #f7f9fb);
+  display: block;
+}
+
+.page-container { padding: 32px clamp(18px, 4vw, 48px) 56px; color: var(--backup-ink); background: linear-gradient(135deg, #e8edf2, #f7f9fb 52%, #e5eef5); }
+.page-header, .banner, .card { max-width: 1240px; margin-inline: auto; }
+.eyebrow { color: var(--blue, #2e6da4); font-size: 11px; font-weight: 700; letter-spacing: .16em; }
+.page-header h1, .history-header h2, .modal-header h3 { color: var(--navy, #1a2e45); letter-spacing: -.03em; }
+.subtitle, .history-description, .modal-subtitle, .muted { color: var(--backup-muted); }
+.card { padding: 0; border: 1px solid var(--backup-line); border-radius: var(--radius, 10px); box-shadow: 0 8px 24px rgba(26, 46, 69, .07); }
+.history-header { padding: 22px 24px; border-bottom-color: var(--backup-line); }
+.history-badge { padding: 7px 11px; color: var(--blue, #2e6da4); background: #e8f1f8; border: 1px solid #c7dbea; border-radius: 999px; font-size: .8rem; }
+.data-table { border-collapse: collapse; border-spacing: 0; }
+.data-table thead th { padding: 14px 12px; color: var(--backup-muted); background: var(--backup-soft); border-bottom: 1px solid var(--backup-line); }
+.data-table td { padding: 15px 12px; border-bottom: 1px solid #edf2f6; }
+.data-table tbody tr:hover td { background: #f8fbfd; }
+.btn { border-radius: 8px; }
+.btn-primary { background: linear-gradient(135deg, var(--navy, #1a2e45), var(--blue, #2e6da4)); box-shadow: 0 5px 14px rgba(46, 109, 164, .24); }
+.btn-secondary { color: var(--navy, #1a2e45); background: #edf3f7; border-color: #cbd9e4; }
+.modal { border-radius: 12px; box-shadow: 0 24px 70px rgba(15, 31, 48, .26); }
+.modal-footer { background: var(--backup-soft); border-top: 1px solid var(--backup-line); }
+.details-card { background: var(--backup-soft); border-color: var(--backup-line); border-radius: 8px; }
+.info-card { background: #eef6fb; border-color: #d3e5f1; }
+.warning-card { background: #fff8e8; border-color: #f1dfb3; }
+.danger-alert-box { background: #fff1f0; border-color: #f0cfcc; }
+.spinner { border-color: #d7e3ec; border-top-color: var(--blue, #2e6da4); }
+
+@media (max-width: 520px) {
+  .page-container { padding: 24px 14px 40px; }
+  .modal-footer { flex-direction: column-reverse; }
+  .modal-footer .btn { width: 100%; }
+}

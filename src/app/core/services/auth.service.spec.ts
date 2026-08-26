@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
+import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 
 function parseRolesFromToken(token: string): string[] {
   const payload = token.split('.')[1];
@@ -30,8 +33,12 @@ function parseRolesFromToken(token: string): string[] {
 }
 
 describe('AuthService', () => {
+  beforeEach(() => {
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideRouter([])] });
+  });
+
   it('returns a null password policy without issuing an HTTP request', async () => {
-    const service = new AuthService();
+    const service = TestBed.inject(AuthService);
     const policy = await firstValueFrom(service.getPasswordPolicy());
 
     expect(policy).toBeNull();

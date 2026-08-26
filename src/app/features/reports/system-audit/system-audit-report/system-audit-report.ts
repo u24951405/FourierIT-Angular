@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReportFrameComponent, ReportFrameConfig } from '../../shared/report-frame/report-frame';
 import { SystemAuditReportData, InstitutionAuditBlock, AuditLogRow } from '../../reports.models';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-system-audit-report',
@@ -11,10 +12,11 @@ import { SystemAuditReportData, InstitutionAuditBlock, AuditLogRow } from '../..
   styleUrls: ['./system-audit-report.scss'],
 })
 export class SystemAuditReportComponent {
+  private authService = inject(AuthService);
   frameConfig: ReportFrameConfig = {
     reportId: 'DV-SAR-4164163896',
     dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
+    createdBy: this.generatedBy(),
     reportType: 'External Enquiry & Token Lifecycle',
     framework: 'FICA · POPIA · DocuVault v35',
     badgeLabel: 'AUDIT TRAIL',
@@ -25,7 +27,7 @@ export class SystemAuditReportComponent {
   data: SystemAuditReportData = {
     reportId: 'DV-SAR-4164163896',
     dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
+    createdBy: this.generatedBy(),
     totalLogs: 8,
     totalSessions: 2,
     totalAnomalies: 2,
@@ -63,6 +65,13 @@ export class SystemAuditReportComponent {
       },
     ],
   };
+
+  private generatedBy(): string {
+    const user = this.authService.currentUser();
+    if (!user) return 'Unknown User';
+    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return name || user.email || 'Unknown User';
+  }
 
   statusClass(status: string): string {
     if (status === 'Clean') return 'audit-status--clean';

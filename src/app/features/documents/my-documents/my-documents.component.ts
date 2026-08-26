@@ -7,6 +7,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import {
   DocumentAccessApprovalItem,
   DocumentDetailItem,
+  DocumentFlagItem,
   DocumentListItem,
   DocumentsApiService,
 } from '../../../core/services/documents-api.service';
@@ -56,6 +57,15 @@ export class MyDocumentsComponent {
   readonly blockedDeletionDocument = signal<any | null>(null);
   readonly blockedDeletionError = signal<string | null>(null);
   readonly blockedDeletionApprovals = signal<DocumentAccessApprovalItem[]>([]);
+  readonly allFlags = signal<DocumentFlagItem[]>([]);
+  readonly resolvingFlagId = signal<number | null>(null);
+
+  readonly flaggedDocumentIds = computed(() => new Set(this.allFlags().filter(f => !f.isResolved).map(f => f.documentId)));
+  readonly detailFlags = computed(() => {
+    const doc = this.detailDocument();
+    if (!doc) return [];
+    return this.allFlags().filter(f => f.documentId === doc.documentId);
+  });
 
   readonly documentCount = computed(() => this.documents().length);
   readonly approvedDocumentCount = computed(() => this.documents().filter(doc => doc.currentStatus?.toLowerCase() === 'approved').length);
@@ -111,6 +121,36 @@ export class MyDocumentsComponent {
   ngOnInit(): void {
     this.loadDocuments();
     this.loadPendingRequests();
+    this.loadFlags();
+  }
+
+  isDocumentFlagged(doc: DocumentListItem): boolean {
+    return this.flaggedDocumentIds().has(doc.documentId);
+  }
+
+  private loadFlags(): void {
+    this.docsApi.getMyDocumentFlags().subscribe({
+      next: flags => this.allFlags.set(flags ?? []),
+      error: () => this.allFlags.set([]),
+    });
+  }
+
+  resolveFlag(flag: DocumentFlagItem): void {
+    this.resolvingFlagId.set(flag.enquiryFlagId);
+    this.docsApi.resolveDocumentFlag(flag.documentId, flag.enquiryFlagId)
+      .pipe(finalize(() => this.resolvingFlagId.set(null)))
+      .subscribe({
+        next: () => {
+          this.allFlags.update(list => list.map(f =>
+            f.enquiryFlagId === flag.enquiryFlagId ? { ...f, isResolved: true } : f
+          ));
+          this.toast.show('Flag marked as resolved.', 'success');
+        },
+        error: err => {
+          const message = err?.error?.error ?? err?.error?.message ?? 'Could not resolve the flag.';
+          this.toast.show(message, 'error');
+        }
+      });
   }
 
   get filteredDocuments(): DocumentListItem[] {
@@ -152,7 +192,12 @@ export class MyDocumentsComponent {
         a.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.toast.show(`Could not download ${doc.fileName}.`, 'error')
+      error: err => {
+        const message = typeof err?.error === 'string'
+          ? err.error
+          : err?.error?.message ?? err?.error?.error ?? err?.error?.title ?? `Could not download ${doc.fileName}.`;
+        this.toast.show(message, 'error');
+      }
     });
   }
 
@@ -200,11 +245,14 @@ export class MyDocumentsComponent {
         this.previewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(rawUrl));
         this.previewLoading.set(false);
       },
-      error: () => {
+      error: err => {
         this.previewUrl.set(null);
         this.previewRawUrl.set(null);
         this.previewLoading.set(false);
-        this.toast.show(`Could not preview ${doc.fileName}.`, 'error');
+        const message = typeof err?.error === 'string'
+          ? err.error
+          : err?.error?.message ?? err?.error?.error ?? err?.error?.title ?? `Could not preview ${doc.fileName}.`;
+        this.toast.show(message, 'error');
       }
     });
   }
@@ -270,12 +318,13 @@ export class MyDocumentsComponent {
   }
 
   revokeDocumentAccess(approvalId: number): void {
-    const documentId = this.detailDocument()?.documentId;
+    const documentId = this.detailDocument()?.documentId ?? this.blockedDeletionDocument()?.documentId;
     if (!documentId) return;
 
     this.docsApi.revokeDocumentAccess(documentId, approvalId).subscribe({
       next: () => {
         this.accessApprovals.update(list => list.filter(item => item.approvalId !== approvalId));
+        this.blockedDeletionApprovals.update(list => list.filter(item => item.approvalId !== approvalId));
         this.toast.show('Access approval revoked.', 'success');
       },
       error: err => {

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DocumentChecklist } from './document-checklist';
+import { DocumentChecklistComponent } from './document-checklist';
 
-describe('DocumentChecklist', () => {
-  let component: DocumentChecklist;
-  let fixture: ComponentFixture<DocumentChecklist>;
+describe('DocumentChecklistComponent', () => {
+  let component: DocumentChecklistComponent;
+  let fixture: ComponentFixture<DocumentChecklistComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DocumentChecklist]
+      imports: [DocumentChecklistComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(DocumentChecklist);
+    fixture = TestBed.createComponent(DocumentChecklistComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

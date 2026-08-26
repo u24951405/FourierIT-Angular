@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { PopiaConsent } from './popia-consent';
+import { PopiaConsentComponent } from './popia-consent';
 
-describe('PopiaConsent', () => {
-  let component: PopiaConsent;
-  let fixture: ComponentFixture<PopiaConsent>;
+describe('PopiaConsentComponent', () => {
+  let component: PopiaConsentComponent;
+  let fixture: ComponentFixture<PopiaConsentComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PopiaConsent]
+      imports: [PopiaConsentComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(PopiaConsent);
+    fixture = TestBed.createComponent(PopiaConsentComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

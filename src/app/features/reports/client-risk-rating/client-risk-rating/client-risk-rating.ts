@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReportFrameComponent, ReportFrameConfig } from '../../shared/report-frame/report-frame';
 import { ClientRiskReportData, RiskLevel } from '../../reports.models';
+import { AuthService } from '../../../../core/services/auth.service';
 
 @Component({
   selector: 'app-client-risk-rating',
@@ -11,12 +12,13 @@ import { ClientRiskReportData, RiskLevel } from '../../reports.models';
   styleUrls: ['./client-risk-rating.scss'],
 })
 export class ClientRiskRatingComponent {
+  private authService = inject(AuthService);
   RiskLevel = RiskLevel;
 
   frameConfig: ReportFrameConfig = {
     reportId: 'DV-CRR-4164163897',
     dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
+    createdBy: this.generatedBy(),
     reportType: 'Client Risk Rating — Executive Summary',
     framework: 'FICA · FATF · DocuVault v35',
     badgeLabel: 'RISK MATRIX',
@@ -27,7 +29,7 @@ export class ClientRiskRatingComponent {
   data: ClientRiskReportData = {
     reportId: 'DV-CRR-4164163897',
     dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
+    createdBy: this.generatedBy(),
     totalProfiles: 12,
     portfolioAvgScore: 64.4,
     strata: [
@@ -66,6 +68,13 @@ export class ClientRiskRatingComponent {
       },
     ],
   };
+
+  private generatedBy(): string {
+    const user = this.authService.currentUser();
+    if (!user) return 'Unknown User';
+    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return name || user.email || 'Unknown User';
+  }
 
   strataColor(level: RiskLevel): string {
     return { [RiskLevel.HIGH]: '#ef4444', [RiskLevel.MEDIUM]: '#f59e0b', [RiskLevel.LOW]: '#10b981' }[level];

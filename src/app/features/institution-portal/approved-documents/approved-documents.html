@@ -2,7 +2,7 @@
   <header class="approved-documents-header">
     <div class="approved-documents-header__top">
       <h1>Approved Documents</h1>
-      <p>Access your institution-approved documents securely from the portal. Download selected files or flag any item that needs review.</p>
+      <p>Access the files currently available within your institution's approved document-type scopes.</p>
       <button class="btn btn--outline approved-documents-back" type="button" (click)="router.navigate(['/institution/dashboard'])">
         ← Back to dashboard
       </button>
@@ -18,15 +18,22 @@
     </div>
 
     <div *ngIf="groupedDocuments().length" class="approved-documents-list">
-      <h2>Approved Documents by Recipient</h2>
+      <h2>Approved access by recipient</h2>
       <div *ngFor="let group of groupedDocuments()" class="approved-documents-group">
         <div class="approved-documents-group__header">
           <div>
             <strong>{{ group.recipientName }}</strong>
             <span class="approved-documents-group__type">{{ group.requestType === 'Department' ? 'Department recipient' : 'Individual recipient' }}</span>
           </div>
-          <span class="approved-documents-group__count">{{ group.documents.length }} document{{ group.documents.length === 1 ? '' : 's' }}</span>
+          <span class="approved-documents-group__count">{{ group.documents.length }} available file{{ group.documents.length === 1 ? '' : 's' }}</span>
         </div>
+        <p class="approved-documents-group__scope">Access is approved for all available files in these document types.</p>
+        <ul class="approved-documents-types">
+          <li *ngFor="let type of documentTypeSummaries(group.documents)">
+            <strong>{{ type.name }}</strong>: {{ type.count }} available file{{ type.count === 1 ? '' : 's' }}
+          </li>
+        </ul>
+        <p class="approved-documents-group__scope">Files below are the documents currently available within the approved type-wide scope.</p>
         <ul>
           <li *ngFor="let document of group.documents" class="approved-documents-item">
             <label>
@@ -50,7 +57,7 @@
 
       <div class="approved-documents-actions">
         <button class="btn btn-download" type="button" (click)="downloadDocument()" [disabled]="loading() || !selectedDocumentId()">
-          {{ loading() ? 'Downloading…' : 'Download selected document' }}
+          {{ loading() ? 'Downloading…' : 'Download document' }}
         </button>
         <button class="btn btn-flag" type="button" (click)="startFlagging()" [disabled]="loading() || !selectedDocumentId()">
           Flag document as not up to standard

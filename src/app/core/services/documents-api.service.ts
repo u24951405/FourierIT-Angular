@@ -39,6 +39,16 @@ export interface DocumentAccessApprovalItem {
   approvedAt: string;
 }
 
+export interface DocumentFlagItem {
+  enquiryFlagId: number;
+  documentId: number;
+  fileName: string;
+  institutionName: string;
+  flagReason: string;
+  isResolved: boolean;
+  flaggedAt: string;
+}
+
 export interface RequiredDocumentStatusItem {
   documentTypeId: number;
   documentTypeName: string;
@@ -182,5 +192,13 @@ export class DocumentsApiService {
 
   getAllUsersDocuments(): Observable<AllUserDocumentsItem[]> {
     return this.http.get<AllUserDocumentsItem[]>(`${this.base}/admin/all-users-documents`);
+  }
+
+  getMyDocumentFlags(): Observable<DocumentFlagItem[]> {
+    return this.http.get<DocumentFlagItem[]>(`${this.base}/flags`);
+  }
+
+  resolveDocumentFlag(documentId: number, flagId: number): Observable<void> {
+    return this.http.post<void>(`${this.base}/${documentId}/flags/${flagId}/resolve`, null);
   }
 }

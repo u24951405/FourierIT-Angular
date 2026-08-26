@@ -8,6 +8,7 @@ import {
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   Chart,
   BarController, BarElement,
@@ -19,6 +20,8 @@ import {
 } from 'chart.js';
 import { ReportFrameComponent, ReportFrameConfig } from '../../shared/report-frame/report-frame';
 import { MonthlyReportData } from '../../reports.models';
+import { AuthService } from '../../../../core/services/auth.service';
+import { environment } from '../../../../../environments/environment';
 
 // Register all used Chart.js components
 Chart.register(
@@ -37,6 +40,8 @@ Chart.register(
   styleUrls: ['./monthly-report.scss'],
 })
 export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy {
+  private authService = inject(AuthService);
+  private http = inject(HttpClient);
   @ViewChild('processingChart') processingChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('securityChart') securityChartRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('distributionChart') distributionChartRef!: ElementRef<HTMLCanvasElement>;
@@ -44,6 +49,7 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
   @ViewChild('uploadChart') uploadChartRef!: ElementRef<HTMLCanvasElement>;
 
   private charts: Chart[] = [];
+  private viewReady = false;
   private resizeObserver?: ResizeObserver;
   private readonly handleViewportResize = () => {
     this.charts.forEach(chart => chart.resize());
@@ -52,7 +58,7 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
   frameConfig: ReportFrameConfig = {
     reportId: 'DV-OPR-4163721330',
     dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
+    createdBy: this.generatedBy(),
     reportType: 'Monthly Automated',
     framework: 'FICA · POPIA · DocuVault v35',
     badgeLabel: 'MONTHLY',
@@ -60,45 +66,66 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
     accentColors: ['#10b981', '#3b82f6'],
   };
 
-  // Mock data — replace with API call
+  pdfUrl = '';
+
   data: MonthlyReportData = {
-    reportId: 'DV-OPR-4163721330',
-    month: 'July 2026',
-    dateGenerated: new Date().toISOString(),
-    createdBy: 'Admin User',
-    processing: { verified: 1842, pendingVerification: 312, flaggedAnomalies: 87, partOfEnquiry: 43 },
-    securityEvents: Array.from({ length: 31 }, (_, i) => ({
-      day: i + 1,
-      failedLogins: Math.floor(Math.random() * 5 + 1),
-      unusualAccessPattern: Math.floor(Math.random() * 8 + 2),
-      permissionElevationRequest: Math.floor(Math.random() * 6 + 1),
-    })),
-    distribution: [
-      { label: 'Natural Person Ingestion', count: 634, percentage: 34, color: '#1e2a3a' },
-      { label: 'Juristic / Corporate Assets', count: 487, percentage: 26, color: '#2d5282' },
-      { label: 'Beneficial Ownership Manifests', count: 312, percentage: 17, color: '#4a7fb5' },
-      { label: 'Fiduciary Frameworks', count: 219, percentage: 12, color: '#7bafd4' },
-      { label: 'Supplementary Verification', count: 194, percentage: 11, color: '#b0cfe8' },
-    ],
-    storage: { usedGb: 847, availableGb: 176, totalGb: 1023, usedPercentage: 82.8 },
-    uploadVolume: Array.from({ length: 31 }, (_, i) => ({
-      day: i + 1,
-      count: Math.floor(Math.random() * 70 + 10),
-    })),
-    totalUploads: 1304,
-    dailyAverage: 42,
-    peakDay: 23,
+    reportId: '',
+    month: 'Loading',
+    dateGenerated: '',
+    createdBy: this.generatedBy(),
+    processing: { verified: 0, pendingVerification: 0, flaggedAnomalies: 0, partOfEnquiry: 0 },
+    securityEvents: [],
+    distribution: [],
+    storage: { usedGb: 0, availableGb: 0, totalGb: 0, usedPercentage: 0 },
+    uploadVolume: [],
+    totalUploads: 0,
+    dailyAverage: 0,
+    peakDay: 0,
   };
 
-  ngOnInit(): void {}
+  ngOnInit(): void {
+    const params = new HttpParams()
+      .set('startDate', this.firstDayOfCurrentMonth())
+      .set('endDate', this.lastDayOfCurrentMonth());
+    this.pdfUrl = `${environment.apiUrl}/reports/monthly/pdf?${params.toString()}`;
+    this.http.get<MonthlyReportData>(`${environment.apiUrl}/reports/monthly`, { params }).subscribe({
+      next: data => {
+        this.data = data;
+        this.frameConfig = {
+          ...this.frameConfig,
+          reportId: data.reportId,
+          dateGenerated: data.dateGenerated,
+          createdBy: data.createdBy,
+        };
+        if (this.viewReady) this.renderCharts();
+      },
+      error: () => {
+        this.data.month = 'Monthly report unavailable';
+      }
+    });
+  }
+
+  private firstDayOfCurrentMonth(): string {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
+  }
+
+  private lastDayOfCurrentMonth(): string {
+    const date = new Date();
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+  }
+
+  private generatedBy(): string {
+    const user = this.authService.currentUser();
+    if (!user) return 'Unknown User';
+    const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+    return name || user.email || 'Unknown User';
+  }
 
   ngAfterViewInit(): void {
     setTimeout(() => {
-      this.buildProcessingChart();
-      this.buildSecurityChart();
-      this.buildDistributionChart();
-      this.buildStorageChart();
-      this.buildUploadChart();
+      this.viewReady = true;
+      this.renderCharts();
 
       const chartHost = this.processingChartRef?.nativeElement?.parentElement;
       if (typeof ResizeObserver !== 'undefined' && chartHost) {
@@ -108,6 +135,16 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
 
       window.addEventListener('resize', this.handleViewportResize);
     }, 100);
+  }
+
+  private renderCharts(): void {
+    this.charts.forEach(chart => chart.destroy());
+    this.charts = [];
+    this.buildProcessingChart();
+    this.buildSecurityChart();
+    this.buildDistributionChart();
+    this.buildStorageChart();
+    this.buildUploadChart();
   }
 
   ngOnDestroy(): void {

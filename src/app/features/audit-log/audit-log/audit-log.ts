@@ -208,7 +208,7 @@ export class AuditLogComponent implements OnInit {
     const rows = this.filteredLogs.map(log => [
       `"${log.timeStamp}"`,
       log.auditLogId,
-      `"${log.userId || ''}"`,
+      `"${log.userId || (log.institutionName ? log.institutionName + ' (institution)' : '')}"`,
       `"${log.actionCode || ''}"`,
       `"${(log.description || '').replace(/"/g, '""')}"`,
       `"${log.tableAffected || ''}"`,
