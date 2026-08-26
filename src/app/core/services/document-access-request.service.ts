@@ -41,6 +41,10 @@ export class DocumentAccessRequestService {
     return this.http.get<PendingDocumentAccessRequest[]>(`${this.base}/document-access-requests/pending`);
   }
 
+  getPendingDepartmentRequests(): Observable<PendingDepartmentAccessRequest[]> {
+    return this.http.get<PendingDepartmentAccessRequest[]>(`${this.base}/department-access-requests/pending`);
+  }
+
   getInstitutionRequestSummary(institutionId: number): Observable<InstitutionRequestSummary> {
     return this.http.get<InstitutionRequestSummary>(
       `${this.base}/institutions/${institutionId}/document-access-requests/summary`
@@ -114,10 +118,6 @@ export class DocumentAccessRequestService {
       `${this.base}/institution-access/requests/document-types`,
       { params }
     );
-  }
-
-  getPendingDepartmentRequests(): Observable<PendingDepartmentAccessRequest[]> {
-    return this.http.get<PendingDepartmentAccessRequest[]>(`${this.base}/department-access-requests/pending`);
   }
 
   routeRequestToOwner(

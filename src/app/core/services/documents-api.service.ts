@@ -13,6 +13,7 @@ export interface DocumentListItem {
   fileSizeBytes: number;
   uploadedDate: string;
   lastModifiedDate: string | null;
+  expiryDate: string;
   documentTypeId: number;
   documentTypeName: string;
 }
@@ -112,6 +113,10 @@ export class DocumentsApiService {
 
   getMyDocuments(): Observable<DocumentListItem[]> {
     return this.http.get<DocumentListItem[]>(this.base);
+  }
+
+  getDepartmentDocuments(departmentId: number): Observable<DocumentListItem[]> {
+    return this.http.get<DocumentListItem[]>(`${this.base}/departments/${departmentId}`);
   }
 
   getMyRequiredDocumentsStatus(entityTypeId?: number | null): Observable<RequiredDocumentsStatusResponse> {

@@ -1,0 +1,78 @@
+<section class="snapshot" *ngIf="!loading(); else loadingState">
+  <div class="snapshot__error" *ngIf="error()">{{ error() }}</div>
+
+  <ng-container *ngIf="!error() && snapshot() as data">
+    <header class="snapshot__header">
+      <div>
+        <p class="snapshot__eyebrow">Compliance snapshot</p>
+        <h1>Current compliance position</h1>
+      </div>
+      <p class="snapshot__checked">
+        Last checked:
+        <strong *ngIf="data.lastChecked; else notChecked">{{ data.lastChecked | date:'medium' }}</strong>
+        <ng-template #notChecked><strong>Not yet checked</strong></ng-template>
+      </p>
+    </header>
+
+    <section class="snapshot__section" aria-labelledby="documents-heading">
+      <h2 id="documents-heading">Documents overview</h2>
+      <div class="snapshot__tiles">
+        <article class="snapshot-tile snapshot-tile--compliant">
+          <span>Compliant</span>
+          <strong>{{ data.documentsOverview.compliant }}</strong>
+        </article>
+        <article class="snapshot-tile snapshot-tile--expired">
+          <span>Expired</span>
+          <strong>{{ data.documentsOverview.expired }}</strong>
+        </article>
+        <article class="snapshot-tile snapshot-tile--noncompliant">
+          <span>Non-Compliant</span>
+          <strong>{{ data.documentsOverview.nonCompliant }}</strong>
+        </article>
+        <article class="snapshot-tile snapshot-tile--unchecked">
+          <span>Unchecked</span>
+          <strong>{{ data.documentsOverview.unchecked }}</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="snapshot__section snapshot__risk" aria-labelledby="risk-heading">
+      <div>
+        <h2 id="risk-heading">Risk score</h2>
+        <strong class="snapshot__score">{{ data.risk.complianceScore | number:'1.0-2' }}</strong>
+      </div>
+      <span class="snapshot__risk-badge" [class]="riskClass()">{{ riskLabel() }}</span>
+    </section>
+
+    <section class="snapshot__section" aria-labelledby="expiry-heading">
+      <h2 id="expiry-heading">Expiring and expired documents</h2>
+      <div class="snapshot__empty" *ngIf="data.expiringDocuments.length === 0">No expiring or expired documents.</div>
+      <div class="snapshot__table-wrap" *ngIf="data.expiringDocuments.length > 0">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Document</th>
+              <th scope="col">Type</th>
+              <th scope="col">Expiry date</th>
+              <th scope="col">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let document of data.expiringDocuments">
+              <td>{{ document.documentName }}</td>
+              <td>{{ document.documentType || 'Unclassified' }}</td>
+              <td>{{ document.expiryDate | date:'mediumDate' }}</td>
+              <td [class.snapshot__overdue]="document.daysRemaining < 0">
+                {{ formatDays(document.daysRemaining) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </ng-container>
+</section>
+
+<ng-template #loadingState>
+  <section class="snapshot snapshot--state">Loading compliance snapshot...</section>
+</ng-template>

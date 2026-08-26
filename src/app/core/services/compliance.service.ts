@@ -11,9 +11,11 @@ export interface ComplianceUserSummary {
   riskLevel?: string;
   complianceCategory?: string;
   totalRequired?: number;
+  totalUsers?: number;
   uploaded?: number;
   compliant?: number;
   nonCompliant?: number;
+  nonCompliantCount?: number;
   expired?: number;
   missing?: number;
   notCertified?: number;
@@ -21,6 +23,7 @@ export interface ComplianceUserSummary {
   compliancePercentage?: number;
   complianceScore?: number;
   riskScore?: number;
+  warningThresholdDays?: number;
   requiresEnhancedDueDiligence?: boolean;
   isPEP?: boolean;
   hasSanctionFlag?: boolean;
@@ -97,6 +100,14 @@ export interface ComplianceDashboard {
   averageComplianceScore: number;
   totalDocumentsChecked?: number;
   totalCompliantDocuments?: number;
+  totalUploaded?: number;
+  totalVerified?: number;
+  totalRejected?: number;
+  totalMissing?: number;
+  totalPendingReview?: number;
+  totalExpiringSoon?: number;
+  totalExpired?: number;
+  warningThresholdDays?: number;
   criticalRiskUsers: number;
   highRiskUsers: number;
   mediumRiskUsers: number;
@@ -116,6 +127,37 @@ export interface InstitutionComplianceSummary {
   submittedOrApprovedDocumentTypeCount: number;
   missingDocumentTypeCount: number;
   missingDocumentTypes: string;
+}
+
+export interface ComplianceDashboardSnapshot {
+  scope: string;
+  scopeId: string | null;
+  lastChecked: string | null;
+  documentsOverview: DocumentsOverview;
+  risk: RiskSummary;
+  expiringDocuments: ExpiringDocument[];
+}
+
+export interface DocumentsOverview {
+  total: number;
+  compliant: number;
+  expired: number;
+  nonCompliant: number;
+  unchecked: number;
+}
+
+export interface RiskSummary {
+  complianceScore: number;
+  riskCategory: string;
+}
+
+export interface ExpiringDocument {
+  documentId: number;
+  documentName: string;
+  documentType: string;
+  expiryDate: string;
+  daysRemaining: number;
+  status: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -151,9 +193,44 @@ export class ComplianceService {
     );
   }
 
+  getUserDashboardSnapshot(userId: string): Observable<ComplianceDashboardSnapshot> {
+    return this.http.get<{ success: boolean; data: ComplianceDashboardSnapshot }>(`${this.base}/users/${userId}/dashboard-snapshot`)
+      .pipe(map(response => response.data));
+  }
+
+  getDepartmentDashboardSnapshot(departmentId: number): Observable<ComplianceDashboardSnapshot> {
+    return this.http.get<{ success: boolean; data: ComplianceDashboardSnapshot }>(`${this.base}/departments/${departmentId}/dashboard-snapshot`)
+      .pipe(map(response => response.data));
+  }
+
   getComplianceRules(): Observable<ComplianceRuleSummary[]> {
     return this.http.get<{ success: boolean; data: ComplianceRuleSummary[] }>(`${this.base}/rules`)
       .pipe(map(response => response.data ?? []));
+  }
+
+  getPendingReviews(): Observable<any[]> {
+    return this.http.get<{ success: boolean; data: any[] }>(`${this.base}/documents/pending-review`)
+      .pipe(map(response => response.data ?? []));
+  }
+
+  previewDocument(documentId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/documents/${documentId}/preview`, { responseType: 'blob' });
+  }
+
+  approveDocument(checkId: number, approvalNotes: string): Observable<any> {
+    return this.http.post<any>(`${this.base}/documents/${checkId}/approve`, {
+      checkId,
+      approvalNotes,
+      approveWithWarnings: false
+    });
+  }
+
+  rejectDocument(checkId: number, approvalNotes: string): Observable<any> {
+    return this.http.post<any>(`${this.base}/documents/${checkId}/reject`, {
+      checkId,
+      approvalNotes,
+      approveWithWarnings: false
+    });
   }
 
   getComplianceHistory(userId: string): Observable<ComplianceHistoryItem[]> {

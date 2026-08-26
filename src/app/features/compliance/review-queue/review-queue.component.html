@@ -1,0 +1,78 @@
+<div class="review-queue-page">
+  <header class="review-queue-header">
+    <h1>Compliance Review Queue</h1>
+    <p>Review documents that require a compliance decision.</p>
+  </header>
+
+  <div *ngIf="loading()" class="review-queue-state review-queue-state--loading">
+    <p>Loading compliance reviews...</p>
+  </div>
+
+  <div *ngIf="!loading() && error()" class="review-queue-state review-queue-state--error">
+    <p>{{ error() }}</p>
+  </div>
+
+  <div *ngIf="!loading() && !error() && reviews().length === 0" class="review-queue-state review-queue-state--empty">
+    <p>No documents are waiting for compliance review.</p>
+  </div>
+
+  <div *ngIf="!loading() && reviews().length > 0" class="review-queue-list">
+    <article class="review-card" *ngFor="let review of reviews()">
+      <div class="review-card__header">
+        <div class="review-card__info">
+          <span class="review-card__badge">Pending review</span>
+          <h2 class="review-card__title">{{ getDocumentName(review) }}</h2>
+          <p class="review-card__subtitle">{{ getDocumentType(review) }}</p>
+          <p class="review-card__subtitle" *ngIf="review.ownerName">
+            Uploaded by {{ review.ownerName }}<ng-container *ngIf="review.departmentName"> — {{ review.departmentName }}</ng-container>
+          </p>
+        </div>
+        <span class="review-card__date" *ngIf="review.checkedAt">
+          Checked {{ review.checkedAt | date:'short' }}
+        </span>
+      </div>
+
+      <div class="review-card__details">
+        <div class="review-card__detail">
+          <span class="review-card__label">Document ID</span>
+          <span class="review-card__value">{{ review.documentId ?? 'Unavailable' }}</span>
+        </div>
+        <div class="review-card__detail">
+          <span class="review-card__label">Review reason</span>
+          <span class="review-card__value">{{ review.manualReviewReason || review.nonComplianceReason || 'Manual review requested.' }}</span>
+        </div>
+        <div class="review-card__detail" *ngIf="review.documentId != null">
+          <button class="btn btn-view" type="button" (click)="viewDocument(review.documentId)">View Document</button>
+        </div>
+      </div>
+
+      <label class="review-card__notes">
+        <span class="review-card__label">Decision notes</span>
+        <textarea
+          rows="3"
+          [ngModel]="getNotes(review.checkId)"
+          (ngModelChange)="setNotes(review.checkId, $event)"
+          placeholder="Add optional notes for this decision"></textarea>
+      </label>
+
+      <div class="review-card__actions">
+        <button
+          class="btn btn-approve"
+          type="button"
+          (click)="approve(review)"
+          [disabled]="processingCheckId() !== null">
+          <span class="btn__icon">✓</span>
+          Approve
+        </button>
+        <button
+          class="btn btn-reject"
+          type="button"
+          (click)="reject(review)"
+          [disabled]="processingCheckId() !== null || !canReject(review.checkId)">
+          <span class="btn__icon">✕</span>
+          Reject
+        </button>
+      </div>
+    </article>
+  </div>
+</div>

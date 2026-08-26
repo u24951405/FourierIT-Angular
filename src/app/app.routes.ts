@@ -8,6 +8,7 @@ import { adminGuard } from './core/guards/admin.guard';
 import { departmentAdminGuard, departmentScopedGuard } from './core/guards/department-admin.guard';
 import { documentManagementGuard } from './core/guards/document-management.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
+import { complianceOfficerGuard } from './core/guards/compliance-officer.guard';
 import { institutionAuthGuard, institutionOtpGuard } from './features/institution-portal/auth/institution-auth-guard';
 
 export const routes: Routes = [
@@ -98,8 +99,8 @@ export const routes: Routes = [
       { path: 'dashboard/department',
         canActivate: [restrictDocumentOwnerOnlyGuard, departmentScopedGuard],
         data: { dashboardScope: 'department' },
-        loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
-          .then(m => m.DashboardComponent) },
+        loadComponent: () => import('./features/documents/department-documents-dashboard/department-documents-dashboard.component')
+          .then(m => m.DepartmentDocumentsDashboardComponent) },
       { path: 'dashboard/owner',
         canActivate: [documentOwnerGuard],
         loadComponent: () => import('./features/documents/my-documents/my-documents-dashboard.component')
@@ -180,6 +181,11 @@ export const routes: Routes = [
         data: { documentPageTitle: 'Document Access Requests' },
         loadComponent: () => import('./features/documents/document-requests/document-requests.component')
           .then(m => m.DocumentRequestsComponent) },
+      { path: 'compliance/review-queue',
+        canActivate: [complianceOfficerGuard],
+        data: { documentPageTitle: 'Compliance Review Queue' },
+        loadComponent: () => import('./features/compliance/review-queue/review-queue.component')
+          .then(m => m.ReviewQueueComponent) },
       { path: 'audit-logs',
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/audit-log/audit-log/audit-log')

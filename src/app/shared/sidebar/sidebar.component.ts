@@ -202,6 +202,7 @@ export class SidebarComponent implements OnInit {
         }
         return item;
       });
+
     }
 
     if (this.auth.isStakeholderViewer() || !this.auth.canUploadDocuments()) {
