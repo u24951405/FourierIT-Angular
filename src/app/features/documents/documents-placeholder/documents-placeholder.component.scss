@@ -4,11 +4,116 @@
 }
 
 .documents-placeholder__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1.4rem 1.5rem;
   border-radius: 18px;
   background: linear-gradient(135deg, #0d2238, #173a5d 55%, #28618b);
   color: #fff;
   box-shadow: 0 16px 44px rgba(18, 38, 61, 0.18);
+}
+
+.documents-placeholder__action,
+.library-card__actions button,
+.document-form__actions button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  background: #f1c75b;
+  color: #17212b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.library-card__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.library-card__actions .danger {
+  background: #fee4e2;
+  color: #b42318;
+}
+
+.document-form-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(13, 34, 56, 0.55);
+}
+
+.document-form {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 30rem);
+  padding: 1.25rem;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(13, 34, 56, 0.25);
+}
+
+.document-form__header,
+.document-form__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.document-form__header h2 {
+  margin: 0;
+}
+
+.document-form__header button {
+  border: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.document-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--text-mid);
+  font-weight: 600;
+}
+
+.document-form select,
+.document-form input[type='file'] {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.document-form__checkbox {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem !important;
+}
+
+.document-form__checkbox input {
+  width: auto;
+}
+
+.document-form__actions {
+  justify-content: flex-end;
+}
+
+.document-form__actions button:first-child {
+  background: #eef2f6;
+}
+
+.document-form__actions button:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .documents-placeholder__hero h1 {
@@ -102,6 +207,11 @@
 }
 
 @media (max-width: 900px) {
+  .documents-placeholder__hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .library-grid {
     grid-template-columns: 1fr;
   }

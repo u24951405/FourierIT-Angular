@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 @Component({
@@ -11,6 +11,20 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 })
 export class HelpComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  readonly searchText = signal('');
+  readonly searchQuery = signal('');
+
+  private readonly topics = [
+    { id: 'login-otp', title: 'Login and OTP verification', keywords: 'login password register institution access token verification' },
+    { id: 'dashboard', title: 'Dashboard', keywords: 'overview roles permissions compliance' },
+    { id: 'institution-requests', title: 'Institution Portal and Request Documents', keywords: 'institution request documents approved my requests portal' },
+    { id: 'document-upload', title: 'Documents and Upload Document', keywords: 'documents upload files metadata registry manage' },
+    { id: 'compliance-status', title: 'Compliance status', keywords: 'compliance FICA KYC required missing evidence' },
+    { id: 'reports', title: 'Reports', keywords: 'reports activity monthly ad hoc summaries' },
+    { id: 'audit-log', title: 'Audit Log', keywords: 'audit security operations changes OTP activity' },
+    { id: 'user-role-management', title: 'User Management and Roles Management', keywords: 'users roles permissions institutions departments administration' },
+    { id: 'timer-settings', title: 'Timer Settings', keywords: 'timer expiry session OTP settings' }
+  ];
 
   ngOnInit(): void {
     this.route.fragment.subscribe((fragment) => {
@@ -23,5 +37,30 @@ export class HelpComponent implements OnInit {
         }
       }, 0);
     });
+  }
+
+  matchesTopic(topicId: string): boolean {
+    const query = this.searchQuery().trim().toLowerCase();
+    if (!query) return true;
+
+    const topic = this.topics.find(item => item.id === topicId);
+    return !!topic && `${topic.title} ${topic.keywords}`.toLowerCase().includes(query);
+  }
+
+  searchHelp(): void {
+    const query = this.searchText().trim();
+    this.searchQuery.set(query);
+
+    if (!query) return;
+
+    const firstMatch = this.topics.find(topic => this.matchesTopic(topic.id));
+    if (firstMatch) {
+      setTimeout(() => document.getElementById(firstMatch.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+    }
+  }
+
+  clearSearch(): void {
+    this.searchText.set('');
+    this.searchQuery.set('');
   }
 }
