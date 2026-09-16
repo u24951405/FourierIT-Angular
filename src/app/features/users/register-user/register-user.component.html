@@ -2,212 +2,235 @@
   <div class="page-header">
     <div class="page-header__titles">
       <h1>{{ pageTitle() }}</h1>
-      <p>Create a new user account with access permissions</p>
+      <p>{{ wizardSteps[currentStep()].subtitle }}</p>
     </div>
   </div>
 
-  <form class="form-card" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-
-    <!-- SECTION: Account Credentials -->
-    <h2 class="form-section-title">Account Credentials</h2>
-
-    <div class="form-row">
-      <div class="field">
-        <label>Email Address <span class="req">*</span></label>
-        <input type="email" formControlName="email" placeholder="user@fourier.com">
-        @if (form.get('email')?.invalid && form.get('email')?.touched) {
-          <span class="field__error">Valid email is required.</span>
-        }
-      </div>
-      <div class="field">
-        <label>Username <span class="req">*</span></label>
-        <input type="text" formControlName="username" placeholder="e.g. jsmith">
-        @if (form.get('username')?.invalid && form.get('username')?.touched) {
-          <span class="field__error">Username is required.</span>
-        }
-      </div>
+  <div class="form-card wizard-card" [formGroup]="form" novalidate>
+    <div class="wizard-steps" aria-label="Registration steps">
+      @for (step of wizardSteps; track step.id; let i = $index) {
+        <button
+          type="button"
+          class="wizard-step"
+          [class.wizard-step--active]="currentStep() === i"
+          [class.wizard-step--complete]="currentStep() > i"
+          (click)="goToStep(i)"
+        >
+          <span class="wizard-step__index">{{ i + 1 }}</span>
+          <span class="wizard-step__label">{{ step.title }}</span>
+        </button>
+      }
     </div>
 
-    <div class="form-row form-row--full" [style.display]="isRoleDropdownMode ? 'block' : 'none'">
-      <div class="field">
-        <label>Role <span class="req">*</span></label>
-        @if (isLoadingRoles()) {
-          <select disabled>
-            <option>Loading roles…</option>
-          </select>
-          <span class="field__hint">Loading allowed roles...</span>
-        } @else {
-          <select [value]="selectedRoleIds()[0]" (change)="onRoleDropdownChange($any($event.target).value)">
-            <option value="">Select a role</option>
-            @for (role of allowedRoleOptions; track role.id) {
-              <option [value]="role.id">{{ role.name }}</option>
-            }
-          </select>
-          <p class="field__hint">
-            This user will be assigned a single role. Stakeholder and Compliance Officer users can view uploaded documents and registered users,
-            but they do not have document upload permissions.
-          </p>
-        }
-        @if (form.get('roleIds')?.invalid && form.get('roleIds')?.touched) {
-          <span class="field__error">Select a role for this account.</span>
-        }
-      </div>
-    </div>
+    <form (ngSubmit)="onSubmit()">
+      @if (currentStep() === 0) {
+        <section class="wizard-panel">
+          <h2 class="form-section-title">Create your account</h2>
+          <p class="step-subtitle">Set up your login details to access the platform.</p>
 
-    @if (!isRoleDropdownMode) {
-      <h2 class="form-section-title">Entity Verification</h2>
-
-      <div class="form-row">
-        <div class="field">
-          <label>Entity Type <span class="req">*</span></label>
-          <select formControlName="entityTypeId">
-            <option [ngValue]="null">Select an entity type</option>
-            @for (entityType of entityTypes; track entityType.entityTypeId) {
-              <option [ngValue]="entityType.entityTypeId">{{ entityType.name }}</option>
-            }
-          </select>
-          @if (form.get('entityTypeId')?.invalid && form.get('entityTypeId')?.touched) {
-            <span class="field__error">Entity type is required.</span>
-          }
-        </div>
-        <div class="field">
-          <label>{{ entityIdentificationLabel }} <span class="req">*</span></label>
-          <div class="field field--inline-action">
-            <input
-              type="text"
-              formControlName="entityIdentificationNumber"
-              [placeholder]="selectedEntityType ? entityIdentificationLabel : 'Select an entity type first'"
-            >
-            <button
-              type="button"
-              class="btn btn--secondary btn--small"
-              (click)="verifyEntity()"
-              [disabled]="isVerifyingEntity() || form.controls.entityTypeId.invalid || form.controls.entityIdentificationNumber.invalid"
-            >
-              {{ isVerifyingEntity() ? 'Verifying…' : 'Verify' }}
-            </button>
+          <div class="form-row">
+            <div class="field">
+              <label>Email Address <span class="req">*</span></label>
+              <input type="email" formControlName="email" placeholder="user@fourier.com">
+              @if (form.get('email')?.invalid && form.get('email')?.touched) {
+                <span class="field__error">Valid email is required.</span>
+              }
+            </div>
+            <div class="field">
+              <label>Username <span class="req">*</span></label>
+              <input type="text" formControlName="username" placeholder="e.g. jsmith">
+              @if (form.get('username')?.invalid && form.get('username')?.touched) {
+                <span class="field__error">Username is required.</span>
+              }
+            </div>
           </div>
-          <p class="field__hint">{{ entityIdentificationHint }}</p>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Password <span class="req">*</span></label>
+              <input type="password" formControlName="password" placeholder="Minimum 8 characters">
+              @if (form.get('password')?.invalid && form.get('password')?.touched) {
+                <span class="field__error">Password must be at least 8 characters.</span>
+              }
+              <div class="password-rules" style="margin-top:8px;">
+                <p class="field__hint">Password requirements:</p>
+                <ul>
+                  <li [class.field__hint--valid]="passwordHasMinLength()" [class.field__hint--invalid]="!passwordHasMinLength()">8+ characters</li>
+                  <li [class.field__hint--valid]="passwordHasDigit()" [class.field__hint--invalid]="!passwordHasDigit()">Contains a digit</li>
+                  <li [class.field__hint--valid]="passwordHasLowercase()" [class.field__hint--invalid]="!passwordHasLowercase()">Contains a lowercase letter</li>
+                  <li [class.field__hint--valid]="passwordHasUppercase()" [class.field__hint--invalid]="!passwordHasUppercase()">Contains an uppercase letter</li>
+                  <li [class.field__hint--valid]="passwordHasNonAlphanumeric()" [class.field__hint--invalid]="!passwordHasNonAlphanumeric()">Contains a symbol</li>
+                </ul>
+                @if (allPasswordRulesSatisfied()) {
+                  <p class="field__hint field__hint--valid">✔ Password meets all requirements</p>
+                }
+              </div>
+            </div>
+            <div class="field">
+              <label>Confirm Password <span class="req">*</span></label>
+              <input type="password" formControlName="confirmPassword" placeholder="Repeat password">
+              <div class="field__hint" style="margin-top:6px;">
+                @if (passwordsMatch()) {
+                  <span class="field__hint field__hint--valid">✔ Passwords match</span>
+                } @else if (form.get('confirmPassword')?.touched) {
+                  <span class="field__hint field__hint--invalid">✖ Passwords do not match</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-actions">
+            <div class="spacer"></div>
+            <button type="button" class="btn btn--primary" (click)="nextStep()">Continue →</button>
+          </div>
+
+          <p class="signin-link">Already have an account? <a href="javascript:void(0)">Sign in</a></p>
+        </section>
+      }
+
+      @if (currentStep() === 1) {
+        <section class="wizard-panel">
+          <h2 class="form-section-title">Verify your identity</h2>
+          <p class="step-subtitle">Select your entity type and provide the identification details required for verification.</p>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Entity Type <span class="req">*</span></label>
+              <select formControlName="entityTypeId">
+                <option [ngValue]="null">Select an entity type</option>
+                @for (entityType of entityTypes; track entityType.entityTypeId) {
+                  <option [ngValue]="entityType.entityTypeId">{{ entityType.name }}</option>
+                }
+              </select>
+              @if (form.get('entityTypeId')?.invalid && form.get('entityTypeId')?.touched) {
+                <span class="field__error">Entity type is required.</span>
+              }
+            </div>
+          </div>
+
+          @if (selectedEntityType) {
+            <div class="form-row">
+              <div class="field">
+                <label>{{ entityIdentificationLabel }} <span class="req">*</span></label>
+                <input type="text" formControlName="entityIdentificationNumber" [placeholder]="entityIdentificationLabel">
+                @if (form.get('entityIdentificationNumber')?.invalid && form.get('entityIdentificationNumber')?.touched) {
+                  <span class="field__error">{{ entityIdentificationLabel }} is required.</span>
+                }
+              </div>
+              <div class="field field--inline-action">
+                <label class="sr-only">Verification action</label>
+                <button type="button" class="btn btn--secondary" (click)="verifyEntity()" [disabled]="isVerifyingEntity() || form.controls.entityTypeId.invalid || form.controls.entityIdentificationNumber.invalid">
+                  {{ isVerifyingEntity() ? 'Verifying…' : 'Verify Identity' }}
+                </button>
+              </div>
+            </div>
+          }
+
           <p class="field__hint field__hint--status" [class.field__hint--valid]="entityVerificationStatus() === 'valid'" [class.field__hint--invalid]="entityVerificationStatus() === 'invalid'">
-            {{ entityVerificationMessage() || 'Press Verify to validate the selected entity identification.' }}
-          </p>
-          @if (form.get('entityIdentificationNumber')?.invalid && form.get('entityIdentificationNumber')?.touched) {
-            <span class="field__error">{{ entityIdentificationLabel }} is required.</span>
-          }
-        </div>
-      </div>
-    }
-
-    <div class="form-row">
-      <div class="field">
-        <label>Password <span class="req">*</span></label>
-        <input type="password" formControlName="password" placeholder="Min. 8 characters">
-        @if (form.get('password')?.invalid && form.get('password')?.touched) {
-          <span class="field__error">Password must be at least 8 characters.</span>
-        }
-        <div class="password-rules" style="margin-top:8px;">
-          <p class="field__hint">Password must satisfy:</p>
-          <ul>
-            <li [class.field__hint--valid]="passwordHasMinLength()" [class.field__hint--invalid]="!passwordHasMinLength()">
-              {{ passwordRequiresLength() || 8 }}+ characters
-            </li>
-            <li [class.field__hint--valid]="passwordHasDigit()" [class.field__hint--invalid]="!passwordHasDigit()">Contains a digit</li>
-            <li [class.field__hint--valid]="passwordHasLowercase()" [class.field__hint--invalid]="!passwordHasLowercase()">Contains a lowercase letter</li>
-            <li [class.field__hint--valid]="passwordHasUppercase()" [class.field__hint--invalid]="!passwordHasUppercase()">Contains an uppercase letter</li>
-            <li [class.field__hint--valid]="passwordHasNonAlphanumeric()" [class.field__hint--invalid]="!passwordHasNonAlphanumeric()">Contains a symbol (non-alphanumeric)</li>
-          </ul>
-          @if (allPasswordRulesSatisfied()) {
-            <p class="field__hint field__hint--valid">✔ Password meets all requirements</p>
-          }
-        </div>
-      </div>
-      <div class="field">
-        <label>Confirm Password <span class="req">*</span></label>
-        <input type="password" formControlName="confirmPassword" placeholder="Repeat password">
-        <div class="field__hint" style="margin-top:6px;">
-          @if (passwordsMatch()) {
-            <span class="field__hint field__hint--valid">✔ Passwords match</span>
-          } @else if (form.get('confirmPassword')?.touched) {
-            <span class="field__hint field__hint--invalid">✖ Passwords do not match</span>
-          }
-        </div>
-      </div>
-    </div>
-
-    <!-- SECTION: Personal Info -->
-    <h2 class="form-section-title">Personal Information</h2>
-
-    <div class="form-row">
-      <div class="field">
-        <label>First Name <span class="req">*</span></label>
-        <input type="text" formControlName="firstName" placeholder="e.g. John">
-        @if (form.get('firstName')?.invalid && form.get('firstName')?.touched) {
-          <span class="field__error">First name is required.</span>
-        }
-      </div>
-      <div class="field">
-        <label>Last Name <span class="req">*</span></label>
-        <input type="text" formControlName="lastName" placeholder="e.g. Smith">
-        @if (form.get('lastName')?.invalid && form.get('lastName')?.touched) {
-          <span class="field__error">Last name is required.</span>
-        }
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="field">
-        <label>Date of Birth <span class="req">*</span></label>
-        <input type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
-        @if (form.get('dateOfBirth')?.invalid && form.get('dateOfBirth')?.touched) {
-          @if (form.get('dateOfBirth')?.errors?.['required']) {
-            <span class="field__error">Date of birth is required.</span>
-          } @else if (form.get('dateOfBirth')?.errors?.['birthDateFuture']) {
-            <span class="field__error">Date of birth cannot be in the future.</span>
-          } @else if (form.get('dateOfBirth')?.errors?.['birthDateTooOld']) {
-            <span class="field__error">Please enter a realistic date of birth.</span>
-          } @else if (form.get('dateOfBirth')?.errors?.['birthDateInvalid']) {
-            <span class="field__error">Enter a valid calendar date.</span>
-            } @else if (form.get('dateOfBirth')?.errors?.['birthDateTooYoung']) {
-              <span class="field__error">You must be at least 18 years old to register.</span>
+            @if (entityVerificationStatus() === 'valid') {
+              ✓ Identity verified successfully
+            } @else if (entityVerificationStatus() === 'invalid') {
+              ⚠ We could not verify these details. Please check the information and try again.
+            } @else {
+              {{ entityVerificationMessage() || 'Select an entity type and enter your identification number to verify your identity.' }}
             }
-        }
-      </div>
-      <div class="field">
-        <label>Job Title <span class="req">*</span></label>
-        <input type="text" formControlName="jobTitle" placeholder="e.g. Compliance Officer">
-        @if (form.get('jobTitle')?.invalid && form.get('jobTitle')?.touched) {
-          <span class="field__error">Job title is required.</span>
-        }
-      </div>
-    </div>
+          </p>
 
-    <div class="form-row--full form-row">
-      <div class="field">
-        <label>Phone Number</label>
-        <input type="tel" formControlName="phone" placeholder="082 123 4567" inputmode="numeric" autocomplete="tel">
-        <p class="field__hint">Optional. South African mobile: up to 10 digits (e.g. 082&nbsp;123&nbsp;4567).</p>
-        @if (form.get('phone')?.invalid && form.get('phone')?.touched) {
-          @if (form.get('phone')?.errors?.['phoneTooManyDigits']) {
-            <span class="field__error">Phone number must be at most 10 digits.</span>
-          } @else if (form.get('phone')?.errors?.['phoneTooShort']) {
-            <span class="field__error">Enter a complete South African mobile number (9–10 digits).</span>
-          } @else if (form.get('phone')?.errors?.['phoneInvalid']) {
-            <span class="field__error">Enter a valid South African mobile number (e.g. 082&nbsp;123&nbsp;4567).</span>
-          }
-        }
-      </div>
-    </div>
+          <div class="wizard-actions">
+            <button type="button" class="btn btn--outline" (click)="previousStep()">← Back</button>
+            <button type="button" class="btn btn--primary" (click)="nextStep()">Continue →</button>
+          </div>
+        </section>
+      }
 
-    <div class="form-actions">
-      <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"/></svg>
-        {{ isSubmitting() ? 'Registering...' : 'Register User' }}
-      </button>
-      <button type="button" class="btn btn--outline" (click)="cancel()">Cancel</button>
-    </div>
+      @if (currentStep() === 2) {
+        <section class="wizard-panel">
+          <h2 class="form-section-title">Personal information</h2>
+          <p class="step-subtitle">Tell us a little about yourself.</p>
+
+          <div class="form-row">
+            <div class="field">
+              <label>First Name <span class="req">*</span></label>
+              <input type="text" formControlName="firstName" placeholder="John">
+            </div>
+            <div class="field">
+              <label>Last Name <span class="req">*</span></label>
+              <input type="text" formControlName="lastName" placeholder="Smith">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field">
+              <label>Date of Birth <span class="req">*</span></label>
+              <input type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
+            </div>
+            <div class="field">
+              <label>Job Title <span class="req">*</span></label>
+              <input type="text" formControlName="jobTitle" placeholder="Compliance Officer">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field field--full">
+              <label>Phone Number</label>
+              <input type="tel" formControlName="phone" placeholder="082 123 4567" inputmode="numeric" autocomplete="tel">
+              <p class="field__hint">Optional. South African mobile number, up to 10 digits.</p>
+            </div>
+          </div>
+
+          <div class="wizard-actions">
+            <button type="button" class="btn btn--outline" (click)="previousStep()">← Back</button>
+            <button type="button" class="btn btn--primary" (click)="nextStep()">Continue →</button>
+          </div>
+        </section>
+      }
+
+      @if (currentStep() === 3) {
+        <section class="wizard-panel">
+          <h2 class="form-section-title">Review &amp; register</h2>
+          <p class="step-subtitle">Review your information before creating the account.</p>
+
+          <div class="review-card">
+            <div class="review-group">
+              <h3>Account</h3>
+              <div class="review-row"><span>Email:</span><strong>{{ form.value.email }}</strong></div>
+              <div class="review-row"><span>Username:</span><strong>{{ form.value.username }}</strong></div>
+              <button type="button" class="review-edit" (click)="goToStep(0)">Edit</button>
+            </div>
+
+            <div class="review-group">
+              <h3>Identity</h3>
+              <div class="review-row"><span>Entity Type:</span><strong>{{ selectedEntityType?.name || '—' }}</strong></div>
+              <div class="review-row"><span>Identification:</span><strong>••••••••••••{{ (form.value.entityIdentificationNumber || '').slice(-4) }}</strong></div>
+              <div class="review-row"><span>Status:</span><strong>✓ Verified</strong></div>
+              <button type="button" class="review-edit" (click)="goToStep(1)">Edit</button>
+            </div>
+
+            <div class="review-group">
+              <h3>Personal Information</h3>
+              <div class="review-row"><span>Name:</span><strong>{{ form.value.firstName }} {{ form.value.lastName }}</strong></div>
+              <div class="review-row"><span>Date of Birth:</span><strong>{{ form.value.dateOfBirth }}</strong></div>
+              <div class="review-row"><span>Job Title:</span><strong>{{ form.value.jobTitle }}</strong></div>
+              <div class="review-row"><span>Phone:</span><strong>{{ form.value.phone || '—' }}</strong></div>
+              <button type="button" class="review-edit" (click)="goToStep(2)">Edit</button>
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" [checked]="reviewConfirmed()" (change)="reviewConfirmed.set($any($event.target).checked)" />
+            <span>I confirm that the information provided is accurate.</span>
+          </label>
+
+          <div class="wizard-actions">
+            <button type="button" class="btn btn--outline" (click)="previousStep()">← Back</button>
+            <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Registering...' : 'Register User' }}</button>
+          </div>
+        </section>
+      }
+    </form>
 
     @if (otpStepVisible()) {
-      <div class="form-card" style="margin-top:24px; padding:24px; border:1px solid #dbeafe;">
+      <div class="form-card otp-card" style="margin-top:24px; padding:24px; border:1px solid #dbeafe;">
         <h2 class="form-section-title">Email Verification</h2>
         <p class="field__hint">We sent a 6-digit verification code to {{ pendingEmail() }}. Enter it below to activate your account.</p>
         <div class="form-row">
@@ -223,5 +246,5 @@
         </div>
       </div>
     }
-  </form>
+  </div>
 </div>
