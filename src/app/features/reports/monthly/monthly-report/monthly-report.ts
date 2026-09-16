@@ -261,7 +261,17 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
         responsive: true,
         maintainAspectRatio: false,
         cutout: '65%',
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            },
+          },
+        },
       },
     });
     this.charts.push(chart);
@@ -288,7 +298,17 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
         responsive: true,
         maintainAspectRatio: false,
         cutout: '65%',
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            },
+          },
+        },
       },
     });
     this.charts.push(chart);

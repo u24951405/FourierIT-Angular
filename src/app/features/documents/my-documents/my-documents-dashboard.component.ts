@@ -227,7 +227,17 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '70%',
-        plugins: { legend: { display: false } }
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            }
+          }
+        }
       }
     });
 
@@ -258,7 +268,17 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '72%',
-        plugins: { legend: { display: false } }
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            }
+          }
+        }
       }
     });
 
