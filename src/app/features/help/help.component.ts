@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { AfterViewChecked, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 @Component({
@@ -9,10 +9,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
   templateUrl: './help.component.html',
   styleUrl: './help.component.css'
 })
-export class HelpComponent implements OnInit {
+export class HelpComponent implements OnInit, AfterViewChecked {
   private readonly route = inject(ActivatedRoute);
   readonly searchText = signal('');
   readonly searchQuery = signal('');
+  private pendingFragment: string | null = null;
 
   private readonly topics = [
     { id: 'login-otp', title: 'Login and OTP verification', keywords: 'login password register institution access token verification' },
@@ -28,15 +29,27 @@ export class HelpComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.fragment.subscribe((fragment) => {
-      if (!fragment) return;
-
-      setTimeout(() => {
-        const target = document.getElementById(fragment);
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 0);
+      this.pendingFragment = fragment ?? null;
+      this.scrollToPendingFragment();
     });
+  }
+
+  ngAfterViewChecked(): void {
+    this.scrollToPendingFragment();
+  }
+
+  private scrollToPendingFragment(): void {
+    if (!this.pendingFragment) {
+      return;
+    }
+
+    const target = document.getElementById(this.pendingFragment);
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.pendingFragment = null;
   }
 
   matchesTopic(topicId: string): boolean {
@@ -55,7 +68,8 @@ export class HelpComponent implements OnInit {
 
     const firstMatch = this.topics.find(topic => this.matchesTopic(topic.id));
     if (firstMatch) {
-      setTimeout(() => document.getElementById(firstMatch.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+      this.pendingFragment = firstMatch.id;
+      this.scrollToPendingFragment();
     }
   }
 
