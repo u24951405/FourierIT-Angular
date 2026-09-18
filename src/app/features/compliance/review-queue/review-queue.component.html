@@ -46,33 +46,35 @@
         </div>
       </div>
 
-      <label class="review-card__notes">
-        <span class="review-card__label">Decision notes</span>
-        <textarea
-          rows="3"
-          [ngModel]="getNotes(review.checkId)"
-          (ngModelChange)="setNotes(review.checkId, $event)"
-          placeholder="Add optional notes for this decision"></textarea>
-      </label>
+      <ng-container *ngIf="canManage">
+        <label class="review-card__notes">
+          <span class="review-card__label">Decision notes</span>
+          <textarea
+            rows="3"
+            [ngModel]="getNotes(review.checkId)"
+            (ngModelChange)="setNotes(review.checkId, $event)"
+            placeholder="Add optional notes for this decision"></textarea>
+        </label>
 
-      <div class="review-card__actions">
-        <button
-          class="btn btn-approve"
-          type="button"
-          (click)="approve(review)"
-          [disabled]="processingCheckId() !== null">
-          <span class="btn__icon">✓</span>
-          Approve
-        </button>
-        <button
-          class="btn btn-reject"
-          type="button"
-          (click)="reject(review)"
-          [disabled]="processingCheckId() !== null || !canReject(review.checkId)">
-          <span class="btn__icon">✕</span>
-          Reject
-        </button>
-      </div>
+        <div class="review-card__actions">
+          <button
+            class="btn btn-approve"
+            type="button"
+            (click)="approve(review)"
+            [disabled]="processingCheckId() !== null">
+            <span class="btn__icon">✓</span>
+            Approve
+          </button>
+          <button
+            class="btn btn-reject"
+            type="button"
+            (click)="reject(review)"
+            [disabled]="processingCheckId() !== null || !canReject(review.checkId)">
+            <span class="btn__icon">✕</span>
+            Reject
+          </button>
+        </div>
+      </ng-container>
     </article>
   </div>
 </div>

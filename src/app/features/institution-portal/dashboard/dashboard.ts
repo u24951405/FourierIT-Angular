@@ -78,27 +78,8 @@ export class Dashboard implements OnInit {
       return;
     }
 
-    // Fallback for internal users (e.g. admin UI)
-    const institutionId = Number(this.institutionAuthService.getInstitutionId());
-    if (!institutionId || institutionId <= 0) {
-      this.loading.set(false);
-      this.errorMessage.set('Unable to load institution stats. Please refresh the portal.');
-      return;
-    }
-
-    this.requestService.getInstitutionRequestSummary(institutionId).subscribe({
-      next: (summary) => {
-        this.stats.set(summary ?? {
-          pendingRequests: 0,
-          approvedRequests: 0,
-          deniedRequests: 0,
-        });
-      },
-      error: () => {
-        this.errorMessage.set('Unable to load request summary.');
-      },
-      complete: () => this.loading.set(false),
-    });
+    this.loading.set(false);
+    this.errorMessage.set('No session token found. Please log in to the institution portal.');
   }
 
   goToRequestDocuments(): void {

@@ -100,7 +100,6 @@ export class SidebarComponent implements OnInit {
     ] },
     { label: 'Departments', icon: 'building', children: [
         { label: 'All Departments', route: '/departments/all' },
-        { label: 'Department Hierarchy', route: '/departments/hierarchy' },
         { label: 'Assign Department Admin', route: '/departments/admins' }
     ]},
     { label: 'Documents', icon: 'folder', children: [
@@ -148,6 +147,10 @@ export class SidebarComponent implements OnInit {
 
     if (!this.auth.isSuperAdmin()) {
       items = items.map(item => {
+        if (item.requiresSuperAdmin) {
+          return null as unknown as NavItem;
+        }
+
         if (item.label === 'Departments' && item.children) {
           return {
             ...item,
@@ -178,10 +181,6 @@ export class SidebarComponent implements OnInit {
             ...item,
             children: item.children.filter(child => !child.requiresSuperAdmin)
           };
-        }
-
-        if (item.requiresSuperAdmin) {
-          return null as unknown as NavItem;
         }
 
         return item;

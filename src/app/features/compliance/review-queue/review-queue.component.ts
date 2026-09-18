@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../../environments/environment';
 
 interface ReviewQueueItem {
@@ -31,6 +32,9 @@ interface ReviewQueueItem {
 export class ReviewQueueComponent implements OnInit {
   private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
+  private auth = inject(AuthService);
+
+  readonly canManage = this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);

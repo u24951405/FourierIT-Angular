@@ -7,7 +7,7 @@ export const complianceOfficerGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (!auth.isLoggedIn()) return router.createUrlTree(['/auth/login']);
-  return auth.hasRole('Compliance Officer') || auth.hasRole('Admin')
+  return auth.hasRole('Compliance Officer') || auth.hasRole('Admin') || auth.hasRole('Stakeholder')
     ? true
     : router.createUrlTree(['/auth/login']);
 };

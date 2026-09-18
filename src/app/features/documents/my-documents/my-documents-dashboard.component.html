@@ -13,7 +13,7 @@
   </div>
 
   <div class="dash-stat-grid">
-    <div class="stat-card stat-card--clickable" (click)="navigate('/documents/all')">
+    <div class="stat-card">
       <div class="stat-card__icon" style="background:#eef2ff; color:#1d4ed8;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M4 7h16M4 12h16M4 17h16" stroke-linecap="round" stroke-linejoin="round" />
@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+    <div class="stat-card">
       <div class="stat-card__icon" style="background:#dcfce7; color:#15803d;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 5v14M5 12h14" stroke-linecap="round" stroke-linejoin="round" />
@@ -39,7 +39,7 @@
       </div>
     </div>
 
-    <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+    <div class="stat-card">
       <div class="stat-card__icon" style="background:#fef3c7; color:#b45309;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 6v6l4 2" stroke-linecap="round" stroke-linejoin="round" />
@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <div class="stat-card stat-card--clickable" (click)="navigate('/institution/my-requests')">
+    <div class="stat-card">
       <div class="stat-card__icon" style="background:#fee2e2; color:#b91c1c;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <div class="stat-card stat-card--clickable" (click)="navigate('/institution/my-requests')">
+    <div class="stat-card">
       <div class="stat-card__icon" style="background:#e0f2fe; color:#0369a1;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M5 12l5 5L20 7" stroke-linecap="round" stroke-linejoin="round" />
@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    <div class="stat-card stat-card--clickable" (click)="navigate('/institution/my-requests')">
+    <div class="stat-card">
       <div class="stat-card__icon" style="background:#ede9fe; color:#7c3aed;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M8 7h8M8 12h8M8 17h5" stroke-linecap="round" stroke-linejoin="round" />
@@ -99,7 +99,6 @@
         <h3 class="dash-chart-card__title">Compliance Check</h3>
         <p class="dash-chart-card__subtitle">Live compliance status from the current API response</p>
       </div>
-      <button class="btn btn--outline" type="button" (click)="navigate('/reports/compliance')">View all compliance</button>
     </div>
 
     <div class="compliance-overview">
@@ -131,7 +130,7 @@
   </div>
 
   <div class="dash-chart-grid">
-    <div class="dash-chart-card dash-chart-card--clickable">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Verification Status</h3>
       <p class="dash-chart-card__subtitle">Document approval breakdown</p>
       <div class="dash-doughnut-wrap">
@@ -156,7 +155,7 @@
       </div>
     </div>
 
-    <div class="dash-chart-card dash-chart-card--clickable">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Documents by Category</h3>
       <p class="dash-chart-card__subtitle">Documents grouped by type</p>
       <div class="dash-doughnut-wrap">
@@ -188,7 +187,7 @@
   </div>
 
   <div class="dash-chart-grid">
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/documents/all')">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Recent Documents</h3>
       <p class="dash-chart-card__subtitle">Latest documents you uploaded</p>
       <div class="documents-table">
@@ -207,7 +206,7 @@
       </div>
     </div>
 
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/institution/my-requests')">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Recent Access Requests</h3>
       <p class="dash-chart-card__subtitle">Requests assigned to you</p>
       <div class="documents-table">

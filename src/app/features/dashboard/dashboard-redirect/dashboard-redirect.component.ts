@@ -26,8 +26,7 @@ export class DashboardRedirectComponent implements OnInit {
 
   private navigateByAccount(account: CurrentAccount): void {
     const isDepartmentScoped = !this.auth.isSuperAdmin()
-      && (this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder'))
-      && !!account.departmentId;
+      && (this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder'));
 
     const path = isDepartmentScoped
       ? '/dashboard/department'

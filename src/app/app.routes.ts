@@ -5,6 +5,7 @@ import { restrictDocumentOwnerOnlyGuard } from './core/guards/restrict-document-
 import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.guard';
 import { documentUploadGuard } from './core/guards/document-upload.guard';
 import { adminGuard } from './core/guards/admin.guard';
+import { adminOrDepartmentAdminGuard } from './core/guards/admin-or-department-admin.guard';
 import { departmentAdminGuard, departmentScopedGuard } from './core/guards/department-admin.guard';
 import { documentManagementGuard } from './core/guards/document-management.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
@@ -110,7 +111,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/documents/my-documents/my-documents.component')
           .then(m => m.MyDocumentsComponent) },
       { path: 'administration/institutions',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminOrDepartmentAdminGuard],
         loadComponent: () => import('./features/administration/institutions/institutions.component')
           .then(m => m.InstitutionsComponent) },
       { path: 'departments/admins',
@@ -128,7 +129,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/user-management/user-management.component')
           .then(m => m.UserManagementComponent) },
       { path: 'users/stakeholders-compliance',
-        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminOrDepartmentAdminGuard],
         data: { managedRoles: ['Stakeholder', 'Compliance Officer'], pageTitle: 'Stakeholders & Compliance Officers' },
         loadComponent: () => import('./features/users/user-management/user-management.component')
           .then(m => m.UserManagementComponent) },
@@ -143,7 +144,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/users/register-user/register-user.component')
           .then(m => m.RegisterUserComponent) },
       { path: 'administration/roles',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, adminOrDepartmentAdminGuard],
         loadComponent: () => import('./features/administration/roles-management/roles-management.component')
           .then(m => m.RolesManagementComponent) },
       { path: 'administration/department-requests',
@@ -162,10 +163,6 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard],
         loadComponent: () => import('./features/departments/departments/departments.component')
           .then(m => m.DepartmentsComponent) },
-      { path: 'departments/hierarchy',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
-        loadComponent: () => import('./features/departments/department-hierarchy/department-hierarchy.component')
-          .then(m => m.DepartmentHierarchyComponent) },
       { path: 'documents/all',
         canActivate: [restrictDocumentOwnerOnlyGuard],
         data: { documentPageTitle: 'All Documents' },

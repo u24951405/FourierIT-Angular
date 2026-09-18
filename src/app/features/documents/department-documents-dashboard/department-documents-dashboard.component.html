@@ -20,22 +20,22 @@
       <div class="stat-card stat-card--error">{{ error() }}</div>
     </ng-container>
     <ng-container *ngIf="!loading() && !error()">
-      <div class="stat-card stat-card--clickable" (click)="navigate('/documents/all')">
+      <div class="stat-card">
         <div class="stat-card__body"><span class="stat-card__value">{{ totalDocuments() }}</span><span class="stat-card__label">Total Documents</span><span class="stat-card__sub">All department documents on file</span></div>
       </div>
-      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+      <div class="stat-card">
         <div class="stat-card__body"><span class="stat-card__value">{{ verifiedDocuments() }}</span><span class="stat-card__label">Verified Documents</span><span class="stat-card__sub">Approved and ready for use</span></div>
       </div>
-      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+      <div class="stat-card">
         <div class="stat-card__body"><span class="stat-card__value">{{ pendingReview() }}</span><span class="stat-card__label">Pending Review</span><span class="stat-card__sub">Awaiting compliance verification</span></div>
       </div>
-      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+      <div class="stat-card">
         <div class="stat-card__body"><span class="stat-card__value">{{ rejectedDocuments() }}</span><span class="stat-card__label">Rejected</span><span class="stat-card__sub">Needs follow-up to resolve</span></div>
       </div>
-      <div class="stat-card stat-card--clickable" (click)="navigate('/reports/compliance')">
+      <div class="stat-card">
         <div class="stat-card__body"><span class="stat-card__value">{{ expiringSoon() }}</span><span class="stat-card__label">Expiring Soon</span><span class="stat-card__sub">Documents due within the warning threshold</span></div>
       </div>
-      <div class="stat-card stat-card--clickable" (click)="navigate('/documents/requests')">
+      <div class="stat-card">
         <div class="stat-card__body"><span class="stat-card__value">{{ pendingRequests().length }}</span><span class="stat-card__label">Access Requests</span><span class="stat-card__sub">Pending requests addressed to the department</span></div>
       </div>
     </ng-container>
@@ -47,7 +47,6 @@
         <h3 class="dash-chart-card__title">Compliance Check</h3>
         <p class="dash-chart-card__subtitle">Live compliance status from the department API response</p>
       </div>
-      <button class="btn btn--outline" type="button" (click)="navigate('/reports/compliance')">View all compliance</button>
     </div>
     <div class="compliance-overview" *ngIf="dashboard() as summary">
       <div class="compliance-summary-card">
@@ -66,7 +65,7 @@
   </div>
 
   <div class="dash-chart-grid">
-    <div class="dash-chart-card dash-chart-card--clickable">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Verification Status</h3>
       <p class="dash-chart-card__subtitle">Department document approval breakdown</p>
       <div class="dash-doughnut-wrap"><canvas #verificationChart></canvas></div>
@@ -78,7 +77,7 @@
       </div>
     </div>
 
-    <div class="dash-chart-card dash-chart-card--clickable">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Documents by Category</h3>
       <p class="dash-chart-card__subtitle">Department documents grouped by type</p>
       <div class="dash-doughnut-wrap"><canvas #categoryChart></canvas></div>
@@ -92,7 +91,7 @@
   </div>
 
   <div class="dash-chart-grid">
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/documents/all')">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Recent Documents</h3>
       <p class="dash-chart-card__subtitle">Latest documents uploaded in the department</p>
       <div class="documents-table">
@@ -101,7 +100,7 @@
       </div>
     </div>
 
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/documents/requests')">
+    <div class="dash-chart-card">
       <h3 class="dash-chart-card__title">Recent Access Requests</h3>
       <p class="dash-chart-card__subtitle">Pending requests addressed to the department</p>
       <div class="documents-table">

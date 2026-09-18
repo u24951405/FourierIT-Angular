@@ -24,7 +24,7 @@
             <th>Email</th>
             <th>Role</th>
             <th>Status</th>
-            @if (!auth.isStakeholderViewer()) {
+            @if (!auth.isStakeholderViewer() && !auth.hasRole('Department Admin')) {
               <th>Actions</th>
             }
           </tr>
@@ -36,7 +36,7 @@
               <td class="td-light">{{ user.email }}</td>
               <td class="td-muted">{{ user.roleName }}</td>
               <td><span class="badge badge--{{ user.status.toLowerCase() }}">{{ user.status }}</span></td>
-              @if (!auth.isStakeholderViewer()) {
+              @if (!auth.isStakeholderViewer() && !auth.hasRole('Department Admin')) {
                 <td>
                   @if (!isSuperAdmin(user)) {
                     <div class="action-buttons">
@@ -53,7 +53,7 @@
             </tr>
           } @empty {
             <tr>
-              <td [attr.colspan]="auth.isStakeholderViewer() ? 4 : 5" class="empty-state">No users found.</td>
+              <td [attr.colspan]="(auth.isStakeholderViewer() || auth.hasRole('Department Admin')) ? 4 : 5" class="empty-state">No users found.</td>
             </tr>
           }
         </tbody>

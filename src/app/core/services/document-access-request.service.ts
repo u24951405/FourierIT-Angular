@@ -45,12 +45,6 @@ export class DocumentAccessRequestService {
     return this.http.get<PendingDepartmentAccessRequest[]>(`${this.base}/department-access-requests/pending`);
   }
 
-  getInstitutionRequestSummary(institutionId: number): Observable<InstitutionRequestSummary> {
-    return this.http.get<InstitutionRequestSummary>(
-      `${this.base}/institutions/${institutionId}/document-access-requests/summary`
-    );
-  }
-
   getInstitutionAccessRequestSummary(token: string): Observable<InstitutionRequestSummary> {
     const params = new HttpParams().set('token', token);
     return this.http.get<InstitutionRequestSummary>(
