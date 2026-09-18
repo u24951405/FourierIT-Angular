@@ -124,6 +124,33 @@
 .help-page__eyebrow { color: #b9d8ed; font-size: 11px; letter-spacing: .16em; }
 .help-page__header h1 { color: #fff; letter-spacing: -.035em; }
 .help-page__intro { color: #e0edf5; }
+.help-search {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 24px;
+}
+.help-search label { font-weight: 700; color: var(--navy, #1a2e45); }
+.help-search__controls { display: flex; gap: 8px; }
+.help-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid var(--border, #d0dce8);
+  border-radius: 8px;
+  font: inherit;
+}
+.help-search button {
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--blue, #2e6da4);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.help-search button:hover { filter: brightness(.92); }
+.help-search__clear { background: #64748b !important; }
+.help-search__status { margin: -12px 0 18px; color: var(--text-mid, #4a6278); }
 .help-page__toc { padding: 12px; background: rgba(247, 249, 251, .94); border: 1px solid var(--border, #d0dce8); border-radius: var(--radius, 10px); box-shadow: 0 7px 18px rgba(26, 46, 69, .08); }
 .help-page__toc a { padding: 7px 11px; color: var(--navy, #1a2e45); background: #eaf1f6; border: 1px solid #d3e0e9; border-radius: 7px; font-size: .82rem; }
 .help-page__toc a:hover { color: #fff; background: var(--blue, #2e6da4); }
@@ -132,3 +159,8 @@
 .help-section p, .help-section li { color: var(--text-mid, #4a6278); }
 .help-section li::marker { color: var(--blue, #2e6da4); }
 .help-section__toplink { color: var(--blue, #2e6da4); }
+
+@media (max-width: 640px) {
+  .help-search__controls { flex-wrap: wrap; }
+  .help-search input { flex-basis: 100%; }
+}

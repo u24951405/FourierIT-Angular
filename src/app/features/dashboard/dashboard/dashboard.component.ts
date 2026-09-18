@@ -177,7 +177,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         cutout: '68%',
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            },
+          },
+        },
       },
     });
     this.charts.push(chart);
@@ -215,7 +225,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         cutout: '68%',
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            },
+          },
+        },
       },
     });
     this.charts.push(chart);
@@ -253,7 +273,17 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       options: {
         responsive: true,
         cutout: '68%',
-        plugins: { legend: { display: false } },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            },
+          },
+        },
       },
     });
     this.charts.push(chart);

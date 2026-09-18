@@ -7,20 +7,41 @@
     </p>
   </header>
 
+  <form class="help-search" (submit)="$event.preventDefault(); searchHelp()">
+    <label for="help-search-input">Search help topics</label>
+    <div class="help-search__controls">
+      <input
+        id="help-search-input"
+        type="search"
+        placeholder="Search login, documents, reports..."
+        [value]="searchText()"
+        (input)="searchText.set($any($event.target).value)"
+      />
+      <button type="submit">Search</button>
+      @if (searchQuery()) {
+        <button type="button" class="help-search__clear" (click)="clearSearch()">Clear</button>
+      }
+    </div>
+  </form>
+
+  @if (searchQuery()) {
+    <p class="help-search__status">Showing results for “{{ searchQuery() }}”.</p>
+  }
+
   <nav class="help-page__toc" aria-label="Help topics">
-    <a [routerLink]="['/help']" [fragment]="'login-otp'">Login &amp; OTP verification</a>
-    <a [routerLink]="['/help']" [fragment]="'dashboard'">Dashboard</a>
-    <a [routerLink]="['/help']" [fragment]="'institution-requests'">Institution Portal · Request Documents</a>
-    <a [routerLink]="['/help']" [fragment]="'document-upload'">Documents · Upload Document</a>
-    <a [routerLink]="['/help']" [fragment]="'compliance-status'">Compliance status</a>
-    <a [routerLink]="['/help']" [fragment]="'reports'">Reports</a>
-    <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a>
-    <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a>
-    <a [routerLink]="['/help']" [fragment]="'timer-settings'">Timer Settings</a>
+    @if (matchesTopic('login-otp')) { <a [routerLink]="['/help']" [fragment]="'login-otp'">Login &amp; OTP verification</a> }
+    @if (matchesTopic('dashboard')) { <a [routerLink]="['/help']" [fragment]="'dashboard'">Dashboard</a> }
+    @if (matchesTopic('institution-requests')) { <a [routerLink]="['/help']" [fragment]="'institution-requests'">Institution Portal · Request Documents</a> }
+    @if (matchesTopic('document-upload')) { <a [routerLink]="['/help']" [fragment]="'document-upload'">Documents · Upload Document</a> }
+    @if (matchesTopic('compliance-status')) { <a [routerLink]="['/help']" [fragment]="'compliance-status'">Compliance status</a> }
+    @if (matchesTopic('reports')) { <a [routerLink]="['/help']" [fragment]="'reports'">Reports</a> }
+    @if (matchesTopic('audit-log')) { <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a> }
+    @if (matchesTopic('user-role-management')) { <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a> }
+    @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">Timer Settings</a> }
   </nav>
 
   <main class="help-page__content">
-    <section id="login-otp" class="help-section">
+    <section id="login-otp" class="help-section" [hidden]="!matchesTopic('login-otp')">
       <h2>Login &amp; OTP verification</h2>
       <p>
         Start at <strong>/auth/login</strong>. Enter your username and password, then continue through the normal sign-in flow. If your account is configured for MFA or OTP validation, you will be guided to the verification step before access is granted.
@@ -33,7 +54,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="dashboard" class="help-section">
+    <section id="dashboard" class="help-section" [hidden]="!matchesTopic('dashboard')">
       <h2>Dashboard</h2>
       <p>
         After login, the Dashboard is the main landing area. It shows the operational overview for the current user scope: the system dashboard for super admins, the department dashboard for department-scoped users, or the personal document dashboard for document owners.
@@ -45,7 +66,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="institution-requests" class="help-section">
+    <section id="institution-requests" class="help-section" [hidden]="!matchesTopic('institution-requests')">
       <h2>Institution Portal · Request Documents</h2>
       <p>
         The institution portal is accessed from <strong>/institution/dashboard</strong> and supports the registration, request, and monitoring flow for external institutions. The work is grouped under the live tabs: <strong>Home</strong>, <strong>Request Documents</strong>, <strong>My Requests</strong>, and <strong>Approved Documents</strong>.
@@ -58,7 +79,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="document-upload" class="help-section">
+    <section id="document-upload" class="help-section" [hidden]="!matchesTopic('document-upload')">
       <h2>Documents · Upload Document</h2>
       <p>
         The document workflow is centered on <strong>Documents</strong> in the sidebar and the route <strong>/documents/upload</strong>. This is where document owners upload files and assign the relevant metadata for review.
@@ -71,7 +92,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="compliance-status" class="help-section">
+    <section id="compliance-status" class="help-section" [hidden]="!matchesTopic('compliance-status')">
       <h2>Compliance status</h2>
       <p>
         Compliance is the operational status view for FICA/KYC requirements and required-document checks. The live system exposes this through the dashboard and the report pages, and the summary is evaluated against the configured requirements for departments, owners, and institutions.
@@ -84,7 +105,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="reports" class="help-section">
+    <section id="reports" class="help-section" [hidden]="!matchesTopic('reports')">
       <h2>Reports</h2>
       <p>
         Reports are grouped under <strong>/reports</strong> and include the system reporting pages such as <strong>View Document Activity Report</strong>, <strong>Compliance</strong>, <strong>Activity</strong>, and other operational summaries. These pages pull together document activity, compliance posture, and audit details into a reviewable format.
@@ -97,7 +118,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="audit-log" class="help-section">
+    <section id="audit-log" class="help-section" [hidden]="!matchesTopic('audit-log')">
       <h2>Audit Log</h2>
       <p>
         The <strong>Audit Log</strong> page is a security and operations review screen for changes, requests, OTP events, and administrative activity. It is intended for control and accountability checks across the platform.
@@ -109,7 +130,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="user-role-management" class="help-section">
+    <section id="user-role-management" class="help-section" [hidden]="!matchesTopic('user-role-management')">
       <h2>User Management &amp; Roles Management</h2>
       <p>
         User administration is handled in the <strong>User Management</strong> and <strong>Roles Management</strong> sections. These reflect real routes such as <strong>/users/department-admins</strong>, <strong>/users/document-owners</strong>, <strong>/users/stakeholders-compliance</strong>, and <strong>/administration/roles</strong>.
@@ -122,7 +143,7 @@
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
 
-    <section id="timer-settings" class="help-section">
+    <section id="timer-settings" class="help-section" [hidden]="!matchesTopic('timer-settings')">
       <h2>Timer Settings</h2>
       <p>
         The <strong>Timer Settings</strong> page is available under <strong>/system-settings</strong> and is used to manage expiry and session timing controls, including OTP expiry and institution session timing values. This section is intended for administrators who need to tune operational timers.

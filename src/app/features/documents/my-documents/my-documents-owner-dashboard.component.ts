@@ -281,7 +281,17 @@ export class MyDocumentsDashboardComponent implements OnInit, AfterViewInit {
       options: {
         responsive: true,
         cutout: '70%',
-        plugins: { legend: { display: false } }
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              boxWidth: 12,
+              padding: 16,
+              usePointStyle: true,
+            }
+          }
+        }
       }
     });
 

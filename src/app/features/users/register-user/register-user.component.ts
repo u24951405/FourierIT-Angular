@@ -43,8 +43,17 @@ export class RegisterUserComponent implements OnInit {
   pendingEmail = signal('');
   otpCode = signal('');
   isVerifyingOtp = signal(false);
+  currentStep = signal(0);
+  reviewConfirmed = signal(false);
   // Local view helpers for live password feedback
   passwordValue = signal('');
+
+  readonly wizardSteps = [
+    { id: 'account', title: 'Create your account', subtitle: 'Set up your login details to access the platform.' },
+    { id: 'identity', title: 'Verify your identity', subtitle: 'Select your entity type and provide the identification details required for verification.' },
+    { id: 'personal', title: 'Personal information', subtitle: 'Tell us a little about yourself.' },
+    { id: 'review', title: 'Review & register', subtitle: 'Check everything before creating the account.' }
+  ];
 
   readonly maxBirthDate = formatIsoDateLocal(new Date());
   readonly minBirthDate = formatIsoDateLocal((() => {
@@ -130,12 +139,15 @@ export class RegisterUserComponent implements OnInit {
     this.cdr.markForCheck();
 
     this.form.controls.entityTypeId.valueChanges.subscribe(() => {
+      this.applyEntityIdentificationValidators();
       this.resetEntityVerificationState();
     });
 
     this.form.controls.entityIdentificationNumber.valueChanges.subscribe(() => {
       this.resetEntityVerificationState();
     });
+
+    this.applyEntityIdentificationValidators();
 
     // Track password changes for live rule evaluation
     this.form.controls.password.valueChanges.subscribe((v) => {
@@ -149,6 +161,27 @@ export class RegisterUserComponent implements OnInit {
     this.entityVerificationStatus.set('idle');
     this.entityVerificationMessage.set('');
     this.cdr.markForCheck();
+  }
+
+  private applyEntityIdentificationValidators(): void {
+    const entityTypeId = this.form.controls.entityTypeId.value;
+    const control = this.form.controls.entityIdentificationNumber;
+
+    control.clearValidators();
+    control.setValidators([Validators.required]);
+
+    if (entityTypeId === 1) {
+      control.setValidators([
+        Validators.required,
+        (input: AbstractControl): ValidationErrors | null => {
+          const value = String(input.value ?? '').replace(/\s+/g, '');
+          if (!value) return null;
+          return /^\d{13}$/.test(value) ? null : { saIdInvalid: true };
+        }
+      ]);
+    }
+
+    control.updateValueAndValidity({ emitEvent: false });
   }
 
   private loadRoles(): void {
@@ -217,7 +250,21 @@ export class RegisterUserComponent implements OnInit {
       this.form.controls.entityTypeId.markAsTouched();
       this.form.controls.entityIdentificationNumber.markAsTouched();
       this.entityVerificationStatus.set('invalid');
-      this.entityVerificationMessage.set('Please select an entity type and enter a valid identification number first.');
+      this.entityVerificationMessage.set(
+        this.form.controls.entityTypeId.value === 1
+          ? 'South African ID numbers must be exactly 13 digits.'
+          : 'Please select an entity type and enter a valid identification number first.'
+      );
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const entityTypeId = this.form.controls.entityTypeId.value ?? 0;
+    const verificationNumber = String(this.form.controls.entityIdentificationNumber.value ?? '').trim();
+
+    if (entityTypeId === 1 && !/^\d{13}$/.test(verificationNumber)) {
+      this.entityVerificationStatus.set('invalid');
+      this.entityVerificationMessage.set('South African ID numbers must be exactly 13 digits.');
       this.cdr.markForCheck();
       return;
     }
@@ -225,9 +272,6 @@ export class RegisterUserComponent implements OnInit {
     this.isVerifyingEntity.set(true);
     this.entityVerificationStatus.set('verifying');
     this.entityVerificationMessage.set('Verifying identification number...');
-
-    const entityTypeId = this.form.controls.entityTypeId.value ?? 0;
-    const verificationNumber = String(this.form.controls.entityIdentificationNumber.value ?? '').trim();
 
     this.form.controls.entityIdentificationNumber.setValue(verificationNumber, { emitEvent: false });
 
@@ -285,7 +329,68 @@ export class RegisterUserComponent implements OnInit {
     }
   }
 
+  get isFirstStep(): boolean {
+    return this.currentStep() === 0;
+  }
+
+  get isLastStep(): boolean {
+    return this.currentStep() === this.wizardSteps.length - 1;
+  }
+
+  goToStep(stepIndex: number): void {
+    this.currentStep.set(Math.min(Math.max(stepIndex, 0), this.wizardSteps.length - 1));
+  }
+
+  nextStep(): void {
+    const step = this.currentStep();
+    if (!this.isCurrentStepValid()) {
+      this.form.markAllAsTouched();
+      this.toast.show('Please complete the required fields before continuing.', 'error');
+      return;
+    }
+
+    this.currentStep.set(Math.min(step + 1, this.wizardSteps.length - 1));
+  }
+
+  previousStep(): void {
+    this.currentStep.set(Math.max(this.currentStep() - 1, 0));
+  }
+
+  isCurrentStepValid(): boolean {
+    switch (this.currentStep()) {
+      case 0:
+        return this.form.controls.email.valid
+          && this.form.controls.username.valid
+          && this.form.controls.password.valid
+          && this.form.controls.confirmPassword.valid
+          && this.allPasswordRulesSatisfied()
+          && this.passwordsMatch();
+      case 1:
+        return this.form.controls.entityTypeId.valid
+          && this.form.controls.entityIdentificationNumber.valid
+          && this.entityVerificationStatus() === 'valid';
+      case 2:
+        return this.form.controls.firstName.valid
+          && this.form.controls.lastName.valid
+          && this.form.controls.dateOfBirth.valid
+          && this.form.controls.jobTitle.valid
+          && this.form.controls.roleIds.valid;
+      default:
+        return this.reviewConfirmed();
+    }
+  }
+
   onSubmit(): void {
+    if (!this.isLastStep) {
+      this.nextStep();
+      return;
+    }
+
+    if (!this.reviewConfirmed()) {
+      this.toast.show('Please confirm that the information provided is accurate before registering the user.', 'error');
+      return;
+    }
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.cdr.markForCheck();

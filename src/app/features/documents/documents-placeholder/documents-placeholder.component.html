@@ -5,6 +5,9 @@
       <h1>{{ title }}</h1>
       <p>{{ canSeeAllUsersDocuments ? 'Review documents across the platform with a clear overview of each user and their submissions.' : 'Manage your uploaded files and view their current review status in one place.' }}</p>
     </div>
+    @if (!canSeeAllUsersDocuments) {
+      <button type="button" class="documents-placeholder__action" (click)="openCreate()">Upload document</button>
+    }
   </div>
 
   @if (loading()) {
@@ -49,8 +52,44 @@
             <span class="badge badge--{{ doc.currentStatus.toLowerCase() }}">{{ doc.currentStatus || 'Pending review' }}</span>
           </div>
           <p class="library-card__entity">Uploaded {{ doc.uploadedDate | date:'mediumDate' }} · {{ doc.currentStatus || 'Pending review' }}</p>
+          <div class="library-card__actions">
+            <button type="button" (click)="openEdit(doc)">Edit</button>
+            <button type="button" class="danger" (click)="deleteDocument(doc)">Delete</button>
+          </div>
         </article>
       }
+    </div>
+  }
+
+  @if (showDocumentForm()) {
+    <div class="document-form-backdrop" role="presentation" (click)="closeDocumentForm()">
+      <form class="document-form" (submit)="$event.preventDefault(); saveDocument()" (click)="$event.stopPropagation()">
+        <div class="document-form__header">
+          <h2>{{ editingDocument() ? 'Edit document' : 'Upload document' }}</h2>
+          <button type="button" aria-label="Close" (click)="closeDocumentForm()">×</button>
+        </div>
+        <label>
+          Document type
+          <select [value]="selectedDocumentTypeId() ?? ''" (change)="selectedDocumentTypeId.set(+$any($event.target).value)" required>
+            <option value="" disabled>Select a document type</option>
+            @for (type of documentTypes(); track type.documentTypeId) {
+              <option [value]="type.documentTypeId">{{ type.typeName }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          File
+          <input type="file" (change)="onFileSelected($event)" required />
+        </label>
+        <label class="document-form__checkbox">
+          <input type="checkbox" [checked]="isCertified()" (change)="isCertified.set($any($event.target).checked)" />
+          Certified document
+        </label>
+        <div class="document-form__actions">
+          <button type="button" (click)="closeDocumentForm()">Cancel</button>
+          <button type="submit" [disabled]="savingDocument()">{{ savingDocument() ? 'Saving...' : 'Save document' }}</button>
+        </div>
+      </form>
     </div>
   }
 </section>
