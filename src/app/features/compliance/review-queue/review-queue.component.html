@@ -4,6 +4,10 @@
     <p>Review documents that require a compliance decision.</p>
   </header>
 
+  <div *ngIf="canManage" class="review-queue-toolbar">
+    <button class="btn btn-pep" type="button" (click)="openPepScan()">Run PEP Scan</button>
+  </div>
+
   <div *ngIf="loading()" class="review-queue-state review-queue-state--loading">
     <p>Loading compliance reviews...</p>
   </div>
@@ -38,10 +42,16 @@
           <span class="review-card__value">{{ review.documentId ?? 'Unavailable' }}</span>
         </div>
         <div class="review-card__detail">
+          <span class="review-card__label">Compliance status</span>
+          <span class="review-card__value review-card__status review-card__status--{{ getComplianceStatus(review).toLowerCase().replace(' ', '-') }}">
+            {{ getComplianceStatus(review) }}
+          </span>
+        </div>
+        <div class="review-card__detail">
           <span class="review-card__label">Review reason</span>
           <span class="review-card__value">{{ review.manualReviewReason || review.nonComplianceReason || 'Manual review requested.' }}</span>
         </div>
-        <div class="review-card__detail" *ngIf="review.documentId != null">
+        <div class="review-card__detail review-card__detail--actions" *ngIf="review.documentId != null">
           <button class="btn btn-view" type="button" (click)="viewDocument(review.documentId)">View Document</button>
         </div>
       </div>

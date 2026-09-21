@@ -11,6 +11,22 @@
   &:first-of-type { margin-top: 0; }
 }
 
+.login-card__dev-entry {
+  width: 100%;
+  margin-top: 12px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #0f766e;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-card__dev-entry:hover {
+  background: #115e59;
+}
+
 .toggle {
   display: flex; align-items: center; gap: 10px;
   cursor: pointer; margin-top: 4px;

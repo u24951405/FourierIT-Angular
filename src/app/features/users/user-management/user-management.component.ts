@@ -40,6 +40,7 @@ export interface UserProfile {
   styleUrl: './user-management.component.scss'
 })
 export class UserManagementComponent {
+  readonly verifyNowAmlPepUrl = 'https://www.verifynow.co.za/verifynow?reportType=check-aml-pep';
   readonly auth = inject(AuthService);
   private cdr = inject(ChangeDetectorRef);
   private fb = inject(FormBuilder);
@@ -102,6 +103,10 @@ export class UserManagementComponent {
       user.email.toLowerCase().includes(q) ||
       user.roleName.toLowerCase().includes(q)
     );
+  }
+
+  openPepScan(): void {
+    window.open(this.verifyNowAmlPepUrl, '_blank', 'noopener,noreferrer');
   }
 
   openEdit(user: UserProfile): void {
