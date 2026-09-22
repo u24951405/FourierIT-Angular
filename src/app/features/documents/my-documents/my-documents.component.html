@@ -66,25 +66,55 @@
     </article>
   </div>
 
-  <div class="documents-page__toolbar">
-    <div class="search-box">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/></svg>
-      <input type="search" placeholder="Search documents..." [value]="search()" (input)="search.set($any($event.target).value)">
+  <!-- SuperAdmin: Show Document Hierarchy Tree -->
+  @if (isSuperAdmin()) {
+    <div class="documents-page__toolbar">
+      <div class="search-info">
+        <p class="eyebrow">Browsing as Super Admin</p>
+        <h3>All Documents by Hierarchy</h3>
+      </div>
     </div>
-  </div>
 
-  @if (loading()) {
-    <div class="documents-page__state">Loading documents…</div>
-  } @else if (error()) {
-    <div class="documents-page__state documents-page__state--error">{{ error() }}</div>
-  } @else if (filteredDocuments.length === 0) {
-    <div class="documents-page__state">
-      No documents found. Upload your first file to start building your record.
+    @if (loading()) {
+      <div class="documents-page__state">Loading documents…</div>
+    } @else if (error()) {
+      <div class="documents-page__state documents-page__state--error">{{ error() }}</div>
+    } @else {
+      <div class="documents-hierarchy-container">
+        <app-document-hierarchy-tree
+          [showDocuments]="true"
+          [mode]="'search'"
+          (documentSelected)="onDocumentSelectedFromTree($event)">
+        </app-document-hierarchy-tree>
+      </div>
+    }
+  }
+
+  <!-- Regular Users: Show Document Grid -->
+  @if (!isSuperAdmin()) {
+    <div class="documents-page__toolbar">
+      <div class="search-box">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/></svg>
+        <input type="search" placeholder="Search documents..." [value]="search()" (input)="search.set($any($event.target).value)">
+      </div>
     </div>
-  } @else {
-    <div class="documents-grid">
-      @for (doc of filteredDocuments; track doc.documentId) {
-        <article class="document-card">
+
+    <div class="documents-page__with-sidebar" [class.sidebar-visible]="false">
+      <aside class="documents-sidebar" style="display: none;"></aside>
+
+    <main class="documents-main">
+      @if (loading()) {
+        <div class="documents-page__state">Loading documents…</div>
+      } @else if (error()) {
+        <div class="documents-page__state documents-page__state--error">{{ error() }}</div>
+      } @else if (filteredDocuments.length === 0) {
+        <div class="documents-page__state">
+          No documents found. Upload your first file to start building your record.
+        </div>
+      } @else {
+        <div class="documents-grid">
+          @for (doc of filteredDocuments; track doc.documentId) {
+            <article class="document-card">
           <div class="document-card__top">
             <div>
               <span class="document-card__type">{{ doc.documentTypeName || 'Document' }}</span>
@@ -121,6 +151,9 @@
           </div>
         </article>
       }
+        </div>
+      }
+    </main>
     </div>
   }
 

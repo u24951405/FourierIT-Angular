@@ -15,6 +15,18 @@ export interface SaveRolePayload {
   permissions: string[];
 }
 
+export interface RolePermissionDto {
+  permissionId: number;
+  permissionKey: string;
+  isAssigned: boolean;
+}
+
+export interface RoleDetailDto {
+  roleId: string;
+  roleName: string;
+  permissions: RolePermissionDto[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class RolesManagementService {
   private http = inject(HttpClient);
@@ -34,6 +46,18 @@ export class RolesManagementService {
 
   getPermissions(): Observable<string[]> {
     return this.http.get<string[]>(`${this.base}/permissions`);
+  }
+
+  getRoleWithPermissions(roleId: string): Observable<RoleDetailDto> {
+    return this.http.get<RoleDetailDto>(`${this.base}/${roleId}/permissions`);
+  }
+
+  addPermissionToRole(roleId: string, permissionId: number): Observable<any> {
+    return this.http.post(`${this.base}/${roleId}/permissions/${permissionId}`, {});
+  }
+
+  removePermissionFromRole(roleId: string, permissionId: number): Observable<any> {
+    return this.http.delete(`${this.base}/${roleId}/permissions/${permissionId}`);
   }
 
   delete(roleId: string): Observable<void> {

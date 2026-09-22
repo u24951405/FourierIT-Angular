@@ -5,11 +5,14 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AllUserDocumentsItem, DocumentListItem, DocumentTypeOption, DocumentsApiService, UploadDocumentPayload } from '../../../core/services/documents-api.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { DocumentHierarchyTreeComponent } from '../../../shared/components/document-hierarchy-tree/document-hierarchy-tree.component';
+import { DocumentDetailsModalComponent } from '../../../shared/components/document-details-modal/document-details-modal.component';
+import { DocumentItemDto } from '../../../core/services/document-hierarchy.service';
 
 @Component({
   selector: 'app-documents-placeholder',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DocumentHierarchyTreeComponent, DocumentDetailsModalComponent],
   templateUrl: './documents-placeholder.component.html',
   styleUrl: './documents-placeholder.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -36,6 +39,8 @@ export class DocumentsPlaceholderComponent {
   readonly selectedDocumentTypeId = signal<number | null>(null);
   readonly isCertified = signal(false);
   readonly savingDocument = signal(false);
+  readonly showDocumentDetailsModal = signal(false);
+  readonly selectedDocumentIdForDetails = signal<number | null>(null);
 
   constructor() {
     this.loadDocuments();
@@ -163,5 +168,39 @@ export class DocumentsPlaceholderComponent {
       },
       error: err => this.toast.show(err?.error?.message ?? 'Could not delete the document.', 'error')
     });
+  }
+
+  onDocumentSelectedFromTree(doc: DocumentItemDto): void {
+    if (!doc.userCanView) {
+      this.toast.show('You do not have permission to view this document.', 'error');
+      return;
+    }
+
+    this.docsApi.previewDocument(doc.documentId).subscribe({
+      next: (blob: Blob) => {
+        this.openDocumentPreview(blob, doc.fileName);
+      },
+      error: () => {
+        this.toast.show('Failed to load document preview.', 'error');
+      }
+    });
+  }
+
+  private openDocumentPreview(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  }
+
+  onDocumentDetailsRequested(documentId: number): void {
+    this.selectedDocumentIdForDetails.set(documentId);
+    this.showDocumentDetailsModal.set(true);
+  }
+
+  closeDocumentDetailsModal(): void {
+    this.showDocumentDetailsModal.set(false);
+    this.selectedDocumentIdForDetails.set(null);
   }
 }

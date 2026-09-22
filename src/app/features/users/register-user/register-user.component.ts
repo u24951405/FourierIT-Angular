@@ -381,27 +381,39 @@ export class RegisterUserComponent implements OnInit {
   }
 
   onSubmit(): void {
+    console.log('onSubmit called');
     if (!this.isLastStep) {
+      console.log('Not on last step, going to next step');
       this.nextStep();
       return;
     }
 
+    console.log('Is on last step, checking review confirmation');
     if (!this.reviewConfirmed()) {
+      console.log('Review not confirmed');
       this.toast.show('Please confirm that the information provided is accurate before registering the user.', 'error');
       return;
     }
 
+    console.log('Review confirmed, checking form validity');
     if (this.form.invalid) {
+      console.log('Form is invalid', this.form.errors);
       this.form.markAllAsTouched();
       this.cdr.markForCheck();
       return;
     }
-    if (!this.isRoleDropdownMode && this.entityVerificationStatus() !== 'valid') {
-      this.entityVerificationStatus.set('invalid');
-      this.entityVerificationMessage.set('Please verify the selected identification number before registering this user.');
-      this.cdr.markForCheck();
-      this.toast.show('Please verify the entity identification number before registering.', 'error');
-      return;
+    console.log('Form is valid, proceeding...');
+    // Skip entity verification check if only registering through role dropdown mode
+    try {
+      if (!this.isRoleDropdownMode && this.entityVerificationStatus() !== 'valid') {
+        this.entityVerificationStatus.set('invalid');
+        this.entityVerificationMessage.set('Please verify the selected identification number before registering this user.');
+        this.cdr.markForCheck();
+        this.toast.show('Please verify the entity identification number before registering.', 'error');
+        return;
+      }
+    } catch (e) {
+      console.error('Entity verification check failed:', e);
     }
     if (this.form.value.password !== this.form.value.confirmPassword) {
       this.toast.show('Passwords do not match.', 'error'); return;
@@ -450,6 +462,7 @@ export class RegisterUserComponent implements OnInit {
       } : {})
     };
 
+    console.log('Making registration API call with payload:', payload);
     this.isSubmitting.set(true);
     this.auth.register(payload)
       .pipe(finalize(() => this.isSubmitting.set(false)))

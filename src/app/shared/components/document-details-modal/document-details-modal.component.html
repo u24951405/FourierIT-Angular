@@ -1,0 +1,82 @@
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Document Details</h2>
+      <button class="close-btn" (click)="closeModal()">×</button>
+    </div>
+
+    @if (isLoading) {
+      <div class="modal-loading">
+        <span class="spinner"></span> Loading...
+      </div>
+    } @else if (error) {
+      <div class="modal-error">{{ error }}</div>
+    } @else if (details) {
+      <div class="modal-body">
+        <!-- Document Info Section -->
+        <div class="info-section">
+          <h3>Document Information</h3>
+          <div class="info-row">
+            <label>File Name</label>
+            <span class="value">{{ details.fileName }}</span>
+          </div>
+          <div class="info-row">
+            <label>Document Type</label>
+            <span class="value">{{ details.documentType }}</span>
+          </div>
+          <div class="info-row">
+            <label>File Size</label>
+            <span class="value">{{ getFormattedFileSize(details.fileSize) }}</span>
+          </div>
+          <div class="info-row">
+            <label>Status</label>
+            <span class="value badge" [class]="'badge-' + details.status.toLowerCase()">
+              {{ details.status }}
+            </span>
+          </div>
+          <div class="info-row">
+            <label>Certified</label>
+            <span class="value">{{ details.isCertified ? 'Yes' : 'No' }}</span>
+          </div>
+        </div>
+
+        <!-- Upload Info Section -->
+        <div class="info-section">
+          <h3>Upload Information</h3>
+          <div class="info-row">
+            <label>Uploaded By</label>
+            <span class="value">{{ details.uploadedBy }}</span>
+          </div>
+          <div class="info-row">
+            <label>Upload Date</label>
+            <span class="value">{{ details.uploadedDate | date: 'medium' }}</span>
+          </div>
+        </div>
+
+        <!-- Request Info Section -->
+        <div class="info-section">
+          <h3>Request Information</h3>
+          @if (details.requestedCount === 0) {
+            <div class="no-requests">
+              <p>No requests for this document</p>
+            </div>
+          } @else {
+            <div class="requests-list">
+              <p class="requests-count">Requested {{ details.requestedCount }} time(s)</p>
+              @for (request of details.requestedBy; track $index) {
+                <div class="request-item">
+                  <span class="requester-name">{{ request.userName }}</span>
+                  <span class="request-date">{{ request.requestedDate | date: 'short' }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">Close</button>
+      </div>
+    }
+  </div>
+</div>
