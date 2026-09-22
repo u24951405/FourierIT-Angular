@@ -96,7 +96,7 @@ export class SidebarComponent implements OnInit {
     ]},
     { label: 'Dashboard',    icon: 'grid',    route: '/dashboard' },
     { label: 'Reports', icon: 'file', route: '/reports', requiresSuperAdmin: true, children: [
-      { label: 'View Document Activity Report', route: '/reports/activity', requiresSuperAdmin: true }
+      { label: 'Activity Report', route: '/reports/activity', requiresSuperAdmin: true }
     ] },
     { label: 'Departments', icon: 'building', children: [
         { label: 'All Departments', route: '/departments/all' },

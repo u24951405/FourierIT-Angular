@@ -108,7 +108,7 @@ export class SuperAdminReportsComponent {
     {
       id: 'requests',
       icon: '📥',
-      title: 'View Enquiry Audit Report',
+      title: 'System Audit Report',
       description: 'Review institution requests, request control breaks, and institution access history.',
       children: [
         { id: 'requests', label: 'Institution Document Request Report' },
@@ -137,7 +137,7 @@ export class SuperAdminReportsComponent {
     {
       id: 'expiring',
       icon: '⏳',
-      title: 'View Operational Report',
+      title: 'Operational Report',
       description: 'Shows near-expiry documents by owner and department with the remaining days to expiry.',
     },
     {

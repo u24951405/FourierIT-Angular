@@ -85,16 +85,12 @@
           <span class="rf-doc-header__meta-val">{{ formattedDate }}</span>
         </div>
         <div class="rf-doc-header__meta-item">
-          <span class="rf-doc-header__meta-key">CREATED BY</span>
-          <span class="rf-doc-header__meta-val">{{ config.createdBy }}</span>
+          <span class="rf-doc-header__meta-key">PERIOD</span>
+          <span class="rf-doc-header__meta-val">{{ config.period || 'N/A' }}</span>
         </div>
         <div class="rf-doc-header__meta-item">
           <span class="rf-doc-header__meta-key">REPORT TYPE</span>
           <span class="rf-doc-header__meta-val">{{ config.reportType }}</span>
-        </div>
-        <div class="rf-doc-header__meta-item" *ngIf="config.framework">
-          <span class="rf-doc-header__meta-key">FRAMEWORK</span>
-          <span class="rf-doc-header__meta-val">{{ config.framework }}</span>
         </div>
       </div>
 

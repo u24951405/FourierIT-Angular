@@ -195,6 +195,59 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   activePercent(): number {
-    return Math.round((this.data.activeDocuments / this.data.totalDocuments) * 100);
+    return this.data.totalDocuments ? Math.round((this.data.activeDocuments / this.data.totalDocuments) * 100) : 0;
+  }
+
+  getInventoryGroups(): Array<{ category: string; rows: DocumentInventoryItem[]; totalCount: number; verifiedCount: number; expiringCount: number }> {
+    const groups = new Map<string, DocumentInventoryItem[]>();
+
+    for (const item of this.data.inventory ?? []) {
+      const key = item.category;
+      const rows = groups.get(key) ?? [];
+      rows.push(item);
+      groups.set(key, rows);
+    }
+
+    return [...groups.entries()].map(([category, rows]) => ({
+      category,
+      rows,
+      totalCount: rows.length,
+      verifiedCount: rows.filter(item => item.verificationStatus === 'Verified').length,
+      expiringCount: rows.filter(item => item.verificationStatus === 'Expiring Soon').length,
+    }));
+  }
+
+  getAccessLogGroups(): Array<{ organisation: string; rows: VaultAccessLogEntry[]; count: number }> {
+    const groups = new Map<string, VaultAccessLogEntry[]>();
+
+    for (const item of this.data.vaultAccessLog ?? []) {
+      const key = item.organisation;
+      const rows = groups.get(key) ?? [];
+      rows.push(item);
+      groups.set(key, rows);
+    }
+
+    return [...groups.entries()].map(([organisation, rows]) => ({
+      organisation,
+      rows,
+      count: rows.length,
+    }));
+  }
+
+  getClientGroups(): Array<{ organisation: string; rows: ClientRelationship[]; totalShared: number }> {
+    const groups = new Map<string, ClientRelationship[]>();
+
+    for (const item of this.data.clientRelationships ?? []) {
+      const key = item.organisation;
+      const rows = groups.get(key) ?? [];
+      rows.push(item);
+      groups.set(key, rows);
+    }
+
+    return [...groups.entries()].map(([organisation, rows]) => ({
+      organisation,
+      rows,
+      totalShared: rows.reduce((sum, item) => sum + item.documentsShared, 0),
+    }));
   }
 }
