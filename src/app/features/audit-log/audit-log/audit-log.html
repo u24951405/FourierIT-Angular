@@ -20,10 +20,10 @@
       </div>
 
       <div class="filter-card">
-        <label>User ID</label>
+        <label>User</label>
         <select [(ngModel)]="selectedUserId" (change)="onFilterChange()" class="form-select">
           <option value="ALL">All Users</option>
-          <option *ngFor="let user of userOptions" [value]="user">{{ user }}</option>
+          <option *ngFor="let user of userOptions" [value]="user.id">{{ user.name }}</option>
         </select>
       </div>
 
@@ -69,7 +69,7 @@
             </th>
             <th>Audit ID</th>
             <th class="sortable" (click)="setSort('userId')">
-              User ID <span class="sort-indicator">{{ sortField === 'userId' ? (sortDirection === 'asc' ? '▲' : '▼') : '' }}</span>
+              User <span class="sort-indicator">{{ sortField === 'userId' ? (sortDirection === 'asc' ? '▲' : '▼') : '' }}</span>
             </th>
             <th class="sortable" (click)="setSort('actionCode')">
               Action <span class="sort-indicator">{{ sortField === 'actionCode' ? (sortDirection === 'asc' ? '▲' : '▼') : '' }}</span>
@@ -90,7 +90,7 @@
           <tr *ngFor="let item of paginatedLogs">
             <td class="timestamp">{{ item.timeStamp | date:'yyyy/MM/dd, HH:mm:ss' }}</td>
             <td>{{ item.auditLogId }}</td>
-            <td>{{ item.userName || item.userEmail || item.userId || (item.institutionName ? item.institutionName + ' (institution)' : 'System') }}</td>
+            <td>{{ getUserDisplayName(item) }}</td>
             <td>
               <span class="badge action-badge">{{ item.actionCode }}</span>
             </td>

@@ -3,6 +3,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService } from '../../../core/services/audit-log';
 import { AuditLog } from '../../../core/models/audit-log';
+import { ManagedUserDto, UserManagementService } from '../../../core/services/user-management.service';
 
 @Component({
   selector: 'app-audit-log',
@@ -13,6 +14,8 @@ import { AuditLog } from '../../../core/models/audit-log';
 })
 export class AuditLogComponent implements OnInit {
   private auditLogService = inject(AuditLogService);
+  private userManagementService = inject(UserManagementService);
+  private userNames = new Map<string, string>();
 
   auditLogs: AuditLog[] = [];
   filteredLogs: AuditLog[] = [];
@@ -27,7 +30,7 @@ export class AuditLogComponent implements OnInit {
   sortDirection: 'asc' | 'desc' = 'desc';
 
   // Dropdown Option Lists
-  userOptions: string[] = [];
+  userOptions: Array<{ id: string; name: string }> = [];
   actionCodeOptions: string[] = [];
 
   // Pagination States
@@ -37,7 +40,35 @@ export class AuditLogComponent implements OnInit {
   private nextPageCache: AuditLog[] | null = null;
 
   ngOnInit(): void {
+    this.loadUserNames();
     this.loadAuditLogs();
+  }
+
+  private loadUserNames(): void {
+    this.userManagementService.getAllUsers().subscribe({
+      next: (users) => {
+        this.userNames = new Map(users.map(user => [user.id, this.getManagedUserName(user)]));
+        this.populateFilterDropdowns();
+        this.filteredLogs = [...this.auditLogs];
+      },
+      error: () => {
+        this.userNames.clear();
+      }
+    });
+  }
+
+  private getManagedUserName(user: ManagedUserDto): string {
+    const firstName = user.profile?.firstName?.trim() || '';
+    const lastName = user.profile?.lastName?.trim() || '';
+    return `${firstName} ${lastName}`.trim() || user.userName;
+  }
+
+  getUserDisplayName(log: AuditLog): string {
+    return log.userName
+      || (log.userId ? this.userNames.get(log.userId) : undefined)
+      || log.userEmail
+      || log.userId
+      || (log.institutionName ? `${log.institutionName} (institution)` : 'System');
   }
 
   loadAuditLogs(): void {
@@ -100,7 +131,9 @@ export class AuditLogComponent implements OnInit {
       if (log.actionCode) actions.add(log.actionCode);
     });
 
-    this.userOptions = Array.from(users).sort((a, b) => (a || '').localeCompare(b || ''));
+    this.userOptions = Array.from(users)
+      .map(id => ({ id, name: this.userNames.get(id) || id }))
+      .sort((a, b) => a.name.localeCompare(b.name));
     this.actionCodeOptions = Array.from(actions).sort((a, b) => (a || '').localeCompare(b || ''));
   }
 
@@ -204,11 +237,11 @@ export class AuditLogComponent implements OnInit {
   exportToCsv(): void {
     if (!this.filteredLogs.length) return;
 
-    const headers = ['TimeStamp', 'AuditID', 'UserID', 'ActionCode', 'Details', 'TableAffected', 'RecordID'];
+    const headers = ['TimeStamp', 'AuditID', 'UserName', 'ActionCode', 'Details', 'TableAffected', 'RecordID'];
     const rows = this.filteredLogs.map(log => [
       `"${log.timeStamp}"`,
       log.auditLogId,
-      `"${log.userId || (log.institutionName ? log.institutionName + ' (institution)' : '')}"`,
+      `"${this.getUserDisplayName(log)}"`,
       `"${log.actionCode || ''}"`,
       `"${(log.description || '').replace(/"/g, '""')}"`,
       `"${log.tableAffected || ''}"`,
