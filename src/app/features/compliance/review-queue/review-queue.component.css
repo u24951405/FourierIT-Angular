@@ -21,6 +21,12 @@
   font-size: 1rem;
 }
 
+.review-queue-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
+}
+
 .review-queue-state {
   padding: 2rem;
   border-radius: 0.75rem;
@@ -125,6 +131,39 @@
   gap: 0.35rem;
 }
 
+.review-card__detail--actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.review-card__status {
+  display: inline-block;
+  width: fit-content;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.review-card__status--pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.review-card__status--needs-review {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.review-card__status--compliant {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .review-card__label {
   color: #999999;
   font-size: 0.75rem;
@@ -200,6 +239,14 @@
 
 .btn-view:hover {
   background: #1d4ed8;
+}
+
+.btn-pep {
+  background: #0f766e;
+}
+
+.btn-pep:hover {
+  background: #115e59;
 }
 
 .btn-approve {

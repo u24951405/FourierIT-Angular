@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 export interface ReportFrameConfig {
   reportId: string;
   dateGenerated: string;
+  period?: string;
   createdBy: string;
   reportType: string;
   framework?: string;

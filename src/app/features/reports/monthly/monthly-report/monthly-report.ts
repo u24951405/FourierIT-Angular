@@ -56,12 +56,12 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
   };
 
   frameConfig: ReportFrameConfig = {
-    reportId: 'DV-OPR-4163721330',
+    reportId: 'DV-OPR-0044472555',
     dateGenerated: new Date().toISOString(),
     createdBy: this.generatedBy(),
-    reportType: 'Monthly Automated',
+    reportType: 'Operational Report',
     framework: 'FICA · POPIA · DocuVault v35',
-    badgeLabel: 'MONTHLY',
+    badgeLabel: 'OPERATIONAL',
     badgeIcon: 'bar',
     accentColors: ['#10b981', '#3b82f6'],
   };
@@ -168,17 +168,34 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
           data: [p.verified, p.pendingVerification, p.flaggedAnomalies, p.partOfEnquiry],
           backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
           borderRadius: 3,
-          barThickness: 20,
+          borderSkipped: false,
+          barThickness: 22,
         }],
       },
       options: {
         indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
+        animation: { duration: 800 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.label}: ${context.parsed.x}`,
+            },
+          },
+        },
         scales: {
-          x: { grid: { color: '#f3f4f6' }, ticks: { font: { size: 11 } } },
-          y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          x: {
+            grid: { color: '#e5e7eb' },
+            ticks: { font: { size: 11 }, color: '#6b7280' },
+            title: { display: true, text: 'Documents', color: '#9ca3af', font: { size: 10, weight: 600 } },
+            suggestedMax: Math.max(...[p.verified, p.pendingVerification, p.flaggedAnomalies, p.partOfEnquiry].map(value => Number(value || 0)), 1) * 1.25,
+          },
+          y: {
+            grid: { display: false },
+            ticks: { font: { size: 11 }, color: '#374151' },
+          },
         },
       },
     });

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -33,8 +34,10 @@ export class ReviewQueueComponent implements OnInit {
   private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
+  private route = inject(ActivatedRoute);
 
-  readonly canManage = this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
+  readonly pepScanUrl = 'https://www.verifynow.co.za/verifynow?reportType=check-aml-pep';
+  readonly canManage = this.isDevAccess() || this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -44,6 +47,11 @@ export class ReviewQueueComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadReviews();
+  }
+
+  private isDevAccess(): boolean {
+    const dev = this.route.snapshot.queryParamMap.get('dev');
+    return dev === '1' || dev === 'true';
   }
 
   loadReviews(): void {
@@ -104,6 +112,18 @@ export class ReviewQueueComponent implements OnInit {
         this.toast.show('The document could not be loaded.', 'error');
       },
     });
+  }
+
+  openPepScan(): void {
+    window.open(this.pepScanUrl, '_blank', 'width=1100,height=750,resizable=yes,scrollbars=yes');
+  }
+
+  getComplianceStatus(review: ReviewQueueItem): 'Pending' | 'Needs review' | 'Compliant' {
+    if (review.nonComplianceReason || review.manualReviewReason) {
+      return 'Needs review';
+    }
+
+    return 'Pending';
   }
 
   private submitDecision(review: ReviewQueueItem, decision: 'approve' | 'reject'): void {

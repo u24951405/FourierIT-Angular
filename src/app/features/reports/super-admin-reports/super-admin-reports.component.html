@@ -22,7 +22,7 @@
         <button type="button" class="report-card" (click)="openActivityReport()">
           <span class="report-card__icon">📈</span>
           <span class="report-card__content">
-            <strong>View Document Activity Report</strong>
+            <strong>Activity Report</strong>
             <small>Review document inventory, vault access activity, and client relationships.</small>
           </span>
         </button>
@@ -590,7 +590,7 @@
 
     <section class="report-panel" *ngIf="activeTab === 'expiring'">
       <div class="panel-header">
-        <h2>View Operational Report</h2>
+        <h2>Operational Report</h2>
         <button type="button" class="btn btn-primary" (click)="exportExpiringDocumentsPdf()">Download PDF</button>
       </div>
 

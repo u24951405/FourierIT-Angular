@@ -102,27 +102,37 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let doc of data.inventory">
-          <td class="act-table__doc-name">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-            </svg>
-            {{ doc.documentName }}
-          </td>
-          <td>
-            <span class="act-category-tag" [style.background]="doc.categoryColor">
-              {{ doc.category }}
-            </span>
-          </td>
-          <td class="act-table__date">{{ doc.uploadDate }}</td>
-          <td class="act-table__date">{{ doc.expiryDate ?? '—' }}</td>
-          <td>
-            <span class="inv-status" [ngClass]="statusClass(doc.verificationStatus)">
-              {{ doc.verificationStatus }}
-            </span>
-          </td>
-        </tr>
+        <ng-container *ngFor="let group of getInventoryGroups()">
+          <tr *ngFor="let doc of group.rows; let isLast = last">
+            <td class="act-table__doc-name">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              {{ doc.documentName }}
+            </td>
+            <td>
+              <span class="act-category-tag" [style.background]="doc.categoryColor">
+                {{ doc.category }}
+              </span>
+            </td>
+            <td class="act-table__date">{{ doc.uploadDate }}</td>
+            <td class="act-table__date">{{ doc.expiryDate ?? '—' }}</td>
+            <td>
+              <span class="inv-status" [ngClass]="statusClass(doc.verificationStatus)">
+                {{ doc.verificationStatus }}
+              </span>
+            </td>
+          </tr>
+          <tr class="act-subtotal-row">
+            <td colspan="5" class="act-subtotal-cell">
+              <span class="act-subtotal-label">Subtotal — {{ group.category }}</span>
+              <span class="act-subtotal-value">{{ group.totalCount }} docs</span>
+              <span class="act-subtotal-badge act-subtotal-badge--verified">{{ group.verifiedCount }} Verified</span>
+              <span *ngIf="group.expiringCount" class="act-subtotal-badge act-subtotal-badge--expiring">{{ group.expiringCount }} Expiring</span>
+            </td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
   </div>
@@ -145,25 +155,33 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let log of data.vaultAccessLog">
-          <td class="act-table__date">{{ log.timestamp }}</td>
-          <td>
-            <div class="act-accessor">
-              <span class="act-accessor__name">{{ log.accessorName }}</span>
-              <span class="act-accessor__role">{{ log.accessorRole }}</span>
-            </div>
-          </td>
-          <td class="act-table__reason">{{ log.actionReason }}</td>
-          <td>
-            <div class="act-org">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
-                <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-              </svg>
-              {{ log.organisation }}
-            </div>
-          </td>
-        </tr>
+        <ng-container *ngFor="let group of getAccessLogGroups()">
+          <tr *ngFor="let log of group.rows">
+            <td class="act-table__date">{{ log.timestamp }}</td>
+            <td>
+              <div class="act-accessor">
+                <span class="act-accessor__name">{{ log.accessorName }}</span>
+                <span class="act-accessor__role">{{ log.accessorRole }}</span>
+              </div>
+            </td>
+            <td class="act-table__reason">{{ log.actionReason }}</td>
+            <td>
+              <div class="act-org">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
+                  <rect x="2" y="7" width="20" height="14" rx="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+                {{ log.organisation }}
+              </div>
+            </td>
+          </tr>
+          <tr class="act-subtotal-row act-subtotal-row--compact">
+            <td colspan="4" class="act-subtotal-cell">
+              <span class="act-subtotal-label">{{ group.count }} event{{ group.count > 1 ? 's' : '' }}</span>
+              <span class="act-subtotal-value">Subtotal — {{ group.organisation }}</span>
+            </td>
+          </tr>
+        </ng-container>
       </tbody>
     </table>
   </div>
@@ -200,6 +218,13 @@
             <span class="client-status" [ngClass]="clientStatusClass(client.status)">
               {{ client.status }}
             </span>
+          </td>
+        </tr>
+        <tr class="act-grand-total-row">
+          <td colspan="3" class="act-grand-total-cell">
+            <span class="act-grand-total-label">GRAND TOTAL</span>
+            <span class="act-grand-total-value">{{ data.clientRelationships.length }} organisations</span>
+            <span class="act-grand-total-badge act-grand-total-badge--active">{{ data.clientRelationships.filter(c => c.status === 'Active').length }} Active</span>
           </td>
         </tr>
       </tbody>
