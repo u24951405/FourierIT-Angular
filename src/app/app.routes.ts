@@ -195,6 +195,10 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/system/system-settings/system-settings.component')
           .then(m => m.SystemSettingsComponent) },
+      { path: 'system-settings/document-types',
+        canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        loadComponent: () => import('./features/system/document-type-validity/document-type-validity.component')
+          .then(m => m.DocumentTypeValidityComponent) },
       { path: 'help',
         canActivate: [authGuard],
         loadComponent: () => import('./features/help/help.component')
