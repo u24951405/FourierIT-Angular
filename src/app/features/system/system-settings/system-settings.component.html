@@ -9,6 +9,10 @@
   <div *ngIf="error" class="status status--error">{{ error }}</div>
   <div *ngIf="message" class="status status--success">{{ message }}</div>
 
+  <div class="settings-toolbar">
+    <a class="btn btn-primary" routerLink="/system-settings/document-types">Manage document type validity</a>
+  </div>
+
   <section class="settings-list" *ngIf="!loading">
     <article class="setting-row card" *ngFor="let setting of settings">
       <div>
