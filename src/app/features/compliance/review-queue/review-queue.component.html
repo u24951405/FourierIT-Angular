@@ -8,6 +8,14 @@
     <button class="btn btn-pep" type="button" (click)="openPepScan()">Run PEP Scan</button>
   </div>
 
+  <section *ngIf="pepScanOpen()" class="pep-scan-panel" aria-label="PEP scan">
+    <div class="pep-scan-panel__header">
+      <h2>PEP Scan</h2>
+      <button type="button" class="pep-scan-panel__close" (click)="closePepScan()">Close</button>
+    </div>
+    <iframe [src]="safePepScanUrl" title="VerifyNow AML and PEP scan" allow="clipboard-write"></iframe>
+  </section>
+
   <div *ngIf="loading()" class="review-queue-state review-queue-state--loading">
     <p>Loading compliance reviews...</p>
   </div>

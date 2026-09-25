@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -35,8 +36,10 @@ export class ReviewQueueComponent implements OnInit {
   private toast = inject(ToastService);
   private auth = inject(AuthService);
   private route = inject(ActivatedRoute);
+  private sanitizer = inject(DomSanitizer);
 
   readonly pepScanUrl = 'https://www.verifynow.co.za/verifynow?reportType=check-aml-pep';
+  readonly safePepScanUrl: SafeResourceUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pepScanUrl);
   readonly canManage = this.isDevAccess() || this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
 
   readonly loading = signal(false);
@@ -44,6 +47,7 @@ export class ReviewQueueComponent implements OnInit {
   readonly reviews = signal<ReviewQueueItem[]>([]);
   readonly processingCheckId = signal<number | null>(null);
   readonly notes = signal<Record<number, string>>({});
+  readonly pepScanOpen = signal(false);
 
   ngOnInit(): void {
     this.loadReviews();
@@ -115,7 +119,11 @@ export class ReviewQueueComponent implements OnInit {
   }
 
   openPepScan(): void {
-    window.open(this.pepScanUrl, '_blank', 'width=1100,height=750,resizable=yes,scrollbars=yes');
+    this.pepScanOpen.set(true);
+  }
+
+  closePepScan(): void {
+    this.pepScanOpen.set(false);
   }
 
   getComplianceStatus(review: ReviewQueueItem): 'Pending' | 'Needs review' | 'Compliant' {
