@@ -5,11 +5,11 @@
     <p class="subtitle">Review expiry rules per document type and apply bulk recalculation safely.</p>
   </header>
 
-  <div *ngIf="loading" class="status">Loading document types...</div>
-  <div *ngIf="error" class="status status--error">{{ error }}</div>
+  <div *ngIf="loading()" class="status">Loading document types...</div>
+  <div *ngIf="error()" class="status status--error">{{ error() }}</div>
 
-  <section class="table-card" *ngIf="!loading">
-    <div class="table-wrap" *ngIf="documentTypes.length; else emptyState">
+  <section class="table-card" *ngIf="!loading()">
+    <div class="table-wrap" *ngIf="documentTypes().length; else emptyState">
       <table>
         <thead>
           <tr>
@@ -21,7 +21,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let type of documentTypes">
+          <tr *ngFor="let type of documentTypes()">
             <td>{{ type.name }}</td>
             <td>{{ getValidityText(type) }}</td>
             <td>{{ type.neverExpires ? 'N/A' : type.warningDays }}</td>
@@ -39,10 +39,10 @@
     </ng-template>
   </section>
 
-  <div class="modal-backdrop" *ngIf="showEditor">
+  <div class="modal-backdrop" *ngIf="showEditor()">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="document-type-validity-title">
       <header class="modal-header">
-        <h2 id="document-type-validity-title">Edit {{ currentType?.name || 'document type' }}</h2>
+        <h2 id="document-type-validity-title">Edit {{ currentType()?.name || 'document type' }}</h2>
         <button type="button" class="close-button" (click)="closeEditor()" aria-label="Close">×</button>
       </header>
 
@@ -73,19 +73,19 @@
           <input id="warningDays" type="number" min="0" max="365" [(ngModel)]="form.warningDays" [disabled]="form.neverExpires" />
         </div>
 
-        <div *ngIf="formError" class="status status--error inline-status">{{ formError }}</div>
+        <div *ngIf="formError()" class="status status--error inline-status">{{ formError() }}</div>
       </div>
 
       <footer class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="closeEditor()">Cancel</button>
-        <button type="button" class="btn btn-primary" [disabled]="isSaving" (click)="handleSave()">
-          {{ isSaving ? 'Checking...' : 'Save' }}
+        <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="handleSave()">
+          {{ isSaving() ? 'Checking...' : 'Save' }}
         </button>
       </footer>
     </div>
   </div>
 
-  <div class="modal-backdrop" *ngIf="showPreviewConfirm">
+  <div class="modal-backdrop" *ngIf="showPreviewConfirm()">
     <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="preview-confirm-title">
       <header class="modal-header">
         <h2 id="preview-confirm-title">Confirm validity changes</h2>
@@ -94,23 +94,23 @@
 
       <div class="modal-body confirm-body">
         <p>
-          This will re-evaluate {{ previewSummary?.affectedDocuments ?? 0 }} documents.
-          <span *ngIf="(previewSummary?.becomeExpired ?? 0) > 0" class="warning-text">
-            {{ previewSummary?.becomeExpired }} will become expired.
+          This will re-evaluate {{ previewSummary()?.affectedDocuments ?? 0 }} documents.
+          <span *ngIf="(previewSummary()?.becomeExpired ?? 0) > 0" class="warning-text">
+            {{ previewSummary()?.becomeExpired }} will become expired.
           </span>
-          <span *ngIf="(previewSummary?.noLongerExpired ?? 0) > 0">
-            {{ previewSummary?.noLongerExpired }} will no longer be expired.
+          <span *ngIf="(previewSummary()?.noLongerExpired ?? 0) > 0">
+            {{ previewSummary()?.noLongerExpired }} will no longer be expired.
           </span>
-          <span *ngIf="(previewSummary?.missingSourceDate ?? 0) > 0">
-            {{ previewSummary?.missingSourceDate }} have no source date and will not expire.
+          <span *ngIf="(previewSummary()?.missingSourceDate ?? 0) > 0">
+            {{ previewSummary()?.missingSourceDate }} have no source date and will not expire.
           </span>
         </p>
       </div>
 
       <footer class="modal-footer">
         <button type="button" class="btn btn-secondary" (click)="cancelPreview()">Cancel</button>
-        <button type="button" class="btn btn-primary" [disabled]="isSaving" (click)="confirmSave()">
-          {{ isSaving ? 'Saving...' : 'Confirm save' }}
+        <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="confirmSave()">
+          {{ isSaving() ? 'Saving...' : 'Confirm save' }}
         </button>
       </footer>
     </div>

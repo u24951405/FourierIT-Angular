@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
@@ -23,16 +23,16 @@ export class DocumentTypeValidityComponent implements OnInit {
   private readonly validityService = inject(DocumentTypeValidityService);
   private readonly toast = inject(ToastService);
 
-  documentTypes: DocumentTypeSummaryDto[] = [];
-  loading = false;
-  error = '';
-  showEditor = false;
-  showPreviewConfirm = false;
-  isSaving = false;
-  currentType: DocumentTypeSummaryDto | null = null;
-  previewSummary: DocumentTypeValiditySummaryDto | null = null;
-  pendingPayload: DocumentTypeValidityUpdateRequest | null = null;
-  formError = '';
+  documentTypes = signal<DocumentTypeSummaryDto[]>([]);
+  loading = signal(true);
+  error = signal('');
+  showEditor = signal(false);
+  showPreviewConfirm = signal(false);
+  isSaving = signal(false);
+  currentType = signal<DocumentTypeSummaryDto | null>(null);
+  previewSummary = signal<DocumentTypeValiditySummaryDto | null>(null);
+  pendingPayload = signal<DocumentTypeValidityUpdateRequest | null>(null);
+  formError = signal('');
 
   form: DocumentTypeValidityFormState = {
     neverExpires: false,
@@ -59,39 +59,39 @@ export class DocumentTypeValidityComponent implements OnInit {
   }
 
   loadDocumentTypes(): void {
-    this.loading = true;
-    this.error = '';
+    this.loading.set(true);
+    this.error.set('');
 
     this.validityService.getAll()
-      .pipe(finalize(() => this.loading = false))
+      .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (types) => this.documentTypes = types ?? [],
-        error: () => this.error = 'Unable to load document types.'
+        next: (types) => this.documentTypes.set(types ?? []),
+        error: () => this.error.set('Unable to load document types.')
       });
   }
 
   openEdit(type: DocumentTypeSummaryDto): void {
-    this.currentType = type;
+    this.currentType.set(type);
     this.form = {
       neverExpires: type.neverExpires,
       validityMonths: type.validityMonths > 0 ? type.validityMonths : 3,
       validityBasis: type.validityBasis ?? DocumentTypeValidityBasis.CertificationDate,
       warningDays: type.warningDays ?? 0
     };
-    this.formError = '';
-    this.previewSummary = null;
-    this.pendingPayload = null;
-    this.showPreviewConfirm = false;
-    this.showEditor = true;
+    this.formError.set('');
+    this.previewSummary.set(null);
+    this.pendingPayload.set(null);
+    this.showPreviewConfirm.set(false);
+    this.showEditor.set(true);
   }
 
   closeEditor(): void {
-    this.showEditor = false;
-    this.showPreviewConfirm = false;
-    this.currentType = null;
-    this.previewSummary = null;
-    this.pendingPayload = null;
-    this.formError = '';
+    this.showEditor.set(false);
+    this.showPreviewConfirm.set(false);
+    this.currentType.set(null);
+    this.previewSummary.set(null);
+    this.pendingPayload.set(null);
+    this.formError.set('');
   }
 
   getValidityText(type: DocumentTypeSummaryDto): string {
@@ -134,11 +134,12 @@ export class DocumentTypeValidityComponent implements OnInit {
   handleSave(): void {
     const validationMessage = this.validateForm();
     if (validationMessage) {
-      this.formError = validationMessage;
+      this.formError.set(validationMessage);
       return;
     }
 
-    if (!this.currentType) {
+    const currentType = this.currentType();
+    if (!currentType) {
       return;
     }
 
@@ -149,38 +150,40 @@ export class DocumentTypeValidityComponent implements OnInit {
       warningDays: this.form.warningDays
     };
 
-    this.isSaving = true;
-    this.formError = '';
-    this.validityService.previewValidity(this.currentType.id, payload)
-      .pipe(finalize(() => this.isSaving = false))
+    this.isSaving.set(true);
+    this.formError.set('');
+    this.validityService.previewValidity(currentType.id, payload)
+      .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (summary) => {
-          this.previewSummary = summary;
-          this.pendingPayload = payload;
-          this.showPreviewConfirm = true;
+          this.previewSummary.set(summary);
+          this.pendingPayload.set(payload);
+          this.showPreviewConfirm.set(true);
         },
         error: (error) => {
-          this.formError = error?.error?.message || 'Unable to preview the validity update.';
+          this.formError.set(error?.error?.message || 'Unable to preview the validity update.');
         }
       });
   }
 
   cancelPreview(): void {
-    this.showPreviewConfirm = false;
-    this.previewSummary = null;
-    this.pendingPayload = null;
+    this.showPreviewConfirm.set(false);
+    this.previewSummary.set(null);
+    this.pendingPayload.set(null);
   }
 
   confirmSave(): void {
-    if (!this.currentType || !this.pendingPayload) {
+    const currentType = this.currentType();
+    const pendingPayload = this.pendingPayload();
+    if (!currentType || !pendingPayload) {
       return;
     }
 
-    this.isSaving = true;
-    this.formError = '';
+    this.isSaving.set(true);
+    this.formError.set('');
 
-    this.validityService.updateValidity(this.currentType.id, this.pendingPayload)
-      .pipe(finalize(() => this.isSaving = false))
+    this.validityService.updateValidity(currentType.id, pendingPayload)
+      .pipe(finalize(() => this.isSaving.set(false)))
       .subscribe({
         next: (summary) => {
           const summaryText = this.buildResultSummary(summary);
@@ -190,8 +193,8 @@ export class DocumentTypeValidityComponent implements OnInit {
         },
         error: (error) => {
           const message = error?.error?.message || 'Unable to save the validity update.';
-          this.formError = message;
-          this.showPreviewConfirm = false;
+          this.formError.set(message);
+          this.showPreviewConfirm.set(false);
         }
       });
   }
