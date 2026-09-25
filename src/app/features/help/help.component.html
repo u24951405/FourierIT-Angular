@@ -54,6 +54,10 @@
     @if (matchesTopic('audit-log')) { <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a> }
     @if (matchesTopic('user-role-management')) { <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a> }
     @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">Timer Settings</a> }
+    @if (matchesTopic('institutions')) { <a [routerLink]="['/help']" [fragment]="'institutions'">Institutions</a> }
+    @if (matchesTopic('department-requests')) { <a [routerLink]="['/help']" [fragment]="'department-requests'">Department Requests</a> }
+    @if (matchesTopic('backup-restore')) { <a [routerLink]="['/help']" [fragment]="'backup-restore'">Backup &amp; Restore</a> }
+    @if (matchesTopic('document-validity')) { <a [routerLink]="['/help']" [fragment]="'document-validity'">Document Type Validity</a> }
   </nav>
 
   <main class="help-page__content">
@@ -167,6 +171,59 @@
       <ul>
         <li>Use the page to review and update system-defined timer values.</li>
         <li>Changes are relevant to OTP windows and authenticated session lifetimes.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="institutions" class="help-section" [hidden]="!matchesTopic('institutions')">
+      <h2>Institutions</h2>
+      <p>
+        The <strong>Institutions</strong> page is under <strong>/administration/institutions</strong> and stores the institution records used across the system. Each record includes the institution name, verified domain, registration number, and institution type.
+      </p>
+      <ul>
+        <li>Use <strong>Add Institution</strong> to create a new record, and use the edit action to update an existing one.</li>
+        <li>Institution records can be searched by name, domain, registration number, or type.</li>
+        <li><strong>Send Access Link</strong> creates a secure link for an institution user and is tied to the institution portal flow for access validation.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="department-requests" class="help-section" [hidden]="!matchesTopic('department-requests')">
+      <h2>Department Requests</h2>
+      <p>
+        The <strong>Department Requests</strong> area is under <strong>/administration/department-requests</strong> and lists pending department document requests that still need action. This page is used to review requests before they are routed, approved, or denied.
+      </p>
+      <ul>
+        <li>Review each request and enter the target user ID before using <strong>Route</strong> to send it to an owner.</li>
+        <li><strong>Approve</strong> accepts the request and removes it from the pending list.</li>
+        <li><strong>Deny</strong> rejects the request and leaves a note describing the outcome.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="backup-restore" class="help-section" [hidden]="!matchesTopic('backup-restore')">
+      <h2>Backup and Restore</h2>
+      <p>
+        The <strong>Backup &amp; Restore</strong> page is at <strong>/backup-restore</strong> and manages system snapshot records. It shows backup history, lets administrators create new backups, and provides restore controls for a selected snapshot.
+      </p>
+      <ul>
+        <li><strong>Create Backup Now</strong> starts a system snapshot and records the backup under the current user.</li>
+        <li>Each backup record includes the date, time, backup ID, user, and file name, and can be restored from the history list.</li>
+        <li><strong>Restore</strong> opens a confirmation step and then applies the selected backup to the current system state.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="document-validity" class="help-section" [hidden]="!matchesTopic('document-validity')">
+      <h2>Document Type Validity</h2>
+      <p>
+        The <strong>Document Type Validity</strong> page is under <strong>/system-settings/document-types</strong>. It controls the expiry rules for each document type, including the validity period, the basis used to calculate expiry, warning days, and whether a type never expires.
+      </p>
+      <ul>
+        <li>Each document type can be set to a validity period in months, or marked as <strong>Never expires</strong>.</li>
+        <li>The validity basis can be <strong>Certification date</strong> or <strong>Upload date</strong>, and the rule is applied when the type is saved.</li>
+        <li><strong>Warning days</strong> can be entered as a countdown before expiry, with validation preventing values that exceed the configured validity window.</li>
+        <li>Saving a change triggers a preview and re-evaluates existing documents to determine which ones changed status.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>

@@ -5,8 +5,41 @@
 }
 
 .app-shell__content {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   overflow-y: auto;
   background: var(--bg);
-  padding: 32px 36px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 18px 32px 0;
+}
+
+.app-header__spacer {
+  flex: 1;
+}
+
+.app-header__help {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eaf3ff;
+  color: var(--navy, #1a2e45);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.app-header__help:hover {
+  background: #dbeafe;
+  border-color: #bfdbfe;
 }

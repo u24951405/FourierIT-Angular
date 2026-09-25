@@ -514,3 +514,42 @@ select {
   }
 }
 
+/* Document Hierarchy Tree Sidebar */
+.documents-page__with-sidebar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.documents-page__with-sidebar.sidebar-visible {
+  grid-template-columns: 300px 1fr;
+}
+
+.documents-sidebar {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: fit-content;
+  position: sticky;
+  top: 1rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.documents-main {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+  .documents-page__with-sidebar.sidebar-visible {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-sidebar {
+    position: static;
+    margin-bottom: 1rem;
+  }
+}
+

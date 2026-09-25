@@ -16,11 +16,13 @@ import { PendingDocumentAccessRequest } from '../../../core/models/institution.m
 import { ToastService } from '../../../core/services/toast.service';
 import { buildExpiryCalendarEvents, CalendarEvent } from './calendar-events';
 import { ComplianceService } from '../../../core/services/compliance.service';
+import { DocumentHierarchyTreeComponent } from '../../../shared/components/document-hierarchy-tree/document-hierarchy-tree.component';
+import { DocumentItemDto } from '../../../core/services/document-hierarchy.service';
 
 @Component({
   selector: 'app-my-documents',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, DocumentHierarchyTreeComponent],
   templateUrl: './my-documents.component.html',
   styleUrls: ['./my-documents.component.scss', '../../../features/dashboard/dashboard/dashboard.component.scss'],
 })
@@ -553,6 +555,20 @@ export class MyDocumentsComponent {
           this.pendingRequestsError.set(message);
         }
       });
+  }
+
+  isSuperAdmin(): boolean {
+    const isAdmin = this.auth.isSuperAdmin();
+    console.log('Checking isSuperAdmin:', isAdmin, 'Current user:', this.auth.currentUser());
+    return isAdmin;
+  }
+
+  onDocumentSelectedFromTree(doc: DocumentItemDto): void {
+    // Find the full document from the documents list and open preview
+    const fullDoc = this.documents().find(d => d.documentId === doc.documentId);
+    if (fullDoc) {
+      this.openPreview(fullDoc);
+    }
   }
 }
 

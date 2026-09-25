@@ -1,0 +1,118 @@
+<section class="document-types-page">
+  <header class="page-header">
+    <p class="eyebrow">System Administration</p>
+    <h1>Document Type Validity</h1>
+    <p class="subtitle">Review expiry rules per document type and apply bulk recalculation safely.</p>
+  </header>
+
+  <div *ngIf="loading()" class="status">Loading document types...</div>
+  <div *ngIf="error()" class="status status--error">{{ error() }}</div>
+
+  <section class="table-card" *ngIf="!loading()">
+    <div class="table-wrap" *ngIf="documentTypes().length; else emptyState">
+      <table>
+        <thead>
+          <tr>
+            <th>Document type</th>
+            <th>Validity</th>
+            <th>Warning days</th>
+            <th>Documents</th>
+            <th class="actions-column">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let type of documentTypes()">
+            <td>{{ type.name }}</td>
+            <td>{{ getValidityText(type) }}</td>
+            <td>{{ type.neverExpires ? 'N/A' : type.warningDays }}</td>
+            <td>{{ type.documentCount }}</td>
+            <td class="actions-column">
+              <button type="button" class="btn btn-primary btn-small" (click)="openEdit(type)">Edit</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ng-template #emptyState>
+      <div class="empty-state">No document types are available.</div>
+    </ng-template>
+  </section>
+
+  <div class="modal-backdrop" *ngIf="showEditor()">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="document-type-validity-title">
+      <header class="modal-header">
+        <h2 id="document-type-validity-title">Edit {{ currentType()?.name || 'document type' }}</h2>
+        <button type="button" class="close-button" (click)="closeEditor()" aria-label="Close">×</button>
+      </header>
+
+      <div class="modal-body">
+        <div class="field-row toggle-row">
+          <label for="neverExpires">Never expires</label>
+          <input id="neverExpires" type="checkbox" [(ngModel)]="form.neverExpires" />
+        </div>
+
+        <div class="field-row">
+          <label for="validityMonths">Validity months</label>
+          <input id="validityMonths" type="number" min="1" max="120" [(ngModel)]="form.validityMonths" [disabled]="form.neverExpires" />
+        </div>
+
+        <div class="field-row">
+          <label for="validityBasis">Validity basis</label>
+          <select id="validityBasis" [(ngModel)]="form.validityBasis">
+            <option *ngFor="let option of basisOptions" [ngValue]="option.value">{{ option.label }}</option>
+          </select>
+        </div>
+
+        <div class="field-note" *ngFor="let option of basisOptions">
+          <strong>{{ option.label }}:</strong> {{ option.description }}
+        </div>
+
+        <div class="field-row">
+          <label for="warningDays">Warning days</label>
+          <input id="warningDays" type="number" min="0" max="365" [(ngModel)]="form.warningDays" [disabled]="form.neverExpires" />
+        </div>
+
+        <div *ngIf="formError()" class="status status--error inline-status">{{ formError() }}</div>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeEditor()">Cancel</button>
+        <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="handleSave()">
+          {{ isSaving() ? 'Checking...' : 'Save' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="showPreviewConfirm()">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="preview-confirm-title">
+      <header class="modal-header">
+        <h2 id="preview-confirm-title">Confirm validity changes</h2>
+        <button type="button" class="close-button" (click)="cancelPreview()" aria-label="Close">×</button>
+      </header>
+
+      <div class="modal-body confirm-body">
+        <p>
+          This will re-evaluate {{ previewSummary()?.affectedDocuments ?? 0 }} documents.
+          <span *ngIf="(previewSummary()?.becomeExpired ?? 0) > 0" class="warning-text">
+            {{ previewSummary()?.becomeExpired }} will become expired.
+          </span>
+          <span *ngIf="(previewSummary()?.noLongerExpired ?? 0) > 0">
+            {{ previewSummary()?.noLongerExpired }} will no longer be expired.
+          </span>
+          <span *ngIf="(previewSummary()?.missingSourceDate ?? 0) > 0">
+            {{ previewSummary()?.missingSourceDate }} have no source date and will not expire.
+          </span>
+        </p>
+      </div>
+
+      <footer class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cancelPreview()">Cancel</button>
+        <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="confirmSave()">
+          {{ isSaving() ? 'Saving...' : 'Confirm save' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+</section>

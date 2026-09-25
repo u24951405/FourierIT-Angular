@@ -118,6 +118,7 @@ export class SidebarComponent implements OnInit {
     { label: 'Audit Log', icon: 'file', route: '/audit-logs', requiresSuperAdmin: true },
     { label: 'Backup & Restore', icon: 'folder', route: '/backup-restore', requiresSuperAdmin: true },
     { label: 'Timer Settings', icon: 'settings', route: '/system-settings', requiresSuperAdmin: true },
+    { label: 'Document Type Validity', icon: 'check-circle', route: '/system-settings/document-types', requiresSuperAdmin: true },
     { label: 'Help', icon: 'file', route: '/help' }
   ];
 

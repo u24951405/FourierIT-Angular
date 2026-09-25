@@ -1,0 +1,197 @@
+<div class="document-hierarchy-container">
+  <!-- Minimal Header -->
+  <div class="hierarchy-header">
+    <div class="header-main">
+      <h1>Documents</h1>
+      <p>Organize and browse your complete document library</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-item">
+        <span class="stat-num">{{ getDocumentCount() }}</span>
+        <span class="stat-text">Total Documents</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">{{ getDocumentTypeCount() }}</span>
+        <span class="stat-text">Categories</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="search-section">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search documents..."
+        [(ngModel)]="searchQuery"
+        (keyup)="searchDocuments()"
+        [disabled]="isLoading"
+      />
+      <button
+        class="search-clear-btn"
+        (click)="clearSearch()"
+        *ngIf="searchQuery"
+        type="button"
+      >
+        ✕
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Results -->
+  <div class="search-results" *ngIf="searchResults.length > 0">
+    <div class="results-header">
+      <h4>Search Results ({{ searchResults.length }})</h4>
+    </div>
+    <div class="results-list">
+      <div
+        *ngFor="let result of searchResults"
+        class="result-item"
+        [class.no-access]="!result.userCanView"
+        (click)="selectDocument({
+          documentId: result.documentId,
+          fileName: result.documentName,
+          currentStatus: result.status,
+          isCertified: result.isCertified,
+          uploadedDate: result.uploadedDate,
+          fileSizeBytes: result.fileSizeBytes,
+          userCanView: result.userCanView,
+          userCanDownload: result.userCanDownload,
+          userCanEdit: false,
+          userCanDelete: false,
+          userCanShare: false
+        })"
+      >
+        <div class="result-info">
+          <div class="result-name">{{ result.documentName }}</div>
+          <div class="result-meta">
+            <span class="meta-item">{{ result.documentTypeName }}</span>
+            <span class="meta-item">{{ getFormattedFileSize(result.fileSizeBytes) }}</span>
+            <span class="meta-item">{{ result.uploadedDate | date: 'short' }}</span>
+          </div>
+        </div>
+        <span *ngIf="result.isCertified" class="badge certified">Certified</span>
+        <span [class]="'status-badge ' + getStatusClass(result.status)">{{ result.status }}</span>
+        <span *ngIf="!result.userCanView" class="no-access-text">No Access</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tree View -->
+  <div class="tree-container" *ngIf="searchResults.length === 0">
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading">
+      <span class="spinner"></span> Loading hierarchy...
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading && hierarchy.length === 0">
+      <p>No documents available</p>
+    </div>
+
+    <!-- Tree Structure -->
+    <div class="tree" *ngIf="!isLoading && hierarchy.length > 0">
+      <div *ngFor="let entityType of hierarchy" class="tree-level-1">
+        <!-- Entity Type Node -->
+        <div
+          class="entity-type-node"
+          [class.expanded]="isEntityTypeExpanded(entityType.entityTypeId)"
+        >
+          <div
+            class="node-content"
+            (click)="toggleEntityType(entityType.entityTypeId)"
+          >
+            <span class="toggle-icon">{{ isEntityTypeExpanded(entityType.entityTypeId) ? '−' : '+' }}</span>
+            <span
+              class="node-name"
+              (click)="selectEntityType(entityType); $event.stopPropagation()"
+            >
+              {{ entityType.name }}
+            </span>
+            <span class="doc-count">{{ entityType.documentTypes.length }}</span>
+          </div>
+
+          <!-- Document Types Level -->
+          <div
+            class="tree-level-2"
+            *ngIf="isEntityTypeExpanded(entityType.entityTypeId)"
+          >
+            <div
+              *ngFor="let docType of entityType.documentTypes"
+              class="tree-level-2-item"
+            >
+              <!-- Document Type Node -->
+              <div
+                class="document-type-node"
+                [class.expanded]="isDocumentTypeExpanded(docType.documentTypeId)"
+              >
+                <div
+                  class="node-content"
+                  (click)="toggleDocumentType(docType.documentTypeId)"
+                >
+                  <span class="toggle-icon">{{ isDocumentTypeExpanded(docType.documentTypeId) ? '−' : '+' }}</span>
+                  <span
+                    class="node-name"
+                    (click)="selectDocumentType(docType); $event.stopPropagation()"
+                  >
+                    {{ docType.typeName }}
+                  </span>
+                  <span *ngIf="docType.isMandatory" class="badge mandatory">Required</span>
+                  <span class="doc-count">{{ docType.documents.length }}</span>
+                </div>
+
+                <!-- Documents Level -->
+                <div
+                  class="tree-level-3"
+                  *ngIf="
+                    showDocuments &&
+                    isDocumentTypeExpanded(docType.documentTypeId)
+                  "
+                >
+                  <div
+                    *ngFor="let doc of docType.documents"
+                    class="document-item"
+                    [class.no-access]="!doc.userCanView"
+                    [class.selected]="selectedDocuments.has(doc.documentId)"
+                  >
+                    <span *ngIf="allowMultiSelect" class="checkbox">
+                      <input
+                        type="checkbox"
+                        [checked]="selectedDocuments.has(doc.documentId)"
+                        (change)="selectDocument(doc)"
+                        (click)="$event.stopPropagation()"
+                      />
+                    </span>
+                    <div class="document-item-main" (click)="viewDocument(doc)">
+                      <span class="file-name">{{ doc.fileName }}</span>
+                      <span *ngIf="doc.isCertified" class="badge certified">Certified</span>
+                      <span [class]="'status-badge ' + getStatusClass(doc.currentStatus)">
+                        {{ doc.currentStatus }}
+                      </span>
+                    </div>
+                    <span class="file-size">{{ getFormattedFileSize(doc.fileSizeBytes) }}</span>
+                    <span class="upload-date">{{ doc.uploadedDate | date: 'short' }}</span>
+                    <button class="details-btn" (click)="openDocumentDetails(doc)" *ngIf="doc.userCanView">
+                      Details
+                    </button>
+                    <span *ngIf="!doc.userCanView" class="no-access-text">No Access</span>
+                  </div>
+
+                  <!-- No Documents Message -->
+                  <div *ngIf="docType.documents.length === 0" class="no-documents">
+                    No documents uploaded yet
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

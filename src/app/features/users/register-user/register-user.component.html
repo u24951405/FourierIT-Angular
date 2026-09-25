@@ -6,7 +6,7 @@
     </div>
   </div>
 
-  <div class="form-card wizard-card" [formGroup]="form" novalidate>
+  <div class="form-card wizard-card">
     <div class="wizard-steps" aria-label="Registration steps">
       @for (step of wizardSteps; track step.id; let i = $index) {
         <button
@@ -22,7 +22,7 @@
       }
     </div>
 
-    <form (ngSubmit)="onSubmit()">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
       @if (currentStep() === 0) {
         <section class="wizard-panel">
           <h2 class="form-section-title">Create your account</h2>

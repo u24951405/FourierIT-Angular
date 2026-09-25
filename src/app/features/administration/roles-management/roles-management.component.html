@@ -71,13 +71,38 @@
             <span class="field__error">Role name is required.</span>
           }
         </div>
-        <fieldset class="permission-field" *ngIf="permissions().length">
-          <legend>Permissions</legend>
-          <label class="permission-option" *ngFor="let permission of permissions()">
-            <input type="checkbox" [checked]="hasPermission(permission)" (change)="togglePermission(permission)">
-            <span>{{ permission }}</span>
-          </label>
-        </fieldset>
+        @if (editId()) {
+          @if (isLoadingPermissions()) {
+            <div class="permission-loading">Loading permissions...</div>
+          } @else if (allPermissions().length) {
+            <fieldset class="permission-field">
+              <legend>Permissions</legend>
+              <label class="permission-option" *ngFor="let perm of allPermissions()">
+                <input type="checkbox"
+                  [checked]="selectedPermissions().includes(perm.permissionKey)"
+                  [disabled]="isPermissionBeingToggled(perm.permissionId)"
+                  (change)="togglePermission(perm.permissionId, perm.permissionKey, selectedPermissions().includes(perm.permissionKey))">
+                <span>{{ getPermissionDisplayName(perm.permissionKey) }}{{ isPermissionBeingToggled(perm.permissionId) ? ' (updating...)' : '' }}</span>
+              </label>
+            </fieldset>
+          } @else if (permissions().length) {
+            <fieldset class="permission-field">
+              <legend>Permissions</legend>
+              <label class="permission-option" *ngFor="let permission of permissions()">
+                <input type="checkbox" [checked]="hasPermission(permission)" (change)="togglePermission(0, permission, hasPermission(permission))">
+                <span>{{ getPermissionDisplayName(permission) }}</span>
+              </label>
+            </fieldset>
+          }
+        } @else if (permissions().length) {
+          <fieldset class="permission-field">
+            <legend>Permissions</legend>
+            <label class="permission-option" *ngFor="let permission of permissions()">
+              <input type="checkbox" [checked]="hasPermission(permission)" (change)="togglePermission(0, permission, !hasPermission(permission))">
+              <span>{{ getPermissionDisplayName(permission) }}</span>
+            </label>
+          </fieldset>
+        }
         <div class="modal__footer">
           <button type="button" class="btn btn--outline" (click)="closeModal()">Cancel</button>
           <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">
