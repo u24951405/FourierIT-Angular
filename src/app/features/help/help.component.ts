@@ -24,7 +24,11 @@ export class HelpComponent implements OnInit, AfterViewChecked {
     { id: 'reports', title: 'Reports', keywords: 'reports activity monthly ad hoc summaries' },
     { id: 'audit-log', title: 'Audit Log', keywords: 'audit security operations changes OTP activity' },
     { id: 'user-role-management', title: 'User Management and Roles Management', keywords: 'users roles permissions institutions departments administration' },
-    { id: 'timer-settings', title: 'System Settings', keywords: 'system settings timer expiry session OTP code link validity limits' }
+    { id: 'timer-settings', title: 'System Settings', keywords: 'system settings timer expiry session OTP code link validity limits' },
+    { id: 'institutions', title: 'Institutions', keywords: 'institutions records types add edit access links invite portal' },
+    { id: 'department-requests', title: 'Department Requests', keywords: 'department requests route approve deny review owner' },
+    { id: 'backup-restore', title: 'Backup and Restore', keywords: 'backup restore database snapshot system file history' },
+    { id: 'document-validity', title: 'Document Type Validity', keywords: 'document type validity expiry warning months basis never expires re-evaluate' }
   ];
 
   ngOnInit(): void {
@@ -48,7 +52,13 @@ export class HelpComponent implements OnInit, AfterViewChecked {
       return;
     }
 
+    target.classList.add('help-section--highlighted');
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    window.setTimeout(() => {
+      target.classList.remove('help-section--highlighted');
+    }, 3000);
+
     this.pendingFragment = null;
   }
 

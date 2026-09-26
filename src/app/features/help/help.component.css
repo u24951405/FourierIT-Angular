@@ -67,36 +67,21 @@
   text-transform: uppercase;
 }
 
-.help-video__thumbnail {
-  position: relative;
-  display: block;
+.help-video__frame {
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 8px;
   background: #0f172a;
   box-shadow: 0 8px 18px rgba(15, 23, 42, .16);
 }
 
-.help-video__thumbnail img {
+.help-video__frame iframe {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-}
-
-.help-video__play {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  padding: 9px 16px;
-  border-radius: 6px;
-  background: rgba(220, 38, 38, .95);
-  color: #fff;
-  font-weight: 700;
-}
-
-.help-video__thumbnail:hover .help-video__play {
-  background: #b91c1c;
+  height: 100%;
+  border: 0;
 }
 
 .help-page__toc {

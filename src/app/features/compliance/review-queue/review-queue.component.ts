@@ -156,8 +156,17 @@ export class ReviewQueueComponent implements OnInit {
     });
   }
 
+  /**
+   * Opens VerifyNow in a small window centred over the app. It can't be shown inside the page:
+   * VerifyNow sends X-Frame-Options: DENY, so browsers refuse to load it in an iframe.
+   */
   openPepScan(): void {
-    window.open(this.pepScanUrl, '_blank', 'width=1100,height=750,resizable=yes,scrollbars=yes');
+    const width = 760;
+    const height = 640;
+    const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+    const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+    const features = `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+    window.open(this.pepScanUrl, 'verifynow-pep-scan', features)?.focus();
   }
 
   getComplianceStatus(review: ReviewQueueItem): 'Pending' | 'Needs review' | 'Compliant' {

@@ -13,16 +13,14 @@
       <h2 id="help-video-title">What is DocuVault?</h2>
       <p>Watch the short introduction to learn what DocuVault does and how it supports document compliance.</p>
     </div>
-    <a
-      class="help-video__thumbnail"
-      href="https://youtu.be/-sC9xt3NLl4"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Watch the DocuVault introduction on YouTube"
-    >
-      <img src="https://img.youtube.com/vi/-sC9xt3NLl4/hqdefault.jpg" alt="DocuVault introduction video thumbnail" />
-      <span class="help-video__play" aria-hidden="true">Play</span>
-    </a>
+    <div class="help-video__frame">
+      <iframe
+        src="https://www.youtube.com/embed/-sC9xt3NLl4"
+        title="DocuVault introduction video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+      ></iframe>
+    </div>
   </section>
 
   <form class="help-search" (submit)="$event.preventDefault(); searchHelp()">
@@ -56,6 +54,10 @@
     @if (matchesTopic('audit-log')) { <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a> }
     @if (matchesTopic('user-role-management')) { <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a> }
     @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">System Settings</a> }
+    @if (matchesTopic('institutions')) { <a [routerLink]="['/help']" [fragment]="'institutions'">Institutions</a> }
+    @if (matchesTopic('department-requests')) { <a [routerLink]="['/help']" [fragment]="'department-requests'">Department Requests</a> }
+    @if (matchesTopic('backup-restore')) { <a [routerLink]="['/help']" [fragment]="'backup-restore'">Backup &amp; Restore</a> }
+    @if (matchesTopic('document-validity')) { <a [routerLink]="['/help']" [fragment]="'document-validity'">Document Type Validity</a> }
   </nav>
 
   <main class="help-page__content">
@@ -174,6 +176,59 @@
         <li><strong>Links:</strong> how long institution invitation, document access and password reset links work.</li>
         <li><strong>Security limits:</strong> how many wrong codes are allowed, and how long to wait before another code can be sent.</li>
         <li>Each setting shows its allowed range and default; use <strong>Reset to default</strong> to undo a change.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="institutions" class="help-section" [hidden]="!matchesTopic('institutions')">
+      <h2>Institutions</h2>
+      <p>
+        The <strong>Institutions</strong> page is under <strong>/administration/institutions</strong> and stores the institution records used across the system. Each record includes the institution name, verified domain, registration number, and institution type.
+      </p>
+      <ul>
+        <li>Use <strong>Add Institution</strong> to create a new record, and use the edit action to update an existing one.</li>
+        <li>Institution records can be searched by name, domain, registration number, or type.</li>
+        <li><strong>Send Access Link</strong> creates a secure link for an institution user and is tied to the institution portal flow for access validation.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="department-requests" class="help-section" [hidden]="!matchesTopic('department-requests')">
+      <h2>Department Requests</h2>
+      <p>
+        The <strong>Department Requests</strong> area is under <strong>/administration/department-requests</strong> and lists pending department document requests that still need action. This page is used to review requests before they are routed, approved, or denied.
+      </p>
+      <ul>
+        <li>Review each request and enter the target user ID before using <strong>Route</strong> to send it to an owner.</li>
+        <li><strong>Approve</strong> accepts the request and removes it from the pending list.</li>
+        <li><strong>Deny</strong> rejects the request and leaves a note describing the outcome.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="backup-restore" class="help-section" [hidden]="!matchesTopic('backup-restore')">
+      <h2>Backup and Restore</h2>
+      <p>
+        The <strong>Backup &amp; Restore</strong> page is at <strong>/backup-restore</strong> and manages system snapshot records. It shows backup history, lets administrators create new backups, and provides restore controls for a selected snapshot.
+      </p>
+      <ul>
+        <li><strong>Create Backup Now</strong> starts a system snapshot and records the backup under the current user.</li>
+        <li>Each backup record includes the date, time, backup ID, user, and file name, and can be restored from the history list.</li>
+        <li><strong>Restore</strong> opens a confirmation step and then applies the selected backup to the current system state.</li>
+      </ul>
+      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
+    </section>
+
+    <section id="document-validity" class="help-section" [hidden]="!matchesTopic('document-validity')">
+      <h2>Document Type Validity</h2>
+      <p>
+        The <strong>Document Validity</strong> tab of <strong>System Settings</strong> (Super Admin only) controls the expiry rules for each document type, including the validity period, the basis used to calculate expiry, warning days, and whether a type never expires.
+      </p>
+      <ul>
+        <li>Each document type can be set to a validity period in months, or marked as <strong>Never expires</strong>.</li>
+        <li>The validity basis can be <strong>Certification date</strong> or <strong>Upload date</strong>, and the rule is applied when the type is saved.</li>
+        <li><strong>Warning days</strong> can be entered as a countdown before expiry, with validation preventing values that exceed the configured validity window.</li>
+        <li><strong>Review impact</strong> shows how many existing documents would expire or become valid again; <strong>Apply changes</strong> saves the rule and re-checks those documents.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
