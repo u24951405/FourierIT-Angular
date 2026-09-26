@@ -84,7 +84,8 @@
         <app-document-hierarchy-tree
           [showDocuments]="true"
           [mode]="'search'"
-          (documentSelected)="onDocumentSelectedFromTree($event)">
+          (documentSelected)="onDocumentSelectedFromTree($event)"
+          (documentDeleteRequested)="deleteDocumentFromTree($event)">
         </app-document-hierarchy-tree>
       </div>
     }
@@ -143,6 +144,11 @@
               <dd>{{ doc.isEncrypted ? doc.encryptionAlgorithm || 'Yes' : 'No' }}</dd>
             </div>
           </dl>
+          @if (doc.reviewStatus === 'Rejected') {
+            <p class="document-card__review">
+              <strong>Action needed:</strong> {{ doc.reviewNotes || 'Rejected by a Compliance Officer.' }}
+            </p>
+          }
           <div class="document-card__actions">
             <button type="button" class="btn btn--outline" (click)="openPreview(doc)">View</button>
             <button type="button" class="btn btn--outline" (click)="openDetails(doc)">Details</button>
@@ -201,6 +207,21 @@
         @if (loadingDetail()) {
           <div class="documents-page__state">Loading document details…</div>
         } @else {
+          @if (detailDocument()?.reviewStatus === 'Rejected') {
+            <div class="review-banner review-banner--rejected" role="status">
+              <strong>Rejected by a Compliance Officer{{ detailDocument()?.reviewedAt ? ' on ' + (detailDocument()?.reviewedAt | date:'mediumDate') : '' }}</strong>
+              <p><span>Reason:</span> {{ detailDocument()?.reviewNotes || 'No reason given.' }}</p>
+              <p>Choose a corrected file below and select <em>Replace &amp; resubmit</em> to send it back for review.</p>
+            </div>
+          } @else if (detailDocument()?.reviewStatus === 'Approved') {
+            <div class="review-banner review-banner--approved" role="status">
+              <strong>Approved by a Compliance Officer{{ detailDocument()?.reviewedAt ? ' on ' + (detailDocument()?.reviewedAt | date:'mediumDate') : '' }}</strong>
+              @if (detailDocument()?.reviewNotes) {
+                <p><span>Notes:</span> {{ detailDocument()?.reviewNotes }}</p>
+              }
+            </div>
+          }
+
           <dl class="document-detail-grid">
             <div><dt>Status</dt><dd>{{ detailDocument()?.currentStatus }}</dd></div>
             <div><dt>Certified</dt><dd>{{ detailDocument()?.isCertified ? 'Yes' : 'No' }}</dd></div>
@@ -284,9 +305,9 @@
             }
           </section>
 
-          <div class="field">
-            <label>Replace file</label>
-            <input type="file" (change)="onEditFileSelected($event)">
+          <div class="field" [class.field--highlight]="detailIsRejected()">
+            <label for="replace-file-input">{{ detailIsRejected() ? 'Upload a corrected file' : 'Replace file' }}</label>
+            <input id="replace-file-input" type="file" (change)="onEditFileSelected($event)">
             @if (selectedEditFile()) {
               <p class="field__hint">Selected file: {{ selectedEditFile()?.name }}</p>
             }
@@ -296,7 +317,11 @@
         <div class="modal__footer">
           <button type="button" class="btn btn--outline" (click)="closeDetail()">Close</button>
           <button type="button" class="btn btn--primary" [disabled]="!selectedEditFile() || savingEdit()" (click)="saveDocumentEdit()">
-            {{ savingEdit() ? 'Saving…' : 'Save changes' }}
+            @if (detailIsRejected()) {
+              {{ savingEdit() ? 'Resubmitting…' : 'Replace & resubmit' }}
+            } @else {
+              {{ savingEdit() ? 'Saving…' : 'Save changes' }}
+            }
           </button>
         </div>
       </div>

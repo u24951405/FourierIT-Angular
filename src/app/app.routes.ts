@@ -4,7 +4,7 @@ import { documentOwnerGuard } from './core/guards/document-owner.guard';
 import { restrictDocumentOwnerOnlyGuard } from './core/guards/restrict-document-owner-only.guard';
 import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.guard';
 import { documentUploadGuard } from './core/guards/document-upload.guard';
-import { adminGuard } from './core/guards/admin.guard';
+import { systemDashboardGuard, userDirectoryGuard } from './core/guards/admin.guard';
 import { adminOrDepartmentAdminGuard } from './core/guards/admin-or-department-admin.guard';
 import { departmentAdminGuard, departmentScopedGuard } from './core/guards/department-admin.guard';
 import { documentManagementGuard } from './core/guards/document-management.guard';
@@ -50,6 +50,8 @@ export const routes: Routes = [
   },
   {
     path: 'institution/auth/token-requested',
+    // Same card as the link-problem page, in its "new link sent" state.
+    data: { reason: 'sent' },
     loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
   },
   {
@@ -93,7 +95,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard-redirect/dashboard-redirect.component')
           .then(m => m.DashboardRedirectComponent) },
       { path: 'dashboard/system',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, systemDashboardGuard],
         data: { dashboardScope: 'system' },
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
@@ -118,6 +120,11 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/departments/department-admin-management/department-admin-management.component')
           .then(m => m.DepartmentAdminManagementComponent) },
+      { path: 'users/all',
+        canActivate: [restrictDocumentOwnerOnlyGuard, userDirectoryGuard],
+        data: { pageTitle: 'All Users' },
+        loadComponent: () => import('./features/users/user-management/user-management.component')
+          .then(m => m.UserManagementComponent) },
       { path: 'users/department-admins',
         canActivate: [restrictDocumentOwnerOnlyGuard, departmentAdminGuard],
         data: { managedRole: 'Department Admin', pageTitle: 'Department Admin Management' },
@@ -191,14 +198,17 @@ export const routes: Routes = [
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
         loadComponent: () => import('./features/backup-restore/backup-restore')
           .then(m => m.BackupRestoreComponent) },
+      // System Settings: one page with tabs; each tab keeps its own address.
       { path: 'system-settings',
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
+        data: { tab: 'security' },
         loadComponent: () => import('./features/system/system-settings/system-settings.component')
           .then(m => m.SystemSettingsComponent) },
       { path: 'system-settings/document-types',
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
-        loadComponent: () => import('./features/system/document-type-validity/document-type-validity.component')
-          .then(m => m.DocumentTypeValidityComponent) },
+        data: { tab: 'documents' },
+        loadComponent: () => import('./features/system/system-settings/system-settings.component')
+          .then(m => m.SystemSettingsComponent) },
       { path: 'help',
         canActivate: [authGuard],
         loadComponent: () => import('./features/help/help.component')

@@ -15,21 +15,21 @@
   <section class="filters-panel card">
     <div class="filters-grid">
       <div class="filter-card">
-        <label>Search records</label>
-        <input type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="Search by user, action or record details" class="form-input" />
+        <label for="audit-search">Search records</label>
+        <input id="audit-search" type="text" [(ngModel)]="searchQuery" (input)="onSearchChange()" placeholder="Search by user, action or record details" class="form-input" />
       </div>
 
       <div class="filter-card">
-        <label>User</label>
-        <select [(ngModel)]="selectedUserId" (change)="onFilterChange()" class="form-select">
+        <label for="audit-user-filter">User</label>
+        <select id="audit-user-filter" [(ngModel)]="selectedUserId" (change)="onFilterChange()" class="form-select">
           <option value="ALL">All Users</option>
           <option *ngFor="let user of userOptions" [value]="user.id">{{ user.name }}</option>
         </select>
       </div>
 
       <div class="filter-card">
-        <label>Action code</label>
-        <select [(ngModel)]="selectedActionCode" (change)="onFilterChange()" class="form-select">
+        <label for="audit-action-filter">Action code</label>
+        <select id="audit-action-filter" [(ngModel)]="selectedActionCode" (change)="onFilterChange()" class="form-select">
           <option value="ALL">All Action Codes</option>
           <option *ngFor="let action of actionCodeOptions" [value]="action">{{ action }}</option>
         </select>
@@ -81,7 +81,7 @@
         </thead>
         <tbody>
           <ng-container *ngIf="isLoading">
-            <tr class="skeleton-row" *ngFor="let n of [].constructor(pageSize)">
+            <tr class="skeleton-row" *ngFor="let n of loadingRows">
               <td colspan="7">
                 <div class="skeleton-line"></div>
               </td>

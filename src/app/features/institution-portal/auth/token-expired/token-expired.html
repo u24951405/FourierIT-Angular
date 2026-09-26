@@ -1,1 +1,83 @@
-<p>token-expired works!</p>
+<div class="portal-shell">
+  <div class="portal-card">
+    <div class="portal-card__header">
+      <div class="portal-card__brand">
+        <span class="portal-card__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </span>
+        <div>
+          <span class="portal-card__brand-name">DocuVault</span>
+          <span class="portal-card__brand-sub">Institution Secure Portal</span>
+        </div>
+      </div>
+      <span class="portal-card__encrypted">
+        <span class="portal-card__encrypted-dot"></span>
+        Encrypted
+      </span>
+    </div>
+
+    <div class="portal-card__body">
+      <div class="expired-icon"
+           [class.expired-icon--warning]="problem === 'expired' || problem === 'used'"
+           [class.expired-icon--success]="problem === 'sent'"
+           aria-hidden="true">
+        @if (problem === 'sent') {
+          <!-- envelope -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+            <polyline points="3 7 12 13 21 7"></polyline>
+          </svg>
+        } @else if (problem === 'expired') {
+          <!-- clock -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        } @else if (problem === 'used') {
+          <!-- check in circle -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="8 12 11 15 16 9"></polyline>
+          </svg>
+        } @else {
+          <!-- alert -->
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        }
+      </div>
+
+      <h1 class="expired-title">{{ copy.title }}</h1>
+      <p class="expired-desc">{{ copy.description }}</p>
+
+      @if (canRequestNewLink) {
+        <button type="button" class="expired-btn" (click)="requestNewLink()" [disabled]="sending() || waitSeconds() > 0">
+          @if (sending()) {
+            Sending…
+          } @else if (waitSeconds() > 0) {
+            Try again in {{ waitSeconds() }}s
+          } @else {
+            Email me a new link
+          }
+        </button>
+        <p class="expired-hint">The link is sent only to the email address registered for your institution.</p>
+      } @else if (problem === 'sent') {
+        <p class="expired-contact">Didn’t get it? Check your spam folder, or contact your DocuVault administrator.</p>
+      } @else {
+        <p class="expired-contact">Need help? Contact your DocuVault administrator.</p>
+      }
+
+      @if (error()) {
+        <p class="expired-error" role="alert">{{ error() }}</p>
+      }
+    </div>
+
+    <div class="portal-card__footer">
+      Powered by Fourier Group · FICA/KYC Compliance Platform
+    </div>
+  </div>
+</div>

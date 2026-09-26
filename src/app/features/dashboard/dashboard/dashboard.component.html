@@ -30,7 +30,7 @@
 
     <ng-container *ngIf="!dashboardLoading && !dashboardError">
       <div
-        class="stat-card stat-card--clickable"
+        class="stat-card" [class.stat-card--clickable]="canOpenReports"
         *ngFor="let card of statCards"
         (click)="navigate('/reports/compliance')"
       >
@@ -49,7 +49,8 @@
   </div>
 
   <!-- ── Compliance Overview ─────────────────────────────────────────────── -->
-  <div class="dash-chart-card dash-chart-card--wide">
+  <!-- Personal document compliance only applies to people who upload documents (not Stakeholders). -->
+  <div class="dash-chart-card dash-chart-card--wide" *ngIf="showPersonalCompliance">
     <h3 class="dash-chart-card__title">Compliance Check</h3>
     <p class="dash-chart-card__subtitle">Live compliance status from the existing API</p>
 
@@ -140,7 +141,7 @@
   <div class="dash-chart-grid">
 
     <!-- Verification Status -->
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/reports/activity')">
+    <div class="dash-chart-card" [class.dash-chart-card--clickable]="canOpenReports" (click)="navigate('/reports/activity')">
       <h3 class="dash-chart-card__title">Verification Status</h3>
       <p class="dash-chart-card__subtitle">Document approval breakdown</p>
       <div class="dash-doughnut-wrap">
@@ -156,7 +157,7 @@
     </div>
 
     <!-- Documents by Category -->
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/reports/activity')">
+    <div class="dash-chart-card" [class.dash-chart-card--clickable]="canOpenReports" (click)="navigate('/reports/activity')">
       <h3 class="dash-chart-card__title">Compliance Status Breakdown</h3>
       <p class="dash-chart-card__subtitle">Risk-tier composition across users in the current scope</p>
       <div class="dash-doughnut-wrap">
@@ -172,7 +173,7 @@
     </div>
 
     <!-- Risk Distribution -->
-    <div class="dash-chart-card dash-chart-card--clickable" (click)="navigate('/reports/client-risk-rating')">
+    <div class="dash-chart-card" [class.dash-chart-card--clickable]="canOpenReports" (click)="navigate('/reports/client-risk-rating')">
       <h3 class="dash-chart-card__title">Risk Distribution</h3>
       <p class="dash-chart-card__subtitle">Client risk rating across all entities</p>
       <div class="dash-doughnut-wrap">

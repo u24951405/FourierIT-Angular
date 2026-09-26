@@ -23,6 +23,11 @@ export interface ManagedUserDto {
   email: string;
   phoneNumber: string;
   accountStatus: string;
+  departmentId: number | null;
+  departmentName: string | null;
+  entityTypeId: number | null;
+  entityTypeName: string | null;
+  entityIdentificationNumber: string;
   roles: string[];
   profile: {
     firstName: string;

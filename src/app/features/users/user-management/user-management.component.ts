@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef, computed } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -24,6 +24,9 @@ export interface UserProfile {
   phone: string;
   dateOfBirth: string;
   jobTitle: string;
+  entityTypeName: string;
+  entityIdentificationNumber: string;
+  departmentName: string;
   roleId: string;
   roleName: string;
   roles: string[];
@@ -59,6 +62,19 @@ export class UserManagementComponent {
   isLoadingRoles = signal(false);
   isSubmitting = signal(false);
   search = signal('');
+  /** Role chosen in the filter chips; empty means every role. */
+  readonly roleFilter = signal('');
+
+  /** Roles present in the list, with how many users hold each (someone with two roles counts under both). */
+  readonly roleOptions = computed(() => {
+    const counts = new Map<string, number>();
+    for (const user of this.users()) {
+      for (const role of this.rolesOf(user)) counts.set(role, (counts.get(role) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, count]) => ({ name, count }));
+  });
 
   roles: Array<{ id: string; name: string }> = [];
 
@@ -78,6 +94,7 @@ export class UserManagementComponent {
     phone: ['', saMobilePhoneRequired()],
     dateOfBirth: ['', [Validators.required, birthDateReasonable()]],
     jobTitle: ['', Validators.required],
+    entityTypeName: [{ value: '', disabled: true }],
     roleId: ['', Validators.required],
     status: ['Active'],
   });
@@ -98,11 +115,25 @@ export class UserManagementComponent {
 
   get filtered() {
     const q = this.search().toLowerCase();
-    return this.users().filter(user =>
-      `${user.firstName} ${user.lastName}`.toLowerCase().includes(q) ||
-      user.email.toLowerCase().includes(q) ||
-      user.roleName.toLowerCase().includes(q)
-    );
+    const role = this.roleFilter().toLowerCase();
+    return this.users().filter(user => {
+      const roles = this.rolesOf(user);
+      const matchesRole = !role || roles.some(r => r.toLowerCase() === role);
+      const matchesSearch = `${user.firstName} ${user.lastName}`.toLowerCase().includes(q)
+        || user.email.toLowerCase().includes(q)
+        || roles.some(r => r.toLowerCase().includes(q));
+      return matchesRole && matchesSearch;
+    });
+  }
+
+  /** Clicking the active chip again clears the filter. */
+  toggleRoleFilter(role: string): void {
+    this.roleFilter.set(this.roleFilter() === role ? '' : role);
+  }
+
+  rolesOf(user: UserProfile): string[] {
+    const roles = user.roles?.length ? user.roles : [user.roleName];
+    return roles.filter(role => !!role && role.trim().length > 0);
   }
 
   openPepScan(): void {
@@ -122,6 +153,7 @@ export class UserManagementComponent {
       phone: user.phone,
       dateOfBirth: user.dateOfBirth,
       jobTitle: user.jobTitle,
+      entityTypeName: user.entityTypeName,
       roleId: user.roleId,
       status: user.status,
     });
@@ -208,7 +240,7 @@ export class UserManagementComponent {
         this.toast.show('User deleted.', 'success');
       },
       error: (error) => {
-        const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Failed to delete user.';
+        const message = error?.error?.message || error?.error?.error || error?.error?.title || 'Failed to delete user.';
         this.toast.show(message, 'error');
       }
     });
@@ -221,10 +253,12 @@ export class UserManagementComponent {
       .subscribe({
         next: (roles) => {
           this.roles = (roles ?? []).map(role => ({ id: role.roleId, name: role.roleName }));
+          this.cdr.markForCheck();
           this.loadUsers();
         },
         error: () => {
           this.roles = [];
+          this.cdr.markForCheck();
           this.toast.show('Failed to load roles.', 'error');
         }
       });
@@ -273,6 +307,9 @@ export class UserManagementComponent {
       phone: user.phoneNumber ?? (user as any).PhoneNumber ?? '',
       dateOfBirth: profile?.dateOfBirth ?? profile?.DateOfBirth ?? '',
       jobTitle: profile?.jobTitle ?? profile?.JobTitle ?? '',
+      entityTypeName: user.entityTypeName ?? (user as any).EntityTypeName ?? 'Not specified',
+      entityIdentificationNumber: user.entityIdentificationNumber ?? (user as any).EntityIdentificationNumber ?? '',
+      departmentName: user.departmentName ?? (user as any).DepartmentName ?? 'Not assigned',
       roleId,
       roleName,
       roles,
@@ -283,5 +320,24 @@ export class UserManagementComponent {
 
   isSuperAdmin(user: UserProfile): boolean {
     return user.userName.trim().toLowerCase() === 'superadmin';
+  }
+
+  /** Only people who upload documents (Document Owners and Department Admins) have an entity. */
+  editingUserHasEntity(): boolean {
+    const user = this.users().find(item => item.profileId === this.editId());
+    const roles = (user?.roles?.length ? user.roles : [user?.roleName ?? '']).map(role => role.toLowerCase());
+    return roles.includes('document owner') || roles.includes('department admin');
+  }
+
+  maskEntityIdentificationNumber(value: string): string {
+    const normalized = value?.trim() ?? '';
+    if (!normalized) return 'Not specified';
+    if (normalized.length <= 4) return normalized;
+    return `${'*'.repeat(Math.max(4, normalized.length - 4))}${normalized.slice(-4)}`;
+  }
+
+  showOrganizationSection(): boolean {
+    const user = this.users().find(item => item.profileId === this.editId());
+    return !(user?.roles ?? []).some(role => role.trim().toLowerCase() === 'document owner');
   }
 }

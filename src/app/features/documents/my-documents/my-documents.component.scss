@@ -553,3 +553,45 @@ select {
   }
 }
 
+
+.document-card__review {
+  margin: 0.8rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #fdf0f0;
+  color: #9b2c2c;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.review-banner {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border-left: 4px solid;
+  font-size: 0.9rem;
+  line-height: 1.45;
+
+  strong { display: block; margin-bottom: 0.25rem; }
+  p { margin: 0.25rem 0 0; }
+  span { font-weight: 600; }
+
+  &--rejected {
+    background: #fdf0f0;
+    border-color: var(--error);
+    color: #7f1d1d;
+  }
+
+  &--approved {
+    background: #eefaf4;
+    border-color: var(--success);
+    color: #14532d;
+  }
+}
+
+.field--highlight {
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--error);
+  border-radius: 10px;
+  background: #fffafa;
+}

@@ -50,10 +50,20 @@ export class InstitutionAuthService {
   readonly institutionCode = computed(() => this.session()?.institutionCode ?? '');
   readonly maskedEmail = computed(() => this.session()?.email ?? '');
 
-  // OTP attempt tracking — lives in service for immediate UI lock on third failure
+  // OTP attempt tracking. The server enforces the limit (set by the Super Admin) and reports how many
+  // attempts are left; the local counter is only used for the offline demo session.
   private otpAttempts = signal(0);
-  readonly isSessionLocked = computed(() => this.otpAttempts() >= MAX_OTP_ATTEMPTS);
-  readonly remainingAttempts = computed(() => MAX_OTP_ATTEMPTS - this.otpAttempts());
+  private serverAttemptsRemaining = signal<number | null>(null);
+  readonly isSessionLocked = computed(() => {
+    const remaining = this.serverAttemptsRemaining();
+    return remaining !== null ? remaining <= 0 : this.otpAttempts() >= MAX_OTP_ATTEMPTS;
+  });
+  readonly remainingAttempts = computed(() => this.serverAttemptsRemaining() ?? MAX_OTP_ATTEMPTS - this.otpAttempts());
+
+  private resetAttempts(): void {
+    this.otpAttempts.set(0);
+    this.serverAttemptsRemaining.set(null);
+  }
 
   // Temporary store during OTP step — cleared after successful verification
   private pendingValidation: TokenValidationResponse | null = null;
@@ -78,7 +88,7 @@ export class InstitutionAuthService {
             // Store pending state for the OTP step
             this.pendingValidation = response;
             this.pendingAccessToken = accessToken;
-            this.otpAttempts.set(0);
+            this.resetAttempts();
 
             // Audit: OTP sent
             this.logAuditEvent({
@@ -109,7 +119,7 @@ export class InstitutionAuthService {
       maskedEmail: 'demo@fourier.local',
     };
     this.pendingAccessToken = 'demo-institution-token';
-    this.otpAttempts.set(0);
+    this.resetAttempts();
 
     this.logAuditEvent({
       userId: this.pendingValidation.institutionId,
@@ -211,9 +221,12 @@ export class InstitutionAuthService {
               this.pendingAccessToken = null;
             }
           },
-          error: () => {
-            // Increment failed attempt counter
-            this.otpAttempts.update((n) => n + 1);
+          error: (err) => {
+            // The server says how many attempts are left for this code.
+            const remaining = err?.error?.attemptsRemaining;
+            if (typeof remaining === 'number') {
+              this.serverAttemptsRemaining.set(remaining);
+            }
 
             const institutionId = this.pendingValidation?.institutionId ?? 'unknown';
             this.logAuditEvent({
@@ -234,10 +247,7 @@ export class InstitutionAuthService {
    * Only permitted if session is not locked.
    */
   resendOtp(): Observable<void> {
-    if (this.isSessionLocked()) {
-      return throwError(() => new Error('Session locked. Cannot resend OTP.'));
-    }
-
+    // Allowed even after too many wrong codes: the server cancelled that code, so a new one is needed.
     if (!this.pendingValidation || !this.pendingAccessToken) {
       return throwError(() => new Error('No pending validation. Please restart.'));
     }
@@ -252,7 +262,7 @@ export class InstitutionAuthService {
       .pipe(
         tap(() => {
           // Reset attempt counter on resend
-          this.otpAttempts.set(0);
+          this.resetAttempts();
           this.logAuditEvent({
             userId: this.pendingValidation!.institutionId,
             institutionId: this.pendingValidation!.institutionId,
@@ -345,7 +355,7 @@ export class InstitutionAuthService {
     // Keep the validated OTP-backed portal access alive for 7 days so the same institution account
     // can re-enter the portal without needing a fresh OTP after logout.
     this.session.set(this.hydrateSession());
-    this.otpAttempts.set(0);
+    this.resetAttempts();
     this.pendingValidation = null;
     this.pendingAccessToken = null;
     this.router.navigate(['/institution/dashboard']);
@@ -373,7 +383,7 @@ export class InstitutionAuthService {
 
     // Preserve the validated institution access for the full 7-day window so the same OTP remains usable.
     this.session.set(this.hydrateSession());
-    this.otpAttempts.set(0);
+    this.resetAttempts();
     this.pendingValidation = null;
     this.pendingAccessToken = null;
 

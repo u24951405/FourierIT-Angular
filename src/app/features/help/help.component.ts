@@ -24,7 +24,7 @@ export class HelpComponent implements OnInit, AfterViewChecked {
     { id: 'reports', title: 'Reports', keywords: 'reports activity monthly ad hoc summaries' },
     { id: 'audit-log', title: 'Audit Log', keywords: 'audit security operations changes OTP activity' },
     { id: 'user-role-management', title: 'User Management and Roles Management', keywords: 'users roles permissions institutions departments administration' },
-    { id: 'timer-settings', title: 'Timer Settings', keywords: 'timer expiry session OTP settings' }
+    { id: 'timer-settings', title: 'System Settings', keywords: 'system settings timer expiry session OTP code link validity limits' }
   ];
 
   ngOnInit(): void {

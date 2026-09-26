@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { afterNextRender, Component, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditLogService } from '../../../core/services/audit-log';
@@ -12,7 +12,7 @@ import { ManagedUserDto, UserManagementService } from '../../../core/services/us
   templateUrl: './audit-log.html',
   styleUrls: ['./audit-log.css']
 })
-export class AuditLogComponent implements OnInit {
+export class AuditLogComponent {
   private auditLogService = inject(AuditLogService);
   private userManagementService = inject(UserManagementService);
   private userNames = new Map<string, string>();
@@ -35,13 +35,16 @@ export class AuditLogComponent implements OnInit {
 
   // Pagination States
   currentPage = 1;
-  pageSize = 25;
+  pageSize = 1000;
+  readonly loadingRows = Array.from({ length: 8 });
   private _totalRecords = 0;
   private nextPageCache: AuditLog[] | null = null;
 
-  ngOnInit(): void {
-    this.loadUserNames();
-    this.loadAuditLogs();
+  constructor() {
+    afterNextRender(() => {
+      this.loadUserNames();
+      this.loadAuditLogs();
+    });
   }
 
   private loadUserNames(): void {

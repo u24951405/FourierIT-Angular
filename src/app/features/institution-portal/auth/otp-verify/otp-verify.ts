@@ -196,8 +196,9 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
         this.toast.show('OTP verified successfully.', 'success');
         this.router.navigate(['/institution/dashboard']);
       },
-      error: () => {
+      error: (err) => {
         this.verifying = false;
+        const serverMessage: string | undefined = err?.error?.error;
         this.digits = Array(OTP_LENGTH).fill('');
         this.cdr.markForCheck();
         setTimeout(() => {
@@ -205,11 +206,15 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
         });
 
         if (this.isLocked) {
-          this.error = 'Maximum attempts reached. Your session has been locked. Please request a new access link.';
-          this.toast.show('Maximum attempts reached. Please request a new access link.', 'error');
+          this.error = serverMessage ?? 'Too many incorrect codes. Request a new code to try again.';
+          this.toast.show('Too many incorrect codes. Request a new code.', 'error');
+          // A new code can be requested straight away once the old one is cancelled.
+          this.canResend = true;
+          this.clearCountdown();
         } else {
-          this.error = `Invalid or expired code. ${this.remainingAttempts} attempt${this.remainingAttempts !== 1 ? 's' : ''} remaining.`;
-          this.toast.show('Invalid or expired OTP. Please try again.', 'error');
+          // The server explains what went wrong (incorrect code with attempts left, expired code or link).
+          this.error = serverMessage ?? `Invalid or expired code. ${this.remainingAttempts} attempt${this.remainingAttempts !== 1 ? 's' : ''} remaining.`;
+          this.toast.show(serverMessage ?? 'Invalid or expired OTP. Please try again.', 'error');
           this.focusBox(0);
         }
       },
@@ -219,7 +224,7 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
   // ─── Resend ─────────────────────────────────────────────────────────────────
 
   resendOtp(): void {
-    if (!this.canResend || this.isLocked) return;
+    if (!this.canResend) return;
 
     this.authService.resendOtp().subscribe({
       next: () => {
@@ -235,9 +240,17 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
         this.focusBox(0);
         this.toast.show('A new OTP has been sent to your email.', 'success');
       },
-      error: () => {
-        this.error = 'Failed to resend code. Please try again.';
-        this.toast.show('Failed to resend OTP. Please try again.', 'error');
+      error: (err) => {
+        // The server may ask us to wait before another code can be sent.
+        const retryAfter = Number(err?.error?.retryAfterSeconds);
+        if (err?.status === 429 && Number.isFinite(retryAfter)) {
+          this.canResend = false;
+          this.resendCountdown = retryAfter;
+          this.startResendCountdown();
+        }
+        this.error = err?.error?.error ?? 'Failed to resend code. Please try again.';
+        this.toast.show(this.error ?? 'Failed to resend OTP. Please try again.', 'error');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -250,6 +263,8 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
         this.canResend = true;
         this.clearCountdown();
       }
+      // Timers don't trigger a redraw on their own in this zoneless app.
+      this.cdr.markForCheck();
     }, 1000);
   }
 
@@ -271,9 +286,10 @@ export class OtpVerifyComponent implements OnInit, OnDestroy {
         this.toast.show('A new access link has been sent to your email.', 'success');
         this.router.navigate(['/institution/auth/token-requested']);
       },
-      error: () => {
-        this.error = 'Failed to request a new access link. Please contact support.';
-        this.toast.show('Failed to send a new access link. Please contact support.', 'error');
+      error: (err) => {
+        this.error = err?.error?.error ?? 'Failed to request a new access link. Please contact support.';
+        this.toast.show(this.error ?? 'Failed to send a new access link. Please contact support.', 'error');
+        this.cdr.markForCheck();
       },
     });
   }

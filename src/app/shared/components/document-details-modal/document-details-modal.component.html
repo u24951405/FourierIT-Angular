@@ -5,38 +5,38 @@
       <button class="close-btn" (click)="closeModal()">×</button>
     </div>
 
-    @if (isLoading) {
+    @if (isLoading()) {
       <div class="modal-loading">
         <span class="spinner"></span> Loading...
       </div>
-    } @else if (error) {
-      <div class="modal-error">{{ error }}</div>
-    } @else if (details) {
+    } @else if (error()) {
+      <div class="modal-error">{{ error() }}</div>
+    } @else if (details(); as d) {
       <div class="modal-body">
         <!-- Document Info Section -->
         <div class="info-section">
           <h3>Document Information</h3>
           <div class="info-row">
             <label>File Name</label>
-            <span class="value">{{ details.fileName }}</span>
+            <span class="value">{{ d.fileName }}</span>
           </div>
           <div class="info-row">
             <label>Document Type</label>
-            <span class="value">{{ details.documentType }}</span>
+            <span class="value">{{ d.documentType }}</span>
           </div>
           <div class="info-row">
             <label>File Size</label>
-            <span class="value">{{ getFormattedFileSize(details.fileSize) }}</span>
+            <span class="value">{{ getFormattedFileSize(d.fileSize) }}</span>
           </div>
           <div class="info-row">
             <label>Status</label>
-            <span class="value badge" [class]="'badge-' + details.status.toLowerCase()">
-              {{ details.status }}
+            <span class="value badge" [class]="'badge-' + d.status.toLowerCase()">
+              {{ d.status }}
             </span>
           </div>
           <div class="info-row">
             <label>Certified</label>
-            <span class="value">{{ details.isCertified ? 'Yes' : 'No' }}</span>
+            <span class="value">{{ d.isCertified ? 'Yes' : 'No' }}</span>
           </div>
         </div>
 
@@ -45,25 +45,25 @@
           <h3>Upload Information</h3>
           <div class="info-row">
             <label>Uploaded By</label>
-            <span class="value">{{ details.uploadedBy }}</span>
+            <span class="value">{{ d.uploadedBy }}</span>
           </div>
           <div class="info-row">
             <label>Upload Date</label>
-            <span class="value">{{ details.uploadedDate | date: 'medium' }}</span>
+            <span class="value">{{ d.uploadedDate | date: 'medium' }}</span>
           </div>
         </div>
 
         <!-- Request Info Section -->
         <div class="info-section">
           <h3>Request Information</h3>
-          @if (details.requestedCount === 0) {
+          @if (d.requestedCount === 0) {
             <div class="no-requests">
               <p>No requests for this document</p>
             </div>
           } @else {
             <div class="requests-list">
-              <p class="requests-count">Requested {{ details.requestedCount }} time(s)</p>
-              @for (request of details.requestedBy; track $index) {
+              <p class="requests-count">Requested {{ d.requestedCount }} time(s)</p>
+              @for (request of d.requestedBy; track $index) {
                 <div class="request-item">
                   <span class="requester-name">{{ request.userName }}</span>
                   <span class="request-date">{{ request.requestedDate | date: 'short' }}</span>

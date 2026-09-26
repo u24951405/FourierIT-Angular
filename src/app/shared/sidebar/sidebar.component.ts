@@ -1,7 +1,7 @@
-import { Component, ElementRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
 import {
@@ -10,6 +10,8 @@ import {
   UpdateCurrentAccountPayload
 } from '../../core/services/auth.service';
 import { birthDateReasonable, formatIsoDateLocal, saMobilePhoneOptional } from '../../core/validators/profile.validators';
+import { NotificationBellComponent } from '../components/notification-bell/notification-bell.component';
+import { ToastService } from '../../core/services/toast.service';
 
 export interface NavItem {
   label: string;
@@ -22,15 +24,16 @@ export interface NavItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, ReactiveFormsModule],
+  imports: [CommonModule, RouterLink, RouterLinkActive, ReactiveFormsModule, NotificationBellComponent],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent implements OnInit {
+export class SidebarComponent implements OnInit, OnDestroy {
   auth = inject(AuthService);
-  private host = inject(ElementRef<HTMLElement>);
   private fb = inject(FormBuilder);
   private sanitizer = inject(DomSanitizer);
+  private toast = inject(ToastService);
+  @ViewChild('firstNameInput') private firstNameInput?: ElementRef<HTMLInputElement>;
   openGroup = signal<string | null>(null);
   profileOpen = signal(false);
   accountDetails = signal<CurrentAccount | null>(null);
@@ -55,9 +58,22 @@ export class SidebarComponent implements OnInit {
     emailAddress: ['', [Validators.required, Validators.email]],
     phoneNumber: ['', saMobilePhoneOptional()],
     jobTitle: [''],
-    dateOfBirth: ['', birthDateReasonable()],
-    otpExpiryMinutes: [5, [Validators.min(1), Validators.max(60)]]
+    dateOfBirth: ['', birthDateReasonable()]
   });
+
+  // Email change: 'idle' → 'enter' (type the new address) → 'code' (confirm the emailed code).
+  readonly emailChangeStep = signal<'idle' | 'enter' | 'code'>('idle');
+  readonly emailChangeBusy = signal(false);
+  readonly emailChangeError = signal<string | null>(null);
+  readonly emailChangeTarget = signal<string | null>(null);
+  /** Minutes the emailed code is valid for (set by the Super Admin in System Settings). */
+  readonly emailCodeValidMinutes = signal<number | null>(null);
+  readonly resendSeconds = signal(0);
+  readonly newEmailControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] });
+  readonly emailOtpControl = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] });
+  @ViewChild('newEmailInput') private newEmailInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('emailOtpInput') private emailOtpInput?: ElementRef<HTMLInputElement>;
+  private resendTimer?: ReturnType<typeof setInterval>;
 
   private readonly iconSvgMap: Readonly<Record<string, string>> = {
     grid:     `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>`,
@@ -117,8 +133,7 @@ export class SidebarComponent implements OnInit {
     ]},
     { label: 'Audit Log', icon: 'file', route: '/audit-logs', requiresSuperAdmin: true },
     { label: 'Backup & Restore', icon: 'folder', route: '/backup-restore', requiresSuperAdmin: true },
-    { label: 'Timer Settings', icon: 'settings', route: '/system-settings', requiresSuperAdmin: true },
-    { label: 'Document Type Validity', icon: 'check-circle', route: '/system-settings/document-types', requiresSuperAdmin: true },
+    { label: 'System Settings', icon: 'settings', route: '/system-settings', requiresSuperAdmin: true },
     { label: 'Help', icon: 'file', route: '/help' }
   ];
 
@@ -131,6 +146,18 @@ export class SidebarComponent implements OnInit {
   }
 
   private buildVisibleNavItems(): NavItem[] {
+    // Stakeholders only view: the organisation overview, the document library and departments.
+    // They change nothing except their own profile (via the account popup).
+    if (this.auth.isStakeholderViewer()) {
+      return [
+        { label: 'Dashboard', icon: 'grid', route: '/dashboard/system' },
+        { label: 'All Documents', icon: 'folder', route: '/documents/all' },
+        { label: 'All Users', icon: 'users', route: '/users/all' },
+        { label: 'Departments', icon: 'building', route: '/departments/all' },
+        { label: 'Help', icon: 'file', route: '/help' }
+      ];
+    }
+
     if (this.auth.isDocumentOwnerOnly()) {
       return [
         { label: 'Dashboard', icon: 'file', route: '/dashboard/owner' },
@@ -231,24 +258,25 @@ export class SidebarComponent implements OnInit {
     this.auth.logout();
   }
 
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (!this.profileOpen()) return;
-    const t = event.target;
-    if (t instanceof Node && !this.host.nativeElement.contains(t)) {
-      this.profileOpen.set(false);
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.profileOpen()) {
+      this.closeProfile();
     }
   }
 
-  toggleProfile(event: MouseEvent): void {
-    event.stopPropagation();
-    if (this.profileOpen()) {
-      this.profileOpen.set(false);
-      this.editingProfile.set(false);
-      return;
-    }
+  /** Opens the profile popup in view mode and refreshes the account details. */
+  openProfile(): void {
+    this.editingProfile.set(false);
     this.profileOpen.set(true);
     this.loadAccount();
+  }
+
+  /** Closes the popup entirely, discarding any unsaved edits. Ignored while a save is in flight. */
+  closeProfile(): void {
+    if (this.savingProfile()) return;
+    if (this.editingProfile()) this.cancelEditProfile();
+    this.profileOpen.set(false);
   }
 
   private loadAccount(): void {
@@ -273,10 +301,6 @@ export class SidebarComponent implements OnInit {
       });
   }
 
-  canManageOtpExpiry(): boolean {
-    return this.auth.isSuperAdmin();
-  }
-
   startEditProfile(): void {
     const account = this.accountDetails();
     if (!account) return;
@@ -289,13 +313,158 @@ export class SidebarComponent implements OnInit {
       emailAddress: account.email ?? '',
       phoneNumber: this.displayPhone(account),
       jobTitle: account.jobTitle ?? '',
-      dateOfBirth: this.toDateInputValue(account.dateOfBirth),
-      otpExpiryMinutes: this.getOtpExpiryMinutes(account)
+      dateOfBirth: this.toDateInputValue(account.dateOfBirth)
     });
     this.editingProfile.set(true);
+
+    // The Super Admin account has only a username and email, so its only edit is an email change.
+    if (this.auth.isSuperAdmin()) {
+      this.startEmailChange();
+    } else {
+      setTimeout(() => this.firstNameInput?.nativeElement.focus());
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.stopResendTimer();
+  }
+
+  startEmailChange(): void {
+    this.emailChangeError.set(null);
+    this.newEmailControl.reset('');
+    this.emailOtpControl.reset('');
+    this.emailChangeStep.set('enter');
+    setTimeout(() => this.newEmailInput?.nativeElement.focus());
+  }
+
+  sendEmailCode(): void {
+    if (this.emailChangeBusy()) return;
+    if (this.newEmailControl.invalid) {
+      this.newEmailControl.markAsTouched();
+      this.emailChangeError.set('Enter a valid email address.');
+      return;
+    }
+
+    const newEmail = this.newEmailControl.value.trim();
+    this.emailChangeBusy.set(true);
+    this.emailChangeError.set(null);
+    this.auth.requestEmailChange(newEmail)
+      .pipe(finalize(() => this.emailChangeBusy.set(false)))
+      .subscribe({
+        next: res => {
+          this.emailChangeTarget.set(res.email ?? newEmail);
+          const validMs = new Date(res.expiresAt).getTime() - Date.now();
+          this.emailCodeValidMinutes.set(Number.isFinite(validMs) ? Math.max(1, Math.round(validMs / 60000)) : null);
+          this.emailOtpControl.reset('');
+          this.emailChangeStep.set('code');
+          this.startResendTimer(res.resendAvailableInSeconds ?? 60);
+          setTimeout(() => this.emailOtpInput?.nativeElement.focus());
+        },
+        error: err => {
+          const seconds = Number(err?.error?.retryAfterSeconds);
+          if (err?.status === 429 && Number.isFinite(seconds)) this.startResendTimer(seconds);
+          this.emailChangeError.set(this.apiErrorMessage(err, 'Could not send the verification code.'));
+        }
+      });
+  }
+
+  resendEmailCode(): void {
+    if (this.resendSeconds() > 0) return;
+    this.newEmailControl.setValue(this.emailChangeTarget() ?? this.newEmailControl.value);
+    this.sendEmailCode();
+  }
+
+  verifyEmailCode(): void {
+    if (this.emailChangeBusy()) return;
+    const otp = this.emailOtpControl.value.replace(/\D/g, '');
+    if (!/^\d{6}$/.test(otp)) {
+      this.emailOtpControl.markAsTouched();
+      this.emailChangeError.set('Enter the 6-digit code from the email.');
+      return;
+    }
+
+    this.emailChangeBusy.set(true);
+    this.emailChangeError.set(null);
+    this.auth.verifyEmailChange(otp)
+      .pipe(finalize(() => this.emailChangeBusy.set(false)))
+      .subscribe({
+        next: res => {
+          this.editForm.controls.emailAddress.setValue(res.email);
+          this.accountDetails.update(account => account ? { ...account, email: res.email } : account);
+          this.resetEmailChange();
+          this.toast.show('Email address updated.', 'success');
+        },
+        error: err => {
+          // After too many wrong codes the request is discarded, so go back to entering an address.
+          if (err?.error?.attemptsRemaining === 0) {
+            this.emailChangeStep.set('enter');
+          }
+          this.emailOtpControl.reset('');
+          this.emailChangeError.set(this.apiErrorMessage(err, 'Could not verify the code.'));
+        }
+      });
+  }
+
+  /** Abandons the email change; a code already sent is invalidated on the server. */
+  cancelEmailChange(): void {
+    if (this.emailChangeStep() === 'code') {
+      this.auth.cancelEmailChange().subscribe({ error: () => { /* the code expires on its own anyway */ } });
+    }
+    this.resetEmailChange();
+  }
+
+  private resetEmailChange(): void {
+    this.emailChangeStep.set('idle');
+    this.emailChangeError.set(null);
+    this.emailChangeTarget.set(null);
+    this.newEmailControl.reset('');
+    this.emailOtpControl.reset('');
+  }
+
+  private startResendTimer(seconds: number): void {
+    this.stopResendTimer();
+    this.resendSeconds.set(Math.max(0, Math.ceil(seconds)));
+    this.resendTimer = setInterval(() => {
+      const next = this.resendSeconds() - 1;
+      this.resendSeconds.set(Math.max(next, 0));
+      if (next <= 0) this.stopResendTimer();
+    }, 1000);
+  }
+
+  private stopResendTimer(): void {
+    if (this.resendTimer) clearInterval(this.resendTimer);
+    this.resendTimer = undefined;
+  }
+
+  private apiErrorMessage(err: any, fallback: string): string {
+    const body = err?.error;
+    if (typeof body === 'string' && body.trim()) return body;
+    return body?.error
+      ?? body?.errors?.NewEmail?.[0]
+      ?? body?.errors?.Otp?.[0]
+      ?? body?.title
+      ?? fallback;
+  }
+
+  /** Inline message for a form field, shown once the user has touched it (or tried to save). */
+  fieldError(name: string): string | null {
+    const control = this.editForm.get(name);
+    if (!control || !control.invalid || !(control.touched || control.dirty)) return null;
+
+    const errors = control.errors ?? {};
+    if (errors['required']) return 'This field is required.';
+    if (errors['email']) return 'Enter a valid email address.';
+    if (errors['phoneTooShort']) return 'This number is too short.';
+    if (errors['phoneTooManyDigits']) return 'This number has too many digits.';
+    if (errors['phoneInvalid']) return 'Enter a valid South African mobile number.';
+    if (errors['birthDateFuture']) return 'Date of birth cannot be in the future.';
+    if (errors['birthDateTooOld']) return 'Enter a realistic date of birth.';
+    if (errors['birthDateInvalid']) return 'Enter a valid date.';
+    return 'Check this value.';
   }
 
   cancelEditProfile(): void {
+    if (this.emailChangeStep() !== 'idle') this.cancelEmailChange();
     this.editingProfile.set(false);
     this.profileSaveError.set(null);
     this.selectedProfileFile.set(null);
@@ -353,11 +522,7 @@ export class SidebarComponent implements OnInit {
 
     if (this.editForm.invalid) {
       this.editForm.markAllAsTouched();
-      const invalidControls = Object.entries(this.editForm.controls)
-        .filter(([, control]) => control.invalid)
-        .map(([name, control]) => `${name}: ${Object.keys(control.errors ?? {}).join(', ')}`)
-        .join('; ');
-      this.profileSaveError.set(`Please correct the following fields: ${invalidControls || 'form is invalid'}.`);
+      this.profileSaveError.set('Please fix the highlighted fields.');
       return;
     }
 
@@ -372,8 +537,7 @@ export class SidebarComponent implements OnInit {
         emailAddress: (formValue.emailAddress ?? '').trim(),
         role: account.roles[0] ?? '',
         accountStatus: account.accountStatus ?? 'Active',
-        profileImageUrl: uploadedImageUrl ?? AuthService.resolveProfileImageUrl(account),
-        otpExpiryMinutes: this.canManageOtpExpiry() ? Number(formValue.otpExpiryMinutes ?? 5) : account.otpExpiryMinutes ?? 5
+        profileImageUrl: uploadedImageUrl ?? AuthService.resolveProfileImageUrl(account)
       };
 
       this.auth.updateCurrentAccount(account.profileId!, payload)
@@ -381,6 +545,7 @@ export class SidebarComponent implements OnInit {
         .subscribe({
           next: () => {
             this.editingProfile.set(false);
+            this.toast.show('Profile updated.', 'success');
             this.loadAccount();
             this.selectedProfileFile.set(null);
             this.selectedProfileImage.set(null);
@@ -438,12 +603,6 @@ export class SidebarComponent implements OnInit {
 
   displayPhone(a: CurrentAccount): string {
     return (a.profilePhoneNumber || a.phoneNumber || '').trim();
-  }
-
-  getOtpExpiryMinutes(a: CurrentAccount): number {
-    const value = Number(a.otpExpiryMinutes ?? 5);
-    if (!Number.isFinite(value) || value < 1) return 5;
-    return Math.min(Math.max(value, 1), 60);
   }
 
   profileFullName(a: CurrentAccount): string {

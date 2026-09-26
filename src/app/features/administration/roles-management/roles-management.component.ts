@@ -39,7 +39,7 @@ export class RolesManagementComponent {
   editId       = signal<string | null>(null);
   isSubmitting = signal(false);
   isLoading = signal(false);
-  permissions = signal<string[]>([]);
+  permissions = signal<RolePermissionDto[]>([]);
   selectedPermissions = signal<string[]>([]);
   allPermissions = signal<RolePermissionDto[]>([]);
   isLoadingPermissions = signal(false);
@@ -128,20 +128,31 @@ export class RolesManagementComponent {
         this.toast.show('Role deleted.', 'success');
       },
       error: (error) => {
-        const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Failed to delete role.';
+        const message = this.getErrorMessage(error, 'Failed to delete role.');
         this.toast.show(message, 'error');
       }
     });
   }
 
+  private getErrorMessage(error: any, fallback: string): string {
+    const body = error?.error;
+    const message = body?.message || body?.error || body?.title || fallback;
+    return body?.suggestion ? `${message} ${body.suggestion}` : message;
+  }
+
   private loadRoles(): void {
     this.isLoading.set(true);
-    const defaultPermissions = [
+    const defaultPermissionKeys = [
       'Documents.View', 'Documents.Upload', 'Documents.Manage',
       'Compliance.View', 'Compliance.Manage',
       'Users.Manage', 'Roles.Manage',
       'Reports.View', 'Audit.View', 'Backup.Manage'
     ];
+    const defaultPermissions = defaultPermissionKeys.map((permissionKey, index) => ({
+      permissionId: index + 1,
+      permissionKey,
+      isAssigned: false
+    }));
     this.rolesService.getPermissions().subscribe({
       next: permissions => this.permissions.set(permissions ?? defaultPermissions),
       error: () => this.permissions.set(defaultPermissions)

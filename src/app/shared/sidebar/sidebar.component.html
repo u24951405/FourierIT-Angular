@@ -7,6 +7,7 @@
       <h2 class="sidebar__brand-name">DocuVault</h2>
       <p class="sidebar__brand-sub">Secure Platform</p>
     </div>
+    <app-notification-bell />
   </div>
 
   <nav class="sidebar__nav">
@@ -71,8 +72,8 @@
     <button type="button"
             class="sidebar__user sidebar__user--trigger"
             [class.sidebar__user--open]="profileOpen()"
-            (click)="toggleProfile($event)"
-            [attr.aria-expanded]="profileOpen()"
+            (click)="openProfile()"
+            aria-haspopup="dialog"
             aria-label="View profile details">
       <div class="sidebar__avatar"
            [class.sidebar__avatar--image]="!!profileImageUrl()"
@@ -93,123 +94,279 @@
       </svg>
     </button>
 
-    <ng-container *ngIf="profileOpen()">
-      <div class="sidebar__profile-panel" role="region" aria-label="Your profile" (click)="$event.stopPropagation()">
-        <ng-container *ngIf="loadingAccount(); else accountState">
-          <p class="sidebar__profile-msg">Loading your details…</p>
-        </ng-container>
-
-        <ng-template #accountState>
-          <ng-container *ngIf="accountError(); else accountContent">
-            <p class="sidebar__profile-msg sidebar__profile-msg--error">{{ accountError() }}</p>
-          </ng-container>
-
-          <ng-template #accountContent>
-            <ng-container *ngIf="accountDetails() as a; else noAccount">
-              <ng-container *ngIf="!editingProfile(); else editProfileForm">
-                <div class="sidebar__profile-header">
-                  <div class="sidebar__profile-avatar"
-                       [class.sidebar__profile-avatar--image]="!!profileImageUrl()"
-                       [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}">
-                    <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
-                  </div>
-                </div>
-                <dl class="sidebar__profile-dl">
-                  <dt>Username</dt>
-                  <dd>{{ a.userName }}</dd>
-                  <dt>Email</dt>
-                  <dd>{{ a.email }}</dd>
-                  <ng-container *ngIf="profileFullName(a)">
-                    <dt>Name</dt>
-                    <dd>{{ profileFullName(a) }}</dd>
-                  </ng-container>
-                  <dt>Roles</dt>
-                  <dd>{{ a.roles.length ? a.roles.join(', ') : '—' }}</dd>
-                  <dt>Account status</dt>
-                  <dd>{{ a.accountStatus }}</dd>
-                  <ng-container *ngIf="displayPhone(a)">
-                    <dt>Phone</dt>
-                    <dd>{{ displayPhone(a) }}</dd>
-                  </ng-container>
-                  <ng-container *ngIf="a.jobTitle">
-                    <dt>Job title</dt>
-                    <dd>{{ a.jobTitle }}</dd>
-                  </ng-container>
-                  <ng-container *ngIf="a.dateOfBirth">
-                    <dt>Date of birth</dt>
-                    <dd>{{ a.dateOfBirth }}</dd>
-                  </ng-container>
-                  <ng-container *ngIf="canManageOtpExpiry()">
-                    <dt>OTP expiry</dt>
-                    <dd>{{ a.otpExpiryMinutes ?? 5 }} minutes</dd>
-                  </ng-container>
-                </dl>
-                <button type="button" class="sidebar__profile-action" (click)="startEditProfile()">Edit details</button>
-              </ng-container>
-
-              <ng-template #editProfileForm>
-                <form class="sidebar__profile-form" [formGroup]="editForm" (ngSubmit)="saveProfile()">
-                  <div class="sidebar__profile-upload">
-                    <div class="sidebar__profile-avatar"
-                         [class.sidebar__profile-avatar--image]="!!profileImageUrl()"
-                         [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}">
-                      <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
-                    </div>
-                    <label class="sidebar__profile-upload-button">
-                      <input type="file" accept="image/*" (change)="onProfileImageSelected($event)" hidden>
-                      Upload photo
-                    </label>
-                    <button *ngIf="selectedProfileFile() || profileImageUrl()" type="button" class="sidebar__profile-action sidebar__profile-action--secondary" (click)="clearProfileImage()">
-                      Remove
-                    </button>
-                  </div>
-                  <label class="sidebar__profile-label">
-                    First name
-                    <input class="sidebar__profile-input" type="text" formControlName="firstName">
-                  </label>
-                  <label class="sidebar__profile-label">
-                    Last name
-                    <input class="sidebar__profile-input" type="text" formControlName="lastName">
-                  </label>
-                  <label class="sidebar__profile-label">
-                    Email
-                    <input class="sidebar__profile-input" type="email" formControlName="emailAddress">
-                  </label>
-                  <label class="sidebar__profile-label">
-                    Phone
-                    <input class="sidebar__profile-input" type="text" formControlName="phoneNumber" placeholder="e.g. 0821234567">
-                  </label>
-                  <label class="sidebar__profile-label">
-                    Job title
-                    <input class="sidebar__profile-input" type="text" formControlName="jobTitle">
-                  </label>
-                  <label class="sidebar__profile-label">
-                    Date of birth
-                    <input class="sidebar__profile-input" type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
-                  </label>
-                  <label *ngIf="canManageOtpExpiry()" class="sidebar__profile-label">
-                    OTP expiry (minutes)
-                    <input class="sidebar__profile-input" type="number" min="1" max="60" formControlName="otpExpiryMinutes">
-                  </label>
-                  <p *ngIf="profileSaveError()" class="sidebar__profile-msg sidebar__profile-msg--error">{{ profileSaveError() }}</p>
-                  <div class="sidebar__profile-actions">
-                    <button type="button" class="sidebar__profile-action sidebar__profile-action--secondary" (click)="cancelEditProfile()">Cancel</button>
-                    <button type="submit" class="sidebar__profile-action" [disabled]="savingProfile()">
-                      {{ savingProfile() ? 'Saving…' : 'Save changes' }}
-                    </button>
-                  </div>
-                </form>
-              </ng-template>
-            </ng-container>
-
-            <ng-template #noAccount>
-              <p class="sidebar__profile-msg sidebar__profile-msg--error">Could not load your profile.</p>
-            </ng-template>
-          </ng-template>
-        </ng-template>
-      </div>
-    </ng-container>
-
     <button type="button" class="sidebar__logout" (click)="logout()">Log out</button>
   </footer>
 </aside>
+
+<!-- Profile popup (view and edit). Rendered outside the sidebar so it is centred on the page. -->
+<div *ngIf="profileOpen()" class="profile-modal" (click)="closeProfile()">
+  <div class="profile-modal__dialog"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="profile-modal-title"
+       (click)="$event.stopPropagation()">
+    <header class="profile-modal__header">
+      <div>
+        <h2 id="profile-modal-title">{{ editingProfile() ? (auth.isSuperAdmin() ? 'Change email' : 'Edit profile') : 'Your profile' }}</h2>
+        <p>{{ editingProfile()
+              ? (auth.isSuperAdmin() ? 'Confirm a new email address with a code sent to it.' : 'Keep your personal and contact details up to date.')
+              : 'Your account and contact details.' }}</p>
+      </div>
+      <button type="button" class="profile-modal__close" (click)="closeProfile()" aria-label="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </header>
+
+    <ng-container *ngIf="accountDetails() as a; else profileState">
+      <!-- View mode -->
+      <ng-container *ngIf="!editingProfile(); else profileEditForm">
+        <div class="profile-modal__body">
+          <section class="profile-modal__photo" aria-label="Profile summary">
+            <div class="profile-modal__avatar"
+                 [class.profile-modal__avatar--image]="!!profileImageUrl()"
+                 [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}"
+                 aria-hidden="true">
+              <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
+            </div>
+            <div class="profile-modal__photo-info">
+              <strong>{{ profileFullName(a) || a.userName }}</strong>
+              <span>{{ a.email }}</span>
+              <div class="profile-modal__chips">
+                <span *ngFor="let role of a.roles" class="pm-chip">{{ role }}</span>
+                <span class="pm-chip"
+                      [class.pm-chip--success]="(a.accountStatus || '').toLowerCase() === 'active'"
+                      [class.pm-chip--muted]="(a.accountStatus || '').toLowerCase() !== 'active'">
+                  {{ a.accountStatus || 'Unknown status' }}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-modal__section">
+            <h3>Account</h3>
+            <dl class="pm-details">
+              <div><dt>Username</dt><dd>{{ a.userName }}</dd></div>
+              <div><dt>Roles</dt><dd>{{ a.roles.length ? a.roles.join(', ') : 'None assigned' }}</dd></div>
+              <div *ngIf="a.departmentName"><dt>Department</dt><dd>{{ a.departmentName }}</dd></div>
+              <div *ngIf="a.maskedIdentificationNumber">
+                <dt>{{ a.entityTypeId === 1 ? 'ID number' : 'Identification number' }}</dt>
+                <dd class="pm-details__mono">{{ a.maskedIdentificationNumber }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <!-- The Super Admin account has only a username and email, so it has no personal details. -->
+          <section *ngIf="!auth.isSuperAdmin()" class="profile-modal__section">
+            <h3>Personal details</h3>
+            <dl class="pm-details">
+              <div><dt>First name</dt><dd [class.pm-details__empty]="!a.firstName">{{ a.firstName || 'Not provided' }}</dd></div>
+              <div><dt>Last name</dt><dd [class.pm-details__empty]="!a.lastName">{{ a.lastName || 'Not provided' }}</dd></div>
+              <div>
+                <dt>Date of birth</dt>
+                <dd [class.pm-details__empty]="!a.dateOfBirth">
+                  {{ a.dateOfBirth ? (a.dateOfBirth | date:'d MMMM y') : 'Not provided' }}
+                  <span *ngIf="a.dateOfBirthFromIdNumber" class="pm-details__note">From ID number</span>
+                </dd>
+              </div>
+              <div><dt>Job title</dt><dd [class.pm-details__empty]="!a.jobTitle">{{ a.jobTitle || 'Not provided' }}</dd></div>
+            </dl>
+          </section>
+
+          <section class="profile-modal__section">
+            <h3>Contact</h3>
+            <dl class="pm-details">
+              <div><dt>Email</dt><dd>{{ a.email }}</dd></div>
+              <div *ngIf="!auth.isSuperAdmin()"><dt>Mobile number</dt><dd [class.pm-details__empty]="!displayPhone(a)">{{ displayPhone(a) || 'Not provided' }}</dd></div>
+            </dl>
+          </section>
+
+        </div>
+
+        <footer class="profile-modal__footer">
+          <div class="profile-modal__actions">
+            <button type="button" class="pm-btn pm-btn--secondary" (click)="closeProfile()">Close</button>
+            <button type="button" class="pm-btn pm-btn--primary" (click)="startEditProfile()">
+              {{ auth.isSuperAdmin() ? 'Change email' : 'Edit details' }}
+            </button>
+          </div>
+        </footer>
+      </ng-container>
+
+      <!-- Edit mode -->
+      <ng-template #profileEditForm>
+        <form class="profile-modal__form" [formGroup]="editForm" (ngSubmit)="saveProfile()" novalidate>
+          <div class="profile-modal__body">
+            <section class="profile-modal__photo" aria-label="Profile photo">
+              <div class="profile-modal__avatar"
+                   [class.profile-modal__avatar--image]="!!profileImageUrl()"
+                   [ngStyle]="profileImageUrl() ? { 'background-image': 'url(' + profileImageUrl() + ')' } : {}"
+                   aria-hidden="true">
+                <span *ngIf="!profileImageUrl()">{{ userInitials }}</span>
+              </div>
+              <div class="profile-modal__photo-info">
+                <strong>{{ profileFullName(a) || a.userName }}</strong>
+                <span>{{ a.roles.length ? a.roles.join(', ') : a.email }}</span>
+                <!-- Uploading a photo would create a profile record, which the Super Admin account does not have. -->
+                <div *ngIf="!auth.isSuperAdmin()" class="profile-modal__photo-actions">
+                  <label class="pm-btn pm-btn--secondary pm-btn--small">
+                    <input type="file" accept="image/*" (change)="onProfileImageSelected($event)" hidden>
+                    {{ profileImageUrl() ? 'Change photo' : 'Upload photo' }}
+                  </label>
+                  <button *ngIf="selectedProfileFile() || profileImageUrl()"
+                          type="button"
+                          class="pm-btn pm-btn--ghost pm-btn--small"
+                          (click)="clearProfileImage()"
+                          [disabled]="savingProfile()">
+                    Remove
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <section *ngIf="!auth.isSuperAdmin()" class="profile-modal__section">
+              <h3>Personal details</h3>
+              <div class="profile-modal__grid">
+                <div class="pm-field" [class.pm-field--invalid]="fieldError('firstName')">
+                  <label for="pm-first-name">First name <span class="pm-required" aria-hidden="true">*</span></label>
+                  <input #firstNameInput id="pm-first-name" type="text" formControlName="firstName" autocomplete="given-name"
+                         [attr.aria-invalid]="!!fieldError('firstName')">
+                  <p *ngIf="fieldError('firstName') as error" class="pm-field__error">{{ error }}</p>
+                </div>
+                <div class="pm-field" [class.pm-field--invalid]="fieldError('lastName')">
+                  <label for="pm-last-name">Last name <span class="pm-required" aria-hidden="true">*</span></label>
+                  <input id="pm-last-name" type="text" formControlName="lastName" autocomplete="family-name"
+                         [attr.aria-invalid]="!!fieldError('lastName')">
+                  <p *ngIf="fieldError('lastName') as error" class="pm-field__error">{{ error }}</p>
+                </div>
+                <div class="pm-field" [class.pm-field--invalid]="fieldError('dateOfBirth')">
+                  <label for="pm-dob">Date of birth</label>
+                  <!-- For South African ID holders the date of birth comes from the ID number (the API enforces this). -->
+                  <input id="pm-dob" type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate"
+                         [readonly]="a.dateOfBirthFromIdNumber"
+                         [attr.aria-invalid]="!!fieldError('dateOfBirth')"
+                         [attr.aria-describedby]="a.dateOfBirthFromIdNumber ? 'pm-dob-hint' : null">
+                  <p *ngIf="a.dateOfBirthFromIdNumber" id="pm-dob-hint" class="pm-field__hint">Taken from your ID number.</p>
+                  <p *ngIf="fieldError('dateOfBirth') as error" class="pm-field__error">{{ error }}</p>
+                </div>
+                <div class="pm-field">
+                  <label for="pm-job-title">Job title</label>
+                  <input id="pm-job-title" type="text" formControlName="jobTitle" autocomplete="organization-title">
+                </div>
+                <div *ngIf="a.maskedIdentificationNumber" class="pm-field pm-field--full">
+                  <label for="pm-id-number">{{ a.entityTypeId === 1 ? 'ID number' : 'Identification number' }}</label>
+                  <input id="pm-id-number" type="text" class="pm-details__mono" [value]="a.maskedIdentificationNumber" readonly
+                         aria-describedby="pm-id-hint">
+                  <p id="pm-id-hint" class="pm-field__hint">Your identification number can't be changed.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="profile-modal__section">
+              <h3>Contact</h3>
+              <div class="profile-modal__grid">
+                <div class="pm-field pm-field--full">
+                  <label for="pm-email">Email</label>
+                  <!-- Email changes are confirmed with a code sent to the new address, not saved with the form. -->
+                  <div class="pm-email-row">
+                    <input id="pm-email" type="email" formControlName="emailAddress" autocomplete="email" readonly
+                           aria-describedby="pm-email-hint">
+                    <button *ngIf="emailChangeStep() === 'idle'" type="button" class="pm-btn pm-btn--secondary"
+                            (click)="startEmailChange()">
+                      Change
+                    </button>
+                  </div>
+                  <p *ngIf="emailChangeStep() === 'idle'" id="pm-email-hint" class="pm-field__hint">
+                    To change it, we'll email a verification code to the new address.
+                  </p>
+
+                  <div *ngIf="emailChangeStep() !== 'idle'" class="pm-email-change" role="group" aria-label="Change email address">
+                    <ng-container *ngIf="emailChangeStep() === 'enter'; else emailCodeStep">
+                      <p class="pm-email-change__title">Step 1 of 2 · Enter your new email address</p>
+                      <label class="pm-sr-only" for="pm-new-email">New email address</label>
+                      <input #newEmailInput id="pm-new-email" type="email" autocomplete="email"
+                             placeholder="name@example.com"
+                             [class.pm-input--invalid]="!!emailChangeError()"
+                             [attr.aria-invalid]="!!emailChangeError()"
+                             [formControl]="newEmailControl"
+                             (input)="emailChangeError.set(null)"
+                             (keydown.enter)="$event.preventDefault(); sendEmailCode()">
+                      <div class="pm-email-change__actions">
+                        <button type="button" class="pm-btn pm-btn--ghost-neutral pm-btn--small" (click)="cancelEmailChange()"
+                                [disabled]="emailChangeBusy()">Cancel</button>
+                        <button type="button" class="pm-btn pm-btn--primary pm-btn--small" (click)="sendEmailCode()"
+                                [disabled]="emailChangeBusy() || resendSeconds() > 0">
+                          {{ emailChangeBusy() ? 'Sending…' : resendSeconds() > 0 ? 'Wait ' + resendSeconds() + 's' : 'Send code' }}
+                        </button>
+                      </div>
+                    </ng-container>
+
+                    <ng-template #emailCodeStep>
+                      <p class="pm-email-change__title">Step 2 of 2 · Enter the verification code</p>
+                      <p class="pm-email-change__text">
+                        We sent a 6-digit code to <strong>{{ emailChangeTarget() }}</strong>.
+                        @if (emailCodeValidMinutes(); as minutes) {
+                          It expires in {{ minutes }} {{ minutes === 1 ? 'minute' : 'minutes' }}.
+                        }
+                      </p>
+                      <label class="pm-sr-only" for="pm-email-otp">Verification code</label>
+                      <input #emailOtpInput id="pm-email-otp" class="pm-otp-input" type="text"
+                             inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••"
+                             [formControl]="emailOtpControl"
+                             (keydown.enter)="$event.preventDefault(); verifyEmailCode()">
+                      <div class="pm-email-change__actions">
+                        <button type="button" class="pm-link" (click)="resendEmailCode()"
+                                [disabled]="emailChangeBusy() || resendSeconds() > 0">
+                          {{ resendSeconds() > 0 ? 'Resend code in ' + resendSeconds() + 's' : 'Resend code' }}
+                        </button>
+                        <span class="pm-email-change__spacer"></span>
+                        <button type="button" class="pm-btn pm-btn--ghost-neutral pm-btn--small" (click)="cancelEmailChange()"
+                                [disabled]="emailChangeBusy()">Cancel</button>
+                        <button type="button" class="pm-btn pm-btn--primary pm-btn--small" (click)="verifyEmailCode()"
+                                [disabled]="emailChangeBusy()">
+                          {{ emailChangeBusy() ? 'Verifying…' : 'Verify' }}
+                        </button>
+                      </div>
+                    </ng-template>
+
+                    <p *ngIf="emailChangeError()" class="pm-field__error" role="alert">{{ emailChangeError() }}</p>
+                  </div>
+                </div>
+                <div *ngIf="!auth.isSuperAdmin()" class="pm-field" [class.pm-field--invalid]="fieldError('phoneNumber')">
+                  <label for="pm-phone">Mobile number</label>
+                  <input id="pm-phone" type="tel" formControlName="phoneNumber" autocomplete="tel" placeholder="e.g. 082 123 4567"
+                         [attr.aria-invalid]="!!fieldError('phoneNumber')">
+                  <p *ngIf="fieldError('phoneNumber') as error" class="pm-field__error">{{ error }}</p>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+          <footer class="profile-modal__footer">
+            <p *ngIf="profileSaveError()" class="profile-modal__error" role="alert">{{ profileSaveError() }}</p>
+            <div class="profile-modal__actions">
+              <button type="button" class="pm-btn pm-btn--secondary" (click)="cancelEditProfile()" [disabled]="savingProfile()">
+                {{ auth.isSuperAdmin() ? 'Back' : 'Cancel' }}
+              </button>
+              <button *ngIf="!auth.isSuperAdmin()" type="submit" class="pm-btn pm-btn--primary" [disabled]="savingProfile()">
+                {{ savingProfile() ? 'Saving…' : 'Save changes' }}
+              </button>
+            </div>
+          </footer>
+        </form>
+      </ng-template>
+    </ng-container>
+
+    <!-- Loading / error while there are no account details yet -->
+    <ng-template #profileState>
+      <div class="profile-modal__body profile-modal__state">
+        <p *ngIf="loadingAccount(); else profileError">Loading your details…</p>
+        <ng-template #profileError>
+          <p class="profile-modal__state--error" role="alert">{{ accountError() || 'Could not load your profile.' }}</p>
+        </ng-template>
+      </div>
+    </ng-template>
+  </div>
+</div>

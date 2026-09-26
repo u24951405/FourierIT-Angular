@@ -1,11 +1,12 @@
 import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService, EntityTypeOption, RegisterPayload, VerifyRegistrationOtpPayload } from '../../../core/services/auth.service';
 import { RoleService } from '../../../core/services/role.service';
+import { SA_ID_ENTITY_TYPE_ID, saIdDateOfBirth, saIdNumber } from '../../../core/validators/sa-id';
 import {
   birthDateReasonable,
   formatIsoDateLocal,
@@ -16,7 +17,7 @@ import {
   selector: 'app-register-user',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './register-user.component.html',
   styleUrl: './register-user.component.scss'
 })
@@ -82,6 +83,9 @@ export class RegisterUserComponent implements OnInit {
     roleIds: this.fb.nonNullable.control<string[]>([], [this.minSelectedRolesValidator(1), this.maxSelectedRolesValidator(this.maxRoles)]),
   });
 
+  /** True when the date of birth is read from a South African ID number (and can't be typed). */
+  readonly dobFromId = signal(false);
+
   roles: Array<{ id: string; name: string }> = [];
   entityTypes: EntityTypeOption[] = [];
   private readonly defaultRoles: Array<{ id: string; name: string }> = [
@@ -102,6 +106,18 @@ export class RegisterUserComponent implements OnInit {
 
   private isSelfSignupFlow(): boolean {
     return this.router.url.startsWith('/auth/register');
+  }
+
+  /** The Super Admin registering a Department Admin, Stakeholder or Compliance Officer (not someone signing up). */
+  get isAdminRegistration(): boolean {
+    return !this.isSelfSignupFlow();
+  }
+
+  /** Where the Super Admin goes after registering someone: the list that user now appears in. */
+  private get registeredUserListPath(): string {
+    if (this.defaultRoleName() === 'Department Admin') return '/users/department-admins';
+    if (this.isRoleDropdownMode) return '/users/stakeholders-compliance';
+    return '/dashboard';
   }
 
   private navigateAfterRegisterOrCancel(): void {
@@ -141,13 +157,16 @@ export class RegisterUserComponent implements OnInit {
     this.form.controls.entityTypeId.valueChanges.subscribe(() => {
       this.applyEntityIdentificationValidators();
       this.resetEntityVerificationState();
+      this.syncDateOfBirthFromId();
     });
 
     this.form.controls.entityIdentificationNumber.valueChanges.subscribe(() => {
       this.resetEntityVerificationState();
+      this.syncDateOfBirthFromId();
     });
 
     this.applyEntityIdentificationValidators();
+    this.syncDateOfBirthFromId();
 
     // Track password changes for live rule evaluation
     this.form.controls.password.valueChanges.subscribe((v) => {
@@ -155,6 +174,25 @@ export class RegisterUserComponent implements OnInit {
       this.cdr.markForCheck();
     });
     this.form.controls.confirmPassword.valueChanges.subscribe(() => this.cdr.markForCheck());
+  }
+
+  /**
+   * A South African ID number contains the date of birth (YYMMDD), so for SA ID holders the date is filled in
+   * from the ID and can't be typed. The API applies the same rule.
+   */
+  private syncDateOfBirthFromId(): void {
+    const control = this.form.controls.dateOfBirth;
+    if (this.form.controls.entityTypeId.value === SA_ID_ENTITY_TYPE_ID) {
+      const fromId = saIdDateOfBirth(this.form.controls.entityIdentificationNumber.value);
+      control.setValue(fromId ?? '');
+      if (fromId) control.markAsTouched();
+      this.dobFromId.set(true);
+    } else if (this.dobFromId()) {
+      // Switching away from an SA ID: clear the date it filled in so it's entered by hand.
+      control.setValue('');
+      this.dobFromId.set(false);
+    }
+    this.cdr.markForCheck();
   }
 
   private resetEntityVerificationState(): void {
@@ -167,18 +205,20 @@ export class RegisterUserComponent implements OnInit {
     const entityTypeId = this.form.controls.entityTypeId.value;
     const control = this.form.controls.entityIdentificationNumber;
 
+    // Stakeholders and Compliance Officers skip the identity step, so nothing there may be required.
+    if (!this.needsIdentityStep) {
+      for (const entityControl of [this.form.controls.entityTypeId, control]) {
+        entityControl.clearValidators();
+        entityControl.updateValueAndValidity({ emitEvent: false });
+      }
+      return;
+    }
+
     control.clearValidators();
     control.setValidators([Validators.required]);
 
-    if (entityTypeId === 1) {
-      control.setValidators([
-        Validators.required,
-        (input: AbstractControl): ValidationErrors | null => {
-          const value = String(input.value ?? '').replace(/\s+/g, '');
-          if (!value) return null;
-          return /^\d{13}$/.test(value) ? null : { saIdInvalid: true };
-        }
-      ]);
+    if (entityTypeId === SA_ID_ENTITY_TYPE_ID) {
+      control.setValidators([Validators.required, saIdNumber()]);
     }
 
     control.updateValueAndValidity({ emitEvent: false });
@@ -238,9 +278,11 @@ export class RegisterUserComponent implements OnInit {
     this.auth.getEntityTypes().subscribe({
       next: (entityTypes) => {
         this.entityTypes = entityTypes?.length ? entityTypes : this.defaultEntityTypes;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.entityTypes = this.defaultEntityTypes;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -329,6 +371,30 @@ export class RegisterUserComponent implements OnInit {
     }
   }
 
+  /**
+   * Only people who upload documents (Document Owners and Department Admins) have an entity.
+   * Stakeholders and Compliance Officers are registered through the role-dropdown page and skip that step.
+   */
+  get needsIdentityStep(): boolean {
+    return !this.isRoleDropdownMode;
+  }
+
+  /** The steps shown for this registration, with their index in wizardSteps. */
+  get visibleSteps(): Array<{ index: number; id: string; title: string }> {
+    return this.wizardSteps
+      .map((step, index) => ({ index, id: step.id, title: step.title }))
+      .filter(step => step.id !== 'identity' || this.needsIdentityStep);
+  }
+
+  /** 1-based position of a step among the visible steps, for "Step N of M". */
+  stepNumber(index: number): number {
+    return this.visibleSteps.findIndex(step => step.index === index) + 1;
+  }
+
+  private isStepVisible(index: number): boolean {
+    return this.visibleSteps.some(step => step.index === index);
+  }
+
   get isFirstStep(): boolean {
     return this.currentStep() === 0;
   }
@@ -338,6 +404,7 @@ export class RegisterUserComponent implements OnInit {
   }
 
   goToStep(stepIndex: number): void {
+    if (!this.isStepVisible(stepIndex)) return;
     this.currentStep.set(Math.min(Math.max(stepIndex, 0), this.wizardSteps.length - 1));
   }
 
@@ -349,15 +416,23 @@ export class RegisterUserComponent implements OnInit {
       return;
     }
 
-    this.currentStep.set(Math.min(step + 1, this.wizardSteps.length - 1));
+    let next = Math.min(step + 1, this.wizardSteps.length - 1);
+    while (!this.isStepVisible(next) && next < this.wizardSteps.length - 1) next++;
+    this.currentStep.set(next);
   }
 
   previousStep(): void {
-    this.currentStep.set(Math.max(this.currentStep() - 1, 0));
+    let previous = Math.max(this.currentStep() - 1, 0);
+    while (!this.isStepVisible(previous) && previous > 0) previous--;
+    this.currentStep.set(previous);
   }
 
   isCurrentStepValid(): boolean {
-    switch (this.currentStep()) {
+    return this.isStepValid(this.currentStep());
+  }
+
+  private isStepValid(step: number): boolean {
+    switch (step) {
       case 0:
         return this.form.controls.email.valid
           && this.form.controls.username.valid
@@ -366,6 +441,9 @@ export class RegisterUserComponent implements OnInit {
           && this.allPasswordRulesSatisfied()
           && this.passwordsMatch();
       case 1:
+        if (this.isRoleDropdownMode) {
+          return true;
+        }
         return this.form.controls.entityTypeId.valid
           && this.form.controls.entityIdentificationNumber.valid
           && this.entityVerificationStatus() === 'valid';
@@ -397,8 +475,16 @@ export class RegisterUserComponent implements OnInit {
 
     console.log('Review confirmed, checking form validity');
     if (this.form.invalid) {
-      console.log('Form is invalid', this.form.errors);
+      // Never fail silently: take the user to the step that still needs attention.
       this.form.markAllAsTouched();
+      const problemStep = this.visibleSteps.find(step => step.id !== 'review' && !this.isStepValid(step.index));
+      if (problemStep) this.currentStep.set(problemStep.index);
+      this.toast.show(
+        problemStep
+          ? `Please check "${problemStep.title}" — some details are missing or invalid.`
+          : 'Some details are missing or invalid. Please check the form.',
+        'error'
+      );
       this.cdr.markForCheck();
       return;
     }
@@ -519,6 +605,12 @@ export class RegisterUserComponent implements OnInit {
       .pipe(finalize(() => this.isVerifyingOtp.set(false)))
       .subscribe({
         next: (response) => {
+          if (this.isAdminRegistration) {
+            // The Super Admin stays signed in; the new user signs in with their own details.
+            this.toast.show('Account verified. The new user can now sign in with their username and password.', 'success');
+            this.router.navigate([this.registeredUserListPath]);
+            return;
+          }
           this.toast.show(response.message || 'Email verified successfully.', 'success');
           this.router.navigate(['/auth/login']);
         },

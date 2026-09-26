@@ -57,6 +57,14 @@ export class DocumentRequestsComponent implements OnInit {
     this.loadAllRequests();
   }
 
+  /**
+   * Only the person (or department) a request is addressed to can approve or deny it; the API refuses
+   * everyone else. The Super Admin can see every request here, so for them the page is view-only.
+   */
+  get isViewOnly(): boolean {
+    return this.auth.isSuperAdmin();
+  }
+
   private loadUserInfo(): void {
     this.userRoles.set(this.auth.getUserRoles());
   }

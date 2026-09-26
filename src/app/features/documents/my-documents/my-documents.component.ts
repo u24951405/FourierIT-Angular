@@ -1,8 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { finalize, timeout, TimeoutError } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   DocumentAccessApprovalItem,
@@ -19,6 +20,8 @@ import { ComplianceService } from '../../../core/services/compliance.service';
 import { DocumentHierarchyTreeComponent } from '../../../shared/components/document-hierarchy-tree/document-hierarchy-tree.component';
 import { DocumentItemDto } from '../../../core/services/document-hierarchy.service';
 
+const REPLACE_TIMEOUT_MS = 120_000;
+
 @Component({
   selector: 'app-my-documents',
   standalone: true,
@@ -27,7 +30,10 @@ import { DocumentItemDto } from '../../../core/services/document-hierarchy.servi
   styleUrls: ['./my-documents.component.scss', '../../../features/dashboard/dashboard/dashboard.component.scss'],
 })
 export class MyDocumentsComponent {
+  @ViewChild(DocumentHierarchyTreeComponent) private hierarchyTree?: DocumentHierarchyTreeComponent;
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
   private docsApi = inject(DocumentsApiService);
   private requestService = inject(DocumentAccessRequestService);
   private complianceService = inject(ComplianceService);
@@ -65,6 +71,9 @@ export class MyDocumentsComponent {
   readonly blockedDeletionApprovals = signal<DocumentAccessApprovalItem[]>([]);
   readonly allFlags = signal<DocumentFlagItem[]>([]);
   readonly resolvingFlagId = signal<number | null>(null);
+  // Set when a notification links here (?document=<id>); opened once the documents have loaded.
+  private pendingDetailDocumentId: number | null = null;
+  readonly detailIsRejected = computed(() => this.detailDocument()?.reviewStatus === 'Rejected');
 
   readonly flaggedDocumentIds = computed(() => new Set(this.allFlags().filter(f => !f.isResolved).map(f => f.documentId)));
   readonly detailFlags = computed(() => {
@@ -142,6 +151,14 @@ export class MyDocumentsComponent {
 
   ngOnInit(): void {
     console.log('[TEMP DIAGNOSTIC] calendarMonth initialized', this.calendarMonth());
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const id = Number(params.get('document'));
+        if (!Number.isInteger(id) || id <= 0) return;
+        this.pendingDetailDocumentId = id;
+        this.openPendingDetail();
+      });
     this.loadDocuments();
     this.loadPendingRequests();
     this.loadFlags();
@@ -319,6 +336,7 @@ export class MyDocumentsComponent {
       return;
     }
 
+    const wasRejected = document.reviewStatus === 'Rejected';
     this.savingEdit.set(true);
     this.docsApi.updateDocument(document.documentId, {
       file,
@@ -326,16 +344,24 @@ export class MyDocumentsComponent {
       isCertified: document.isCertified,
       entityTypeId: null,
     })
-      .pipe(finalize(() => this.savingEdit.set(false)))
+      // Never leave the button spinning forever if the server stalls.
+      .pipe(timeout(REPLACE_TIMEOUT_MS), finalize(() => this.savingEdit.set(false)))
       .subscribe({
         next: updated => {
           this.detailDocument.set(updated);
           this.selectedEditFile.set(null);
-          this.toast.show('Document updated.', 'success');
+          this.toast.show(
+            wasRejected
+              ? 'New file uploaded and resubmitted for compliance review.'
+              : 'Document updated. The new file has been sent for compliance review.',
+            'success'
+          );
           this.loadDocuments();
         },
         error: err => {
-          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not update the document.';
+          const message = err instanceof TimeoutError
+            ? 'The server took too long to save the new file. Refresh the page to check whether it was saved before trying again.'
+            : err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not update the document.';
           this.toast.show(message, 'error');
         }
       });
@@ -507,6 +533,7 @@ export class MyDocumentsComponent {
       .subscribe({
         next: docs => {
           this.documents.set(docs ?? []);
+          this.openPendingDetail();
           console.log('[TEMP DIAGNOSTIC] raw documents received', (docs ?? []).slice(0, 5).map(doc => ({
             documentId: doc.documentId,
             fileName: doc.fileName,
@@ -520,6 +547,18 @@ export class MyDocumentsComponent {
           this.error.set(message);
         }
       });
+  }
+
+  private openPendingDetail(): void {
+    const id = this.pendingDetailDocumentId;
+    if (id == null) return;
+    const doc = this.documents().find(item => item.documentId === id);
+    if (!doc) return;
+
+    this.pendingDetailDocumentId = null;
+    this.openDetails(doc);
+    // Drop the query param so closing the modal and refreshing does not reopen it.
+    this.router.navigate([], { relativeTo: this.route, queryParams: { document: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   private loadWarningThreshold(): void {
@@ -569,6 +608,21 @@ export class MyDocumentsComponent {
     if (fullDoc) {
       this.openPreview(fullDoc);
     }
+  }
+
+  deleteDocumentFromTree(doc: DocumentItemDto): void {
+    if (!doc.userCanDelete || !confirm(`Delete ${doc.fileName}?`)) return;
+
+    this.docsApi.deleteDocument(doc.documentId).subscribe({
+      next: () => {
+        this.toast.show('Document deleted.', 'success');
+        this.hierarchyTree?.loadHierarchy();
+      },
+      error: err => {
+        const message = err?.error?.error ?? err?.error?.message ?? err?.error?.title ?? 'Could not delete document.';
+        this.toast.show(message, 'error');
+      }
+    });
   }
 }
 

@@ -63,7 +63,7 @@
           userCanView: result.userCanView,
           userCanDownload: result.userCanDownload,
           userCanEdit: false,
-          userCanDelete: false,
+          userCanDelete: result.userCanDelete,
           userCanShare: false
         })"
       >
@@ -78,6 +78,7 @@
         <span *ngIf="result.isCertified" class="badge certified">Certified</span>
         <span [class]="'status-badge ' + getStatusClass(result.status)">{{ result.status }}</span>
         <span *ngIf="!result.userCanView" class="no-access-text">No Access</span>
+        <button *ngIf="result.userCanDelete" type="button" class="details-btn" (click)="deleteDocument({ documentId: result.documentId, fileName: result.documentName, currentStatus: result.status, isCertified: result.isCertified, uploadedDate: result.uploadedDate, fileSizeBytes: result.fileSizeBytes, userCanView: result.userCanView, userCanDownload: result.userCanDownload, userCanEdit: false, userCanDelete: result.userCanDelete, userCanShare: false }, $event)">Delete</button>
       </div>
     </div>
   </div>
@@ -178,6 +179,9 @@
                     <span class="upload-date">{{ doc.uploadedDate | date: 'short' }}</span>
                     <button class="details-btn" (click)="openDocumentDetails(doc)" *ngIf="doc.userCanView">
                       Details
+                    </button>
+                    <button *ngIf="doc.userCanDelete" type="button" class="details-btn danger" (click)="deleteDocument(doc, $event)">
+                      Delete
                     </button>
                     <span *ngIf="!doc.userCanView" class="no-access-text">No Access</span>
                   </div>

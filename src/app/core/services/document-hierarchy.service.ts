@@ -12,8 +12,8 @@ export interface DocumentItemDto {
   fileSizeBytes: number;
   userCanView: boolean;
   userCanDownload: boolean;
-  userCanEdit: boolean;
   userCanDelete: boolean;
+  userCanEdit: boolean;
   userCanShare: boolean;
 }
 
@@ -43,6 +43,7 @@ export interface SearchResultDto {
   fileSizeBytes: number;
   userCanView: boolean;
   userCanDownload: boolean;
+  userCanDelete: boolean;
 }
 
 @Injectable({

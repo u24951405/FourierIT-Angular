@@ -117,6 +117,16 @@
     margin-bottom: 16px;
   }
 
+  &__notice {
+    background: #eef5fc;
+    border: 1px solid #cfe0f1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 16px;
+  }
+
   &__forgot {
     display: block;
     text-align: right;

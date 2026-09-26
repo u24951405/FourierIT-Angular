@@ -15,5 +15,5 @@ export const superAdminGuard: CanActivateFn = (route: ActivatedRouteSnapshot) =>
 
   return auth.isSuperAdmin()
     ? true
-    : router.createUrlTree(['/auth/login']);
+    : router.createUrlTree([auth.getDefaultAppPath()]);
 };

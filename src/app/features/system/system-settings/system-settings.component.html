@@ -1,33 +1,94 @@
 <section class="settings-page">
   <header class="page-header">
     <p class="eyebrow">System Administration</p>
-    <h1>Timer Settings</h1>
-    <p class="subtitle">Adjust institution portal security timers.</p>
+    <h1>System Settings</h1>
+    <p class="subtitle">Security timers and document validity rules that apply across DocuVault.</p>
   </header>
 
-  <div *ngIf="loading" class="status">Loading settings...</div>
-  <div *ngIf="error" class="status status--error">{{ error }}</div>
-  <div *ngIf="message" class="status status--success">{{ message }}</div>
-
-  <div class="settings-toolbar">
-    <a class="btn btn-primary" routerLink="/system-settings/document-types">Manage document type validity</a>
+  <div class="settings-tabs" role="tablist" aria-label="System settings sections">
+    <button type="button" role="tab" id="tab-security" class="settings-tab"
+            [class.settings-tab--active]="activeTab() === 'security'"
+            [attr.aria-selected]="activeTab() === 'security'"
+            aria-controls="panel-security"
+            (click)="selectTab('security')">
+      Security &amp; Sessions
+    </button>
+    <button type="button" role="tab" id="tab-documents" class="settings-tab"
+            [class.settings-tab--active]="activeTab() === 'documents'"
+            [attr.aria-selected]="activeTab() === 'documents'"
+            aria-controls="panel-documents"
+            (click)="selectTab('documents')">
+      Document Validity
+    </button>
   </div>
 
-  <section class="settings-list" *ngIf="!loading">
-    <article class="setting-row card" *ngFor="let setting of settings">
-      <div>
-        <h2>{{ setting.key }}</h2>
-        <p>{{ setting.description }}</p>
-      </div>
-      <div class="setting-control">
-        <label>
-          Minutes
-          <input type="number" min="1" max="1440" [(ngModel)]="setting.value">
-        </label>
-        <button class="btn btn-primary" type="button" [disabled]="savingKey === setting.key" (click)="save(setting)">
-          {{ savingKey === setting.key ? 'Saving...' : 'Save' }}
-        </button>
-      </div>
-    </article>
-  </section>
+  @if (activeTab() === 'security') {
+    <div id="panel-security" role="tabpanel" aria-labelledby="tab-security">
+      @if (loading()) {
+        <div class="status">Loading settings…</div>
+      } @else if (error()) {
+        <div class="status status--error">{{ error() }}</div>
+      } @else {
+        <div class="settings-groups">
+          @for (group of groups(); track group.category) {
+            <section class="settings-group" [attr.aria-labelledby]="'group-' + $index">
+              <header class="settings-group__header">
+                <h2 [id]="'group-' + $index">{{ group.category }}</h2>
+                <p>{{ group.description }}</p>
+              </header>
+
+              @for (setting of group.settings; track setting.key) {
+                <div class="setting-row">
+                  <div class="setting-row__text">
+                    <h3 [id]="'label-' + setting.key">{{ setting.title }}</h3>
+                    <p>{{ setting.description }}</p>
+                    <p class="setting-row__range">
+                      Allowed {{ setting.min }}–{{ setting.max }} {{ unitLabel(setting, setting.max) }}
+                      · Default {{ formatValue(setting, setting.default) }}
+                    </p>
+                  </div>
+
+                  <div class="setting-row__control">
+                    <div class="setting-input" [class.setting-input--invalid]="isDirty(setting) && validationError(setting)">
+                      <input type="number" step="1" inputmode="numeric"
+                             [min]="setting.min" [max]="setting.max"
+                             [attr.aria-labelledby]="'label-' + setting.key"
+                             [attr.aria-invalid]="isDirty(setting) && !!validationError(setting)"
+                             [ngModel]="draft(setting)"
+                             (ngModelChange)="setDraft(setting.key, $event)"
+                             (keydown.enter)="save(setting)">
+                      <span class="setting-input__unit">{{ unitLabel(setting, +draft(setting)) }}</span>
+                    </div>
+                    <button type="button" class="btn btn-primary"
+                            [disabled]="!isDirty(setting) || !!validationError(setting) || savingKey() === setting.key"
+                            (click)="save(setting)">
+                      {{ savingKey() === setting.key ? 'Saving…' : 'Save' }}
+                    </button>
+                  </div>
+
+                  <div class="setting-row__meta">
+                    @if (isDirty(setting) && validationError(setting); as message) {
+                      <span class="setting-row__error" role="alert">{{ message }}</span>
+                    } @else if (plainDuration(setting); as plain) {
+                      <span class="setting-row__plain">= {{ plain }}</span>
+                    }
+                    @if (!isDefault(setting)) {
+                      <button type="button" class="link-btn" (click)="resetToDefault(setting)"
+                              [disabled]="savingKey() === setting.key">
+                        Reset to default ({{ formatValue(setting, setting.default) }})
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </section>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div id="panel-documents" role="tabpanel" aria-labelledby="tab-documents">
+      <app-document-type-validity [embedded]="true" />
+    </div>
+  }
 </section>

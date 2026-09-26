@@ -89,8 +89,8 @@
             <fieldset class="permission-field">
               <legend>Permissions</legend>
               <label class="permission-option" *ngFor="let permission of permissions()">
-                <input type="checkbox" [checked]="hasPermission(permission)" (change)="togglePermission(0, permission, hasPermission(permission))">
-                <span>{{ getPermissionDisplayName(permission) }}</span>
+                <input type="checkbox" [checked]="hasPermission(permission.permissionKey)" [disabled]="isPermissionBeingToggled(permission.permissionId)" (change)="togglePermission(permission.permissionId, permission.permissionKey, hasPermission(permission.permissionKey))">
+                <span>{{ getPermissionDisplayName(permission.permissionKey) }}</span>
               </label>
             </fieldset>
           }
@@ -98,8 +98,8 @@
           <fieldset class="permission-field">
             <legend>Permissions</legend>
             <label class="permission-option" *ngFor="let permission of permissions()">
-              <input type="checkbox" [checked]="hasPermission(permission)" (change)="togglePermission(0, permission, !hasPermission(permission))">
-              <span>{{ getPermissionDisplayName(permission) }}</span>
+              <input type="checkbox" [checked]="hasPermission(permission.permissionKey)" (change)="togglePermission(permission.permissionId, permission.permissionKey, !hasPermission(permission.permissionKey))">
+              <span>{{ getPermissionDisplayName(permission.permissionKey) }}</span>
             </label>
           </fieldset>
         }

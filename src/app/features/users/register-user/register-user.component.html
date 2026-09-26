@@ -8,15 +8,15 @@
 
   <div class="form-card wizard-card">
     <div class="wizard-steps" aria-label="Registration steps">
-      @for (step of wizardSteps; track step.id; let i = $index) {
+      @for (step of visibleSteps; track step.id; let position = $index) {
         <button
           type="button"
           class="wizard-step"
-          [class.wizard-step--active]="currentStep() === i"
-          [class.wizard-step--complete]="currentStep() > i"
-          (click)="goToStep(i)"
+          [class.wizard-step--active]="currentStep() === step.index"
+          [class.wizard-step--complete]="currentStep() > step.index"
+          (click)="goToStep(step.index)"
         >
-          <span class="wizard-step__index">{{ i + 1 }}</span>
+          <span class="wizard-step__index">{{ position + 1 }}</span>
           <span class="wizard-step__label">{{ step.title }}</span>
         </button>
       }
@@ -25,8 +25,11 @@
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
       @if (currentStep() === 0) {
         <section class="wizard-panel">
-          <h2 class="form-section-title">Create your account</h2>
-          <p class="step-subtitle">Set up your login details to access the platform.</p>
+          <div class="panel-intro">
+            <span class="panel-intro__eyebrow">Step {{ stepNumber(0) }} of {{ visibleSteps.length }}</span>
+            <h2>Create your account</h2>
+            <p>Set up the login details you will use to access the platform.</p>
+          </div>
 
           <div class="form-row">
             <div class="field">
@@ -84,14 +87,19 @@
             <button type="button" class="btn btn--primary" (click)="nextStep()">Continue →</button>
           </div>
 
-          <p class="signin-link">Already have an account? <a href="javascript:void(0)">Sign in</a></p>
+          @if (!isAdminRegistration) {
+            <p class="signin-link">Already have an account? <a routerLink="/auth/login">Sign in</a></p>
+          }
         </section>
       }
 
       @if (currentStep() === 1) {
         <section class="wizard-panel">
-          <h2 class="form-section-title">Verify your identity</h2>
-          <p class="step-subtitle">Select your entity type and provide the identification details required for verification.</p>
+          <div class="panel-intro">
+            <span class="panel-intro__eyebrow">Step {{ stepNumber(1) }} of {{ visibleSteps.length }}</span>
+            <h2>Verify your identity</h2>
+            <p>Select your entity type and provide the identification details required for verification.</p>
+          </div>
 
           <div class="form-row">
             <div class="field">
@@ -114,7 +122,15 @@
                 <label>{{ entityIdentificationLabel }} <span class="req">*</span></label>
                 <input type="text" formControlName="entityIdentificationNumber" [placeholder]="entityIdentificationLabel">
                 @if (form.get('entityIdentificationNumber')?.invalid && form.get('entityIdentificationNumber')?.touched) {
-                  <span class="field__error">{{ entityIdentificationLabel }} is required.</span>
+                  <span class="field__error">
+                    @if (form.get('entityIdentificationNumber')?.hasError('saIdInvalid')) {
+                      A South African ID number is 13 digits.
+                    } @else if (form.get('entityIdentificationNumber')?.hasError('saIdChecksum')) {
+                      This isn't a valid South African ID number. Check it for typing mistakes.
+                    } @else {
+                      {{ entityIdentificationLabel }} is required.
+                    }
+                  </span>
                 }
               </div>
               <div class="field field--inline-action">
@@ -145,8 +161,11 @@
 
       @if (currentStep() === 2) {
         <section class="wizard-panel">
-          <h2 class="form-section-title">Personal information</h2>
-          <p class="step-subtitle">Tell us a little about yourself.</p>
+          <div class="panel-intro">
+            <span class="panel-intro__eyebrow">Step {{ stepNumber(2) }} of {{ visibleSteps.length }}</span>
+            <h2>Personal information</h2>
+            <p>Tell us a little about yourself so we can complete your profile.</p>
+          </div>
 
           <div class="form-row">
             <div class="field">
@@ -162,7 +181,18 @@
           <div class="form-row">
             <div class="field">
               <label>Date of Birth <span class="req">*</span></label>
-              <input type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate">
+              <input type="date" formControlName="dateOfBirth" [max]="maxBirthDate" [min]="minBirthDate" autocomplete="bday"
+                     [readonly]="dobFromId()" [class.input--locked]="dobFromId()">
+              @if (dobFromId()) {
+                <p class="field__hint">
+                  {{ form.value.dateOfBirth ? 'Taken from your South African ID number.' : 'Filled in from your South African ID number once it is entered.' }}
+                </p>
+              } @else {
+                <p class="field__hint">Choose a date from the calendar or type it directly as YYYY-MM-DD.</p>
+              }
+              @if (dobFromId() && form.get('dateOfBirth')?.value && form.get('dateOfBirth')?.invalid) {
+                <span class="field__error">You must be at least 18 years old to register.</span>
+              }
             </div>
             <div class="field">
               <label>Job Title <span class="req">*</span></label>
@@ -178,6 +208,23 @@
             </div>
           </div>
 
+          @if (isRoleDropdownMode) {
+            <div class="form-row">
+              <div class="field field--full">
+                <label>Role <span class="req">*</span></label>
+                <select [value]="selectedRoleIds()[0]" (change)="onRoleDropdownChange($any($event.target).value)">
+                  <option value="">Select a role</option>
+                  @for (role of allowedRoleOptions; track role.id) {
+                    <option [value]="role.id">{{ role.name }}</option>
+                  }
+                </select>
+                @if (form.controls.roleIds.invalid && form.controls.roleIds.touched) {
+                  <span class="field__error">Select a role.</span>
+                }
+              </div>
+            </div>
+          }
+
           <div class="wizard-actions">
             <button type="button" class="btn btn--outline" (click)="previousStep()">← Back</button>
             <button type="button" class="btn btn--primary" (click)="nextStep()">Continue →</button>
@@ -186,42 +233,57 @@
       }
 
       @if (currentStep() === 3) {
-        <section class="wizard-panel">
-          <h2 class="form-section-title">Review &amp; register</h2>
-          <p class="step-subtitle">Review your information before creating the account.</p>
+        <section class="wizard-panel wizard-panel--review">
+          <div class="panel-intro panel-intro--review">
+            <span class="panel-intro__eyebrow">Step {{ stepNumber(3) }} of {{ visibleSteps.length }}</span>
+            <h2>Review &amp; register</h2>
+            <p>Everything looks good? Confirm your details, then create the account.</p>
+          </div>
+
+          <div class="review-summary">
+            <div class="review-summary__icon">✓</div>
+            <div>
+              <strong>Almost there</strong>
+              <p>Your identity details will be saved with this registration.</p>
+            </div>
+          </div>
 
           <div class="review-card">
             <div class="review-group">
-              <h3>Account</h3>
+              <div class="review-group__header"><h3>Account</h3><span class="review-group__step">1</span></div>
               <div class="review-row"><span>Email:</span><strong>{{ form.value.email }}</strong></div>
               <div class="review-row"><span>Username:</span><strong>{{ form.value.username }}</strong></div>
-              <button type="button" class="review-edit" (click)="goToStep(0)">Edit</button>
+              <button type="button" class="review-edit" (click)="goToStep(0)">Edit account</button>
             </div>
 
             <div class="review-group">
-              <h3>Identity</h3>
-              <div class="review-row"><span>Entity Type:</span><strong>{{ selectedEntityType?.name || '—' }}</strong></div>
-              <div class="review-row"><span>Identification:</span><strong>••••••••••••{{ (form.value.entityIdentificationNumber || '').slice(-4) }}</strong></div>
+              <div class="review-group__header"><h3>Identity</h3><span class="review-group__step">2</span></div>
+              @if (needsIdentityStep) {
+                <div class="review-row"><span>Entity Type:</span><strong>{{ selectedEntityType?.name || '—' }}</strong></div>
+                <div class="review-row"><span>Identification:</span><strong>••••••••••••{{ (form.value.entityIdentificationNumber || '').slice(-4) }}</strong></div>
+              }
               <div class="review-row"><span>Status:</span><strong>✓ Verified</strong></div>
-              <button type="button" class="review-edit" (click)="goToStep(1)">Edit</button>
+              <button type="button" class="review-edit" (click)="goToStep(1)">Edit identity</button>
             </div>
 
-            <div class="review-group">
-              <h3>Personal Information</h3>
+            <div class="review-group review-group--personal">
+              <div class="review-group__header"><h3>Personal information</h3><span class="review-group__step">3</span></div>
               <div class="review-row"><span>Name:</span><strong>{{ form.value.firstName }} {{ form.value.lastName }}</strong></div>
               <div class="review-row"><span>Date of Birth:</span><strong>{{ form.value.dateOfBirth }}</strong></div>
               <div class="review-row"><span>Job Title:</span><strong>{{ form.value.jobTitle }}</strong></div>
               <div class="review-row"><span>Phone:</span><strong>{{ form.value.phone || '—' }}</strong></div>
-              <button type="button" class="review-edit" (click)="goToStep(2)">Edit</button>
+              <button type="button" class="review-edit" (click)="goToStep(2)">Edit profile</button>
             </div>
           </div>
 
-          <label class="checkbox-row">
-            <input type="checkbox" [checked]="reviewConfirmed()" (change)="reviewConfirmed.set($any($event.target).checked)" />
-            <span>I confirm that the information provided is accurate.</span>
-          </label>
+          <div class="review-confirmation">
+            <label class="checkbox-row checkbox-row--review">
+              <input type="checkbox" [checked]="reviewConfirmed()" (change)="reviewConfirmed.set($any($event.target).checked)" />
+              <span><strong>Confirm your information</strong><small>I confirm that the information provided is accurate.</small></span>
+            </label>
+          </div>
 
-          <div class="wizard-actions">
+          <div class="wizard-actions review-actions">
             <button type="button" class="btn btn--outline" (click)="previousStep()">← Back</button>
             <button type="submit" class="btn btn--primary" [disabled]="isSubmitting()">{{ isSubmitting() ? 'Registering...' : 'Register User' }}</button>
           </div>

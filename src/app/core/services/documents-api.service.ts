@@ -16,7 +16,13 @@ export interface DocumentListItem {
   expiryDate: string;
   documentTypeId: number;
   documentTypeName: string;
+  reviewStatus?: DocumentReviewStatus;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
 }
+
+/** Outcome of a Compliance Officer review of the current file; null when no decision has been made. */
+export type DocumentReviewStatus = 'Approved' | 'Rejected' | null;
 
 export interface DocumentDetailItem {
   documentId: number;
@@ -30,6 +36,9 @@ export interface DocumentDetailItem {
   uploadedDate: string;
   lastModifiedDate: string | null;
   documentTypeName: string;
+  reviewStatus?: DocumentReviewStatus;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
 }
 
 export interface DocumentAccessApprovalItem {

@@ -44,6 +44,30 @@ export class ReviewQueueComponent implements OnInit {
   readonly reviews = signal<ReviewQueueItem[]>([]);
   readonly processingCheckId = signal<number | null>(null);
   readonly notes = signal<Record<number, string>>({});
+  readonly rejectionCategories = signal<Record<number, string>>({});
+  readonly rejectionCategoryOptions = [
+    'Illegible or poor quality',
+    'Expired',
+    'Not certified',
+    'Wrong document',
+    'Details do not match',
+    'Other'
+  ];
+  searchTerm = '';
+
+  get filteredReviews(): ReviewQueueItem[] {
+    const query = this.searchTerm.trim().toLowerCase();
+    if (!query) return this.reviews();
+
+    return this.reviews().filter(review => [
+      this.getDocumentName(review),
+      this.getDocumentType(review),
+      review.ownerName ?? '',
+      review.departmentName ?? '',
+      review.manualReviewReason ?? '',
+      review.nonComplianceReason ?? ''
+    ].some(value => value.toLowerCase().includes(query)));
+  }
 
   ngOnInit(): void {
     this.loadReviews();
@@ -88,8 +112,26 @@ export class ReviewQueueComponent implements OnInit {
     this.notes.update((current) => ({ ...current, [checkId]: value }));
   }
 
+  getRejectionCategory(checkId: number): string {
+    return this.rejectionCategories()[checkId] ?? '';
+  }
+
+  setRejectionCategory(checkId: number, value: string): void {
+    this.rejectionCategories.update((current) => ({ ...current, [checkId]: value }));
+  }
+
+  // A category is always required; "Other" also needs notes so the owner knows what to fix.
   canReject(checkId: number): boolean {
-    return this.getNotes(checkId).trim().length > 0;
+    const category = this.getRejectionCategory(checkId);
+    if (!category) return false;
+    return category !== 'Other' || this.getNotes(checkId).trim().length > 0;
+  }
+
+  private buildRejectionReason(checkId: number): string {
+    const category = this.getRejectionCategory(checkId);
+    const notes = this.getNotes(checkId).trim();
+    if (category === 'Other') return notes;
+    return notes ? `${category}: ${notes}` : category;
   }
 
   getDocumentName(review: ReviewQueueItem): string {
@@ -140,15 +182,15 @@ export class ReviewQueueComponent implements OnInit {
 
     const request = decision === 'approve'
       ? this.complianceService.approveDocument(checkId, this.getNotes(checkId))
-      : this.complianceService.rejectDocument(checkId, this.getNotes(checkId));
+      : this.complianceService.rejectDocument(checkId, this.buildRejectionReason(checkId));
 
     request.pipe(finalize(() => this.processingCheckId.set(null))).subscribe({
       next: () => {
-        this.toast.show(
-          decision === 'approve' ? 'Document approved successfully.' : 'Document rejected successfully.',
-          'success'
-        );
-        this.loadReviews();
+        this.toast.show(decision === 'approve' ? 'Document approved.' : 'Document rejected.', 'success');
+        // A decided document leaves the queue straight away; it returns only if the owner resubmits.
+        this.reviews.update((current) => current.filter((item) => item.checkId !== checkId));
+        this.notes.update(({ [checkId]: _, ...rest }) => rest);
+        this.rejectionCategories.update(({ [checkId]: _, ...rest }) => rest);
       },
       error: (err) => {
         const message = err?.error?.error ?? err?.error?.message ?? 'Could not update this review.';

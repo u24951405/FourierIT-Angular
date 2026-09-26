@@ -55,7 +55,7 @@
     @if (matchesTopic('reports')) { <a [routerLink]="['/help']" [fragment]="'reports'">Reports</a> }
     @if (matchesTopic('audit-log')) { <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a> }
     @if (matchesTopic('user-role-management')) { <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a> }
-    @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">Timer Settings</a> }
+    @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">System Settings</a> }
   </nav>
 
   <main class="help-page__content">
@@ -162,13 +162,18 @@
     </section>
 
     <section id="timer-settings" class="help-section" [hidden]="!matchesTopic('timer-settings')">
-      <h2>Timer Settings</h2>
+      <h2>System Settings</h2>
       <p>
-        The <strong>Timer Settings</strong> page is available under <strong>/system-settings</strong> and is used to manage expiry and session timing controls, including OTP expiry and institution session timing values. This section is intended for administrators who need to tune operational timers.
+        The <strong>System Settings</strong> page (Super Admin only) has two tabs. <strong>Security &amp; Sessions</strong> controls
+        how long codes, sign-ins and emailed links stay valid, and the limits that protect against guessing codes.
+        <strong>Document Validity</strong> sets how long each document type is valid and when owners are warned before it expires.
       </p>
       <ul>
-        <li>Use the page to review and update system-defined timer values.</li>
-        <li>Changes are relevant to OTP windows and authenticated session lifetimes.</li>
+        <li><strong>Verification codes:</strong> how long registration, email-change and institution sign-in codes last.</li>
+        <li><strong>Sessions:</strong> how long staff and institutions stay signed in before they must sign in again.</li>
+        <li><strong>Links:</strong> how long institution invitation, document access and password reset links work.</li>
+        <li><strong>Security limits:</strong> how many wrong codes are allowed, and how long to wait before another code can be sent.</li>
+        <li>Each setting shows its allowed range and default; use <strong>Reset to default</strong> to undo a change.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>

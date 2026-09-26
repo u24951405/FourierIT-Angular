@@ -8,6 +8,11 @@ export interface ApiDepartmentDto {
   departmentName: string;
   branchId: number;
   createdAt: string;
+  // A department's only user is its Department Admin; null when none is assigned.
+  adminUserId?: string | null;
+  adminName?: string | null;
+  adminEmail?: string | null;
+  documentCount?: number;
 }
 
 export interface SaveDepartmentPayload {

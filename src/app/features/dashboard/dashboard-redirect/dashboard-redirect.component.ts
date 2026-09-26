@@ -25,10 +25,11 @@ export class DashboardRedirectComponent implements OnInit {
   }
 
   private navigateByAccount(account: CurrentAccount): void {
-    const isDepartmentScoped = !this.auth.isSuperAdmin()
-      && (this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder'));
+    const isDepartmentScoped = !this.auth.isSuperAdmin() && this.auth.hasRole('Department Admin');
 
-    const path = isDepartmentScoped
+    const path = this.auth.isStakeholderViewer()
+      ? '/dashboard/system'
+      : isDepartmentScoped
       ? '/dashboard/department'
       : this.auth.isDocumentOwnerOnly()
         ? '/dashboard/owner'
@@ -42,7 +43,9 @@ export class DashboardRedirectComponent implements OnInit {
   }
 
   private navigateByTokenFallback(): void {
-    const path = this.auth.hasRole('Department Admin') || this.auth.hasRole('Stakeholder')
+    const path = this.auth.isStakeholderViewer()
+      ? '/dashboard/system'
+      : this.auth.hasRole('Department Admin')
       ? '/dashboard/department'
       : this.auth.isDocumentOwnerOnly()
         ? '/dashboard/owner'

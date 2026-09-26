@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, Output, EventEmitter, inject } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DocumentsApiService } from '../../../core/services/documents-api.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -30,9 +30,10 @@ export class DocumentDetailsModalComponent implements OnInit {
   private docsApi = inject(DocumentsApiService);
   private toast = inject(ToastService);
 
-  isLoading = false;
-  details: DocumentDetails | null = null;
-  error: string | null = null;
+  // Signals so the popup redraws even when it sits inside an OnPush page (e.g. All Documents).
+  readonly isLoading = signal(false);
+  readonly details = signal<DocumentDetails | null>(null);
+  readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
     if (this.documentId) {
@@ -41,8 +42,8 @@ export class DocumentDetailsModalComponent implements OnInit {
   }
 
   loadDocumentDetails(): void {
-    this.isLoading = true;
-    this.error = null;
+    this.isLoading.set(true);
+    this.error.set(null);
 
     console.log('[Document Details] Loading document ID:', this.documentId);
 
@@ -58,7 +59,7 @@ export class DocumentDetailsModalComponent implements OnInit {
 
         console.log('[Document Details] Formatted uploader name:', uploadedBy);
 
-        this.details = {
+        this.details.set({
           documentId: doc.documentId,
           fileName: doc.fileName,
           documentType: doc.documentTypeName || 'Unknown',
@@ -69,14 +70,14 @@ export class DocumentDetailsModalComponent implements OnInit {
           isCertified: doc.isCertified,
           requestedCount: 0,
           requestedBy: []
-        };
-        this.isLoading = false;
+        });
+        this.isLoading.set(false);
       },
       error: (error) => {
         console.error('[Document Details] Error loading document:', error);
-        this.error = 'Failed to load document details';
+        this.error.set('Failed to load document details');
         this.toast.show('Could not load document details', 'error');
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }

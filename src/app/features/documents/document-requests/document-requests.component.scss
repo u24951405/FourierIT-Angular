@@ -384,3 +384,13 @@
     gap: 0.5rem;
   }
 }
+
+.request-card__view-only {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f4f8fc;
+  border: 1px solid #cfe0f1;
+  color: var(--text-mid, #4a6278);
+  font-size: 13px;
+}

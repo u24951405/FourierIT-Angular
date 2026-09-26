@@ -5,6 +5,7 @@ import {
   OnDestroy,
   ViewChild,
   ElementRef,
+  NgZone,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -70,6 +71,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
   private complianceService = inject(ComplianceService);
+  // Chart.js animates and watches its size constantly; running that outside Angular stops every
+  // animation frame and resize from triggering a redraw of the whole app.
+  private zone = inject(NgZone);
   private routeDataSubscription?: Subscription;
 
   today = new Date().toLocaleDateString('en-ZA', {
@@ -137,12 +141,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderDashboardCharts(): void {
-    this.charts.forEach(chart => chart.destroy());
-    this.charts = [];
+    this.zone.runOutsideAngular(() => {
+      this.charts.forEach(chart => chart.destroy());
+      this.charts = [];
 
-    this.buildVerificationChart();
-    this.buildCategoryChart();
-    this.buildRiskChart();
+      this.buildVerificationChart();
+      this.buildCategoryChart();
+      this.buildRiskChart();
+    });
   }
 
   // ── Verification Status Doughnut ──────────────────────────────────────────
@@ -176,6 +182,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
           legend: {
@@ -224,6 +231,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
           legend: {
@@ -272,6 +280,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
           legend: {
@@ -333,6 +342,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
                   },
                   error: () => this.handleDashboardError('Unable to load dashboard. Please refresh the page.')
                 });
+              } else if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {
+                // Department Admins only see their own department's figures.
+                this.handleDashboardError('You are not assigned to a department yet. Ask the Super Admin to assign you to one.');
               } else {
                 this.handleDashboardError('Unable to load system dashboard.');
               }
@@ -465,7 +477,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       dashboard.nonCompliantUsers,
       dashboard.pendingUsers ?? 0,
     ];
-    chart.update();
+    this.zone.runOutsideAngular(() => chart.update());
   }
 
   private updateCategoryChart(dashboard: ComplianceDashboard): void {
@@ -478,7 +490,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       dashboard.highRiskUsers,
       dashboard.mediumRiskUsers ?? 0,
     ];
-    chart.update();
+    this.zone.runOutsideAngular(() => chart.update());
   }
 
   private updateRiskChart(dashboard: ComplianceDashboard): void {
@@ -497,14 +509,20 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
 
     try {
-      chart.update();
+      this.zone.runOutsideAngular(() => chart.update());
     } catch (err) {
       // Guard against Chart.js errors when element detached
       console.warn('Skipped updating risk chart due to detached canvas or Chart error.', err);
     }
   }
 
+  /** Stakeholders and Compliance Officers don't upload documents, so they have no personal compliance to show. */
+  get showPersonalCompliance(): boolean {
+    return this.auth.canUploadDocuments() || this.auth.isSuperAdmin();
+  }
+
   private loadComplianceData(): void {
+    if (!this.showPersonalCompliance) return;
     this.complianceLoading = true;
     this.complianceError = '';
 
@@ -656,7 +674,13 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return summary as ComplianceUserSummary;
   }
 
+  /** Reports are Super Admin only; for everyone else the dashboard cards are plain, read-only tiles. */
+  get canOpenReports(): boolean {
+    return this.auth.isSuperAdmin();
+  }
+
   navigate(path: string): void {
+    if (path.startsWith('/reports') && !this.canOpenReports) return;
     this.router.navigateByUrl(path);
   }
 }

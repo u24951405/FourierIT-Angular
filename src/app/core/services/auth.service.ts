@@ -81,10 +81,22 @@ export interface CurrentAccount {
   dateOfBirth: string | null;
   departmentId: number | null;
   departmentName: string | null;
+  entityTypeId?: number | null;
+  /** Identification number with only the last four characters visible; it can't be changed. */
+  maskedIdentificationNumber?: string | null;
+  /** True for South African ID holders: the date of birth comes from the ID and can't be edited. */
+  dateOfBirthFromIdNumber?: boolean;
   profileImageUrl?: string | null;
   profileImage?: string | null;
   avatarUrl?: string | null;
   otpExpiryMinutes?: number | null;
+}
+
+export interface EmailChangeRequestResponse {
+  message: string;
+  email: string;
+  expiresAt: string;
+  resendAvailableInSeconds: number;
 }
 
 export interface UpdateCurrentAccountPayload {
@@ -284,7 +296,22 @@ export class AuthService {
   }
 
   getToken(): string | null { return localStorage.getItem(TOKEN_KEY); }
-  isLoggedIn(): boolean   { return !!this.getToken(); }
+
+  /** Signed in only while the token has not passed its expiry (set by the Super Admin's session timer). */
+  isLoggedIn(): boolean {
+    const token = this.getToken();
+    if (!token) return false;
+    const exp = Number(this.decodeTokenClaims(token)?.['exp']);
+    return !Number.isFinite(exp) || exp * 1000 > Date.now();
+  }
+
+  /** Clears an expired sign-in and returns to the login page with an explanation. */
+  expireSession(): void {
+    if (!this.getToken()) return;
+    localStorage.removeItem(TOKEN_KEY);
+    this.currentUser.set(null);
+    this.router.navigate(['/auth/login'], { queryParams: { expired: '1' } });
+  }
 
   getCurrentAccount(): Observable<CurrentAccount> {
     return this.http.get<CurrentAccount>(`${this.base}/me`);
@@ -303,6 +330,26 @@ export class AuthService {
 
   updateCurrentAccount(profileId: number, payload: UpdateCurrentAccountPayload): Observable<{ message: string }> {
     return this.http.put<{ message: string }>(`${this.base}/profile/${profileId}`, payload);
+  }
+
+  /** Step 1 of an email change: emails a 6-digit code to the new address. */
+  requestEmailChange(newEmail: string): Observable<EmailChangeRequestResponse> {
+    return this.http.post<EmailChangeRequestResponse>(`${this.base}/me/email-change`, { newEmail });
+  }
+
+  /** Step 2: confirms the code. On success the API returns a fresh token carrying the new email, which is stored. */
+  verifyEmailChange(otp: string): Observable<{ message: string; email: string; token: string }> {
+    return this.http.post<{ message: string; email: string; token: string }>(`${this.base}/me/email-change/verify`, { otp }).pipe(
+      tap(res => {
+        if (!res?.token) return;
+        localStorage.setItem(TOKEN_KEY, res.token);
+        this.currentUser.set(this.userFromToken(res.token, res.email));
+      })
+    );
+  }
+
+  cancelEmailChange(): Observable<void> {
+    return this.http.delete<void>(`${this.base}/me/email-change`);
   }
 
   private hydrateUserFromToken(): void {

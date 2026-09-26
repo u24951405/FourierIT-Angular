@@ -1,4 +1,7 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 
 const TOKEN_KEY = 'docuvault_token';
 
@@ -19,8 +22,17 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(req);
   }
 
+  const auth = inject(AuthService);
   const cloned = req.clone({
     setHeaders: { Authorization: `Bearer ${token}` }
   });
-  return next(cloned);
+  return next(cloned).pipe(
+    catchError((error: unknown) => {
+      // A 401 on a signed-in request means the session has ended (e.g. the staff session timer ran out).
+      if (error instanceof HttpErrorResponse && error.status === 401) {
+        auth.expireSession();
+      }
+      return throwError(() => error);
+    })
+  );
 };

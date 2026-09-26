@@ -97,11 +97,13 @@ export class UploadDocumentComponent implements OnInit {
           this.loadDocumentContext();
         },
         error: err => {
+          const traceId = err?.error?.traceId;
           const message = typeof err?.error === 'string'
             ? err.error
             : err?.error?.message ?? err?.error?.error ?? err?.error?.title ?? 'Upload failed.';
-          this.error.set(message);
-          this.toast.show(message, 'error');
+          const messageWithReference = traceId ? `${message} Reference: ${traceId}` : message;
+          this.error.set(messageWithReference);
+          this.toast.show(messageWithReference, 'error');
         }
       });
   }
