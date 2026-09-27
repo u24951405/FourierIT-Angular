@@ -45,19 +45,9 @@
   }
 
   <nav class="help-page__toc" aria-label="Help topics">
-    @if (matchesTopic('login-otp')) { <a [routerLink]="['/help']" [fragment]="'login-otp'">Login &amp; OTP verification</a> }
-    @if (matchesTopic('dashboard')) { <a [routerLink]="['/help']" [fragment]="'dashboard'">Dashboard</a> }
-    @if (matchesTopic('institution-requests')) { <a [routerLink]="['/help']" [fragment]="'institution-requests'">Institution Portal · Request Documents</a> }
-    @if (matchesTopic('document-upload')) { <a [routerLink]="['/help']" [fragment]="'document-upload'">Documents · Upload Document</a> }
-    @if (matchesTopic('compliance-status')) { <a [routerLink]="['/help']" [fragment]="'compliance-status'">Compliance status</a> }
-    @if (matchesTopic('reports')) { <a [routerLink]="['/help']" [fragment]="'reports'">Reports</a> }
-    @if (matchesTopic('audit-log')) { <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a> }
-    @if (matchesTopic('user-role-management')) { <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a> }
-    @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">Timer Settings</a> }
-    @if (matchesTopic('institutions')) { <a [routerLink]="['/help']" [fragment]="'institutions'">Institutions</a> }
-    @if (matchesTopic('department-requests')) { <a [routerLink]="['/help']" [fragment]="'department-requests'">Department Requests</a> }
-    @if (matchesTopic('backup-restore')) { <a [routerLink]="['/help']" [fragment]="'backup-restore'">Backup &amp; Restore</a> }
-    @if (matchesTopic('document-validity')) { <a [routerLink]="['/help']" [fragment]="'document-validity'">Document Type Validity</a> }
+    @for (topic of visibleTopics(); track topic.id) {
+      <a [routerLink]="['/help']" [fragment]="topic.id">{{ topic.title }}</a>
+    }
   </nav>
 
   <main class="help-page__content">
@@ -82,19 +72,6 @@
       <ul>
         <li>Use the dashboard to review key compliance information and quick access areas.</li>
         <li>Navigation depends on your role and access permissions, including Department Admin, Stakeholder, or Super Admin.</li>
-      </ul>
-      <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
-    </section>
-
-    <section id="institution-requests" class="help-section" [hidden]="!matchesTopic('institution-requests')">
-      <h2>Institution Portal · Request Documents</h2>
-      <p>
-        The institution portal is accessed from <strong>/institution/dashboard</strong> and supports the registration, request, and monitoring flow for external institutions. The work is grouped under the live tabs: <strong>Home</strong>, <strong>Request Documents</strong>, <strong>My Requests</strong>, and <strong>Approved Documents</strong>.
-      </p>
-      <ul>
-        <li><strong>Request Documents</strong> lets an institution select the document types it needs and submit the request.</li>
-        <li><strong>My Requests</strong> tracks the status of those submissions.</li>
-        <li><strong>Approved Documents</strong> displays the documents the institution is allowed to access.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>

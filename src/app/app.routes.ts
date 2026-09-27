@@ -41,51 +41,42 @@ export const routes: Routes = [
   },
   {
     path: 'institution/auth/access',
-    data: { helpKey: 'login-otp' },
     loadComponent: () => import('./features/institution-portal/auth/token-entry/token-entry').then(m => m.TokenEntryComponent)
   },
   {
     path: 'institution/auth/verify',
-    data: { helpKey: 'login-otp' },
     canActivate: [institutionOtpGuard],
     loadComponent: () => import('./features/institution-portal/auth/otp-verify/otp-verify').then(m => m.OtpVerifyComponent)
   },
   {
     path: 'institution/auth/expired',
-    data: { helpKey: 'login-otp' },
     loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
   },
   {
     path: 'institution/auth/token-requested',
-    data: { helpKey: 'login-otp' },
     loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
   },
   {
     path: 'institution/thank-you',
-    data: { helpKey: 'institution-requests' },
     loadComponent: () => import('./features/institution-portal/auth/thank-you/thank-you.component').then(m => m.ThankYouComponent)
   },
   {
     path: 'institution/dashboard',
-    data: { helpKey: 'institution-requests' },
     canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
   },
   {
     path: 'institution/request-documents',
-    data: { helpKey: 'institution-requests' },
     canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
   },
   {
     path: 'institution/my-requests',
-    data: { helpKey: 'institution-requests' },
     canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
   },
   {
     path: 'institution/approved-documents',
-    data: { helpKey: 'institution-requests' },
     canActivate: [institutionAuthGuard],
     loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
   },
