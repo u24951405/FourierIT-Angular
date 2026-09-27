@@ -164,16 +164,27 @@ export class MyDocumentsComponent {
     });
   }
 
+  /** What the owner did about each flag; sent to the institution that raised it. */
+  readonly flagNotes = signal<Record<number, string>>({});
+
+  flagNote(flagId: number): string {
+    return this.flagNotes()[flagId] ?? '';
+  }
+
+  setFlagNote(flagId: number, value: string): void {
+    this.flagNotes.update(notes => ({ ...notes, [flagId]: value }));
+  }
+
   resolveFlag(flag: DocumentFlagItem): void {
     this.resolvingFlagId.set(flag.enquiryFlagId);
-    this.docsApi.resolveDocumentFlag(flag.documentId, flag.enquiryFlagId)
+    this.docsApi.resolveDocumentFlag(flag.documentId, flag.enquiryFlagId, this.flagNote(flag.enquiryFlagId))
       .pipe(finalize(() => this.resolvingFlagId.set(null)))
       .subscribe({
         next: () => {
           this.allFlags.update(list => list.map(f =>
             f.enquiryFlagId === flag.enquiryFlagId ? { ...f, isResolved: true } : f
           ));
-          this.toast.show('Flag marked as resolved.', 'success');
+          this.toast.show('Flag marked as resolved. The institution has been told.', 'success');
         },
         error: err => {
           const message = err?.error?.error ?? err?.error?.message ?? 'Could not resolve the flag.';

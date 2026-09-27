@@ -301,6 +301,9 @@
                         <td>{{ flag.isResolved ? 'Resolved' : 'Unresolved' }}</td>
                         <td>
                           @if (!flag.isResolved) {
+                            <input class="flag-note" type="text" maxlength="500" placeholder="What did you do? (sent to the institution)"
+                                   [attr.aria-label]="'What you did about ' + flag.institutionName + '\'s flag'"
+                                   [value]="flagNote(flag.enquiryFlagId)" (input)="setFlagNote(flag.enquiryFlagId, $any($event.target).value)">
                             <button type="button" class="btn btn--ghost" [disabled]="resolvingFlagId() === flag.enquiryFlagId" (click)="resolveFlag(flag)">
                               {{ resolvingFlagId() === flag.enquiryFlagId ? 'Resolving…' : 'Mark resolved' }}
                             </button>

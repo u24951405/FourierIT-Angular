@@ -6,6 +6,7 @@ import { DocumentAccessRequestService } from '../../../core/services/document-ac
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import {
+  PendingAccessExtension,
   PendingDocumentAccessRequest,
   PendingDepartmentAccessRequest,
 } from '../../../core/models/institution.models';
@@ -51,10 +52,46 @@ export class DocumentRequestsComponent implements OnInit {
   readonly userRoles = signal<string[]>([]);
   readonly departmentId = signal<number | null>(null);
   readonly expandedRequestId = signal<number | null>(null);
+  /** Institutions asking for more time on access this person approved. */
+  readonly extensions = signal<PendingAccessExtension[]>([]);
+  readonly decidingExtensionId = signal<number | null>(null);
+  readonly extensionNotes = signal<Record<number, string>>({});
 
   ngOnInit(): void {
     this.loadUserInfo();
     this.loadAllRequests();
+    this.loadExtensions();
+  }
+
+  loadExtensions(): void {
+    if (this.isViewOnly) return;
+    this.requestService.getPendingExtensions().subscribe({
+      next: list => this.extensions.set(list ?? []),
+      error: () => this.extensions.set([]),
+    });
+  }
+
+  extensionNote(requestId: number): string {
+    return this.extensionNotes()[requestId] ?? '';
+  }
+
+  setExtensionNote(requestId: number, value: string): void {
+    this.extensionNotes.update(notes => ({ ...notes, [requestId]: value }));
+  }
+
+  decideExtension(extension: PendingAccessExtension, approve: boolean): void {
+    this.decidingExtensionId.set(extension.enquiryRequestId);
+    this.requestService.decideExtension(extension.enquiryRequestId, approve, this.extensionNote(extension.enquiryRequestId).trim())
+      .pipe(finalize(() => this.decidingExtensionId.set(null)))
+      .subscribe({
+        next: () => {
+          this.extensions.update(list => list.filter(e => e.enquiryRequestId !== extension.enquiryRequestId));
+          this.toast.show(approve
+            ? `${extension.institutionName} can use the documents for longer.`
+            : `You declined ${extension.institutionName}'s request for more time.`, 'success');
+        },
+        error: err => this.toast.show(err?.error?.error ?? err?.error?.message ?? 'Could not answer the request for more time.', 'error'),
+      });
   }
 
   /**
