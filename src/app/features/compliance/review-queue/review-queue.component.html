@@ -21,6 +21,28 @@
       <span>Find a document</span>
       <input id="review-search-input" type="search" [(ngModel)]="searchTerm" placeholder="Search name, owner, type or reason">
     </label>
+    <label class="review-search review-sort" for="review-sort">
+      <span>Sort by</span>
+      <select id="review-sort" [(ngModel)]="sortBy">
+        <option *ngFor="let option of sortOptions" [value]="option.value">{{ option.label }}</option>
+      </select>
+    </label>
+  </section>
+
+  <!-- Bulk approval: only documents the automatic checks found nothing wrong with. -->
+  <section *ngIf="canManage && reviews().length > 0" class="review-bulk" aria-label="Bulk approval">
+    <label class="review-bulk__check">
+      <input type="checkbox" [(ngModel)]="onlyClearlyValid">
+      Show only clearly valid documents
+    </label>
+    <label class="review-bulk__check" *ngIf="selectableReviews.length > 0">
+      <input type="checkbox" [checked]="allSelectableSelected" (change)="toggleSelectAll()">
+      Select all clearly valid ({{ selectableReviews.length }})
+    </label>
+    <button class="review-button review-button--approve" type="button" (click)="bulkApprove()"
+            [disabled]="selected().size === 0 || bulkApproving() || processingCheckId() !== null">
+      {{ bulkApproving() ? 'Approving…' : 'Approve selected (' + selected().size + ')' }}
+    </button>
   </section>
 
   <div *ngIf="loading()" class="review-state" role="status">Loading reviews…</div>
@@ -35,9 +57,15 @@
   </div>
 
   <section *ngIf="!loading() && !error() && filteredReviews.length > 0" class="review-list" aria-label="Documents awaiting compliance review">
-    <article class="review-item" *ngFor="let review of filteredReviews">
+    <article class="review-item" *ngFor="let review of filteredReviews" [class.review-item--selected]="isSelected(review.checkId)">
       <div class="review-item__identity">
-        <span class="review-status">{{ getComplianceStatus(review) }}</span>
+        <div class="review-item__tags">
+          <input *ngIf="canManage && review.isClearlyValid" type="checkbox" class="review-item__select"
+                 [checked]="isSelected(review.checkId)" (change)="toggleSelected(review.checkId)"
+                 [attr.aria-label]="'Select ' + getDocumentName(review) + ' for bulk approval'">
+          <span class="review-status">{{ getComplianceStatus(review) }}</span>
+          <span *ngIf="review.isClearlyValid" class="review-tag review-tag--valid" title="Passed every automatic check">Clearly valid</span>
+        </div>
         <h2>{{ getDocumentName(review) }}</h2>
         <p>{{ getDocumentType(review) }}</p>
         <p class="review-owner">{{ review.ownerName || 'Owner unavailable' }}<ng-container *ngIf="review.departmentName"> · {{ review.departmentName }}</ng-container></p>
@@ -46,7 +74,13 @@
       <div class="review-item__reason">
         <span class="review-field-label">Review reason</span>
         <p>{{ review.manualReviewReason || review.nonComplianceReason || 'Manual review requested.' }}</p>
-        <span class="review-checked" *ngIf="review.checkedAt">Checked {{ review.checkedAt | date:'medium' }}</span>
+        <ul class="review-concerns" *ngIf="review.concerns?.length">
+          <li *ngFor="let concern of review.concerns">{{ concern }}</li>
+        </ul>
+        <span class="review-checked">{{ waitingLabel(review) }}</span>
+        <span *ngIf="review.neededBy" class="review-needed" [class.review-needed--overdue]="isOverdue(review)">
+          {{ isOverdue(review) ? 'Overdue: ' : '' }}{{ review.neededByInstitution || 'An institution' }} needs it by {{ review.neededBy | date:'d MMM y' }}
+        </span>
       </div>
 
       <div class="review-item__decision" *ngIf="canManage">

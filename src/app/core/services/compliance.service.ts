@@ -225,6 +225,11 @@ export class ComplianceService {
     });
   }
 
+  /** Approves several documents at once; the API only approves the clearly valid ones and lists the rest as skipped. */
+  bulkApproveDocuments(checkIds: number[]): Observable<{ approved: number; skipped: number[] }> {
+    return this.http.post<{ approved: number; skipped: number[] }>(`${this.base}/documents/bulk-approve`, checkIds);
+  }
+
   rejectDocument(checkId: number, approvalNotes: string): Observable<any> {
     return this.http.post<any>(`${this.base}/documents/${checkId}/reject`, {
       checkId,

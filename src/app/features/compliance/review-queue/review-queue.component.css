@@ -610,3 +610,50 @@
   outline-offset: 1px;
   border-color: #2563eb;
 }
+
+/* Sorting, bulk approval and waiting times */
+.review-sort { flex: 0 0 190px; }
+.review-sort select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 0.5rem;
+  border: 1px solid #cbd7e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #172b3d;
+  font: inherit;
+  font-size: 0.9rem;
+  text-transform: none;
+}
+
+.review-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed #b7c8d6;
+  border-radius: 8px;
+  background: #f7fafc;
+}
+.review-bulk .review-button { margin-left: auto; }
+.review-bulk__check { display: inline-flex; align-items: center; gap: 0.4rem; color: #294760; font-size: 0.85rem; }
+
+.review-item--selected { border-color: #24736f; box-shadow: 0 0 0 1px #24736f; }
+.review-item__tags { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.review-item__select { width: 1rem; height: 1rem; margin: 0; }
+.review-tag {
+  display: inline-flex;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.review-tag--valid { background: #e3f4ee; color: #1d6b50; }
+
+.review-concerns { margin: 0.35rem 0 0; padding-left: 1.1rem; color: #9a3412; font-size: 0.8rem; }
+.review-needed { display: block; margin-top: 0.3rem; color: #1d4ed8; font-size: 0.78rem; font-weight: 600; }
+.review-needed--overdue { color: #b91c1c; }

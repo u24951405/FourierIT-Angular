@@ -20,7 +20,17 @@ interface ReviewQueueItem {
   checkedAt?: string;
   manualReviewReason?: string | null;
   nonComplianceReason?: string | null;
+  /** How long it has been waiting for a decision. */
+  waitingDays?: number;
+  /** The earliest needed-by date of an institution request waiting on this document. */
+  neededBy?: string | null;
+  neededByInstitution?: string | null;
+  /** The automatic checks found nothing wrong, so it can be approved in bulk. */
+  isClearlyValid?: boolean;
+  concerns?: string[];
 }
+
+type QueueSort = 'needed' | 'waiting' | 'owner' | 'type';
 
 @Component({
   selector: 'app-review-queue',
@@ -52,12 +62,22 @@ export class ReviewQueueComponent implements OnInit {
     'Other'
   ];
   searchTerm = '';
+  sortBy: QueueSort = 'needed';
+  onlyClearlyValid = false;
+  readonly sortOptions: { value: QueueSort; label: string }[] = [
+    { value: 'needed', label: 'Needed soonest' },
+    { value: 'waiting', label: 'Waiting longest' },
+    { value: 'owner', label: 'Owner' },
+    { value: 'type', label: 'Document type' },
+  ];
+  /** Clearly valid documents picked for bulk approval. */
+  readonly selected = signal<Set<number>>(new Set());
+  readonly bulkApproving = signal(false);
 
   get filteredReviews(): ReviewQueueItem[] {
     const query = this.searchTerm.trim().toLowerCase();
-    if (!query) return this.reviews();
-
-    return this.reviews().filter(review => [
+    const visible = this.reviews().filter(review => !this.onlyClearlyValid || review.isClearlyValid);
+    const matching = !query ? visible : visible.filter(review => [
       this.getDocumentName(review),
       this.getDocumentType(review),
       review.ownerName ?? '',
@@ -65,6 +85,78 @@ export class ReviewQueueComponent implements OnInit {
       review.manualReviewReason ?? '',
       review.nonComplianceReason ?? ''
     ].some(value => value.toLowerCase().includes(query)));
+    return [...matching].sort((a, b) => this.compare(a, b));
+  }
+
+  /** Documents an institution is waiting for come first (soonest deadline), then the ones waiting longest. */
+  private compare(a: ReviewQueueItem, b: ReviewQueueItem): number {
+    const waiting = (b.waitingDays ?? 0) - (a.waitingDays ?? 0);
+    switch (this.sortBy) {
+      case 'owner': return (a.ownerName ?? '').localeCompare(b.ownerName ?? '') || waiting;
+      case 'type': return this.getDocumentType(a).localeCompare(this.getDocumentType(b)) || waiting;
+      case 'waiting': return waiting;
+      default: {
+        const due = (item: ReviewQueueItem) => item.neededBy ? new Date(item.neededBy).getTime() : Number.MAX_SAFE_INTEGER;
+        return due(a) - due(b) || waiting;
+      }
+    }
+  }
+
+  waitingLabel(review: ReviewQueueItem): string {
+    const days = review.waitingDays ?? 0;
+    return days <= 0 ? 'Waiting since today' : `Waiting ${days} day${days === 1 ? '' : 's'}`;
+  }
+
+  isOverdue(review: ReviewQueueItem): boolean {
+    return !!review.neededBy && new Date(review.neededBy).getTime() < Date.now();
+  }
+
+  isSelected(checkId: number): boolean {
+    return this.selected().has(checkId);
+  }
+
+  toggleSelected(checkId: number): void {
+    this.selected.update(current => {
+      const next = new Set(current);
+      next.has(checkId) ? next.delete(checkId) : next.add(checkId);
+      return next;
+    });
+  }
+
+  get selectableReviews(): ReviewQueueItem[] {
+    return this.filteredReviews.filter(review => review.isClearlyValid);
+  }
+
+  get allSelectableSelected(): boolean {
+    const selectable = this.selectableReviews;
+    return selectable.length > 0 && selectable.every(review => this.isSelected(review.checkId));
+  }
+
+  toggleSelectAll(): void {
+    const ids = this.selectableReviews.map(review => review.checkId);
+    this.selected.set(this.allSelectableSelected ? new Set() : new Set(ids));
+  }
+
+  /** Approves every selected clearly valid document in one go. */
+  bulkApprove(): void {
+    const ids = [...this.selected()];
+    if (!ids.length) return;
+    if (!confirm(`Approve ${ids.length} document${ids.length === 1 ? '' : 's'} that passed every automatic check?`)) return;
+
+    this.bulkApproving.set(true);
+    this.complianceService.bulkApproveDocuments(ids)
+      .pipe(finalize(() => this.bulkApproving.set(false)))
+      .subscribe({
+        next: result => {
+          const skipped = new Set(result.skipped ?? []);
+          this.reviews.update(current => current.filter(item => !ids.includes(item.checkId) || skipped.has(item.checkId)));
+          this.selected.set(new Set());
+          const message = `${result.approved} document${result.approved === 1 ? '' : 's'} approved.`
+            + (skipped.size ? ` ${skipped.size} need${skipped.size === 1 ? 's' : ''} a closer look and stayed in the queue.` : '');
+          this.toast.show(message, skipped.size ? 'info' : 'success');
+        },
+        error: err => this.toast.show(err?.error?.error ?? err?.error?.message ?? 'Could not approve the selected documents.', 'error'),
+      });
   }
 
   ngOnInit(): void {
@@ -191,6 +283,7 @@ export class ReviewQueueComponent implements OnInit {
         this.toast.show(decision === 'approve' ? 'Document approved.' : 'Document rejected.', 'success');
         // A decided document leaves the queue straight away; it returns only if the owner resubmits.
         this.reviews.update((current) => current.filter((item) => item.checkId !== checkId));
+        this.selected.update(current => { const next = new Set(current); next.delete(checkId); return next; });
         this.notes.update(({ [checkId]: _, ...rest }) => rest);
         this.rejectionCategories.update(({ [checkId]: _, ...rest }) => rest);
       },
