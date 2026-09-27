@@ -75,7 +75,10 @@
         <span class="review-field-label">Review reason</span>
         <p>{{ review.manualReviewReason || review.nonComplianceReason || 'Manual review requested.' }}</p>
         <ul class="review-concerns" *ngIf="review.concerns?.length">
-          <li *ngFor="let concern of review.concerns">{{ concern }}</li>
+          <ng-container *ngFor="let concern of review.concerns">
+            <!-- The review reason is already shown above; list only what it doesn't say. -->
+            <li *ngIf="concern !== (review.manualReviewReason || review.nonComplianceReason)">{{ concern }}</li>
+          </ng-container>
         </ul>
         <span class="review-checked">{{ waitingLabel(review) }}</span>
         <span *ngIf="review.neededBy" class="review-needed" [class.review-needed--overdue]="isOverdue(review)">
