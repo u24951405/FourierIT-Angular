@@ -24,7 +24,7 @@
   </div>
 
   <div class="chart-card">
-    <p class="chart-card__desc">Total documents processed during the reporting period, broken down by verification outcome.</p>
+    <p class="chart-card__desc">Documents uploaded during the reporting period, by where they stand now.</p>
     <canvas #processingChart style="max-height: 180px;"></canvas>
 
     <div class="monthly-stats-row">
@@ -37,12 +37,16 @@
         <span class="monthly-stat__label">Pending Verification</span>
       </div>
       <div class="monthly-stat">
+        <span class="monthly-stat__value monthly-stat__value--red">{{ data.processing.rejected | number }}</span>
+        <span class="monthly-stat__label">Rejected</span>
+      </div>
+      <div class="monthly-stat">
         <span class="monthly-stat__value monthly-stat__value--red">{{ data.processing.flaggedAnomalies | number }}</span>
-        <span class="monthly-stat__label">Flagged Anomalies</span>
+        <span class="monthly-stat__label">Flagged <small>(documents or owners)</small></span>
       </div>
       <div class="monthly-stat">
         <span class="monthly-stat__value monthly-stat__value--purple">{{ data.processing.partOfEnquiry | number }}</span>
-        <span class="monthly-stat__label">Part of Enquiry</span>
+        <span class="monthly-stat__label">Institution requests received</span>
       </div>
     </div>
   </div>
@@ -50,12 +54,12 @@
   <!-- ── Security & Anomalies ──────────────────────────────────────────────── -->
   <div class="report-section-divider">
     <div class="report-section-divider__line"></div>
-    <span class="report-section-divider__label">SECURITY & ANOMALIES</span>
+    <span class="report-section-divider__label">SECURITY EVENTS</span>
     <div class="report-section-divider__line"></div>
   </div>
 
   <div class="chart-card">
-    <p class="chart-card__desc">Security events recorded across the reporting period. Plotted by day of month.</p>
+    <p class="chart-card__desc">Failed logins, role changes, and documents flagged or access revoked, per day (SAST). Everyday activity such as logins and uploads isn't counted.</p>
     <canvas #securityChart style="max-height: 220px;"></canvas>
   </div>
 
@@ -70,8 +74,8 @@
 
     <!-- Distribution -->
     <div class="chart-card">
-      <h3 class="chart-card__subtitle">Document Distribution by Category</h3>
-      <p class="chart-card__desc">Five core FICA material categories</p>
+      <h3 class="chart-card__subtitle">Document Distribution by Type</h3>
+      <p class="chart-card__desc">Documents uploaded in the period, by document type</p>
       <div class="monthly-doughnut-wrap">
         <canvas #distributionChart></canvas>
       </div>
@@ -122,7 +126,7 @@
   </div>
 
   <div class="chart-card">
-    <p class="chart-card__desc">Total document uploads per day of the reporting month (31-day view).</p>
+    <p class="chart-card__desc">Document uploads per day of the reporting period (SAST).</p>
     <canvas #uploadChart style="max-height: 200px;"></canvas>
 
     <div class="monthly-upload-summary">
@@ -135,7 +139,7 @@
         <span class="monthly-upload-stat__label">Daily Average</span>
       </div>
       <div class="monthly-upload-stat">
-        <span class="monthly-upload-stat__value">Day {{ data.peakDay }}</span>
+        <span class="monthly-upload-stat__value">{{ data.peakDay ? 'Day ' + data.peakDay : '—' }}</span>
         <span class="monthly-upload-stat__label">Peak Day</span>
       </div>
     </div>

@@ -3,9 +3,10 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
+/** The API sends and accepts these as text (it uses a string enum converter). */
 export enum DocumentTypeValidityBasis {
-  CertificationDate = 0,
-  UploadDate = 1
+  CertificationDate = 'CertificationDate',
+  UploadDate = 'UploadDate'
 }
 
 export interface DocumentTypeSummaryDto {
@@ -13,7 +14,6 @@ export interface DocumentTypeSummaryDto {
   name: string;
   description?: string | null;
   validityMonths: number;
-  neverExpires: boolean;
   validityBasis: DocumentTypeValidityBasis;
   warningDays: number;
   documentCount: number;
@@ -21,7 +21,6 @@ export interface DocumentTypeSummaryDto {
 
 export interface DocumentTypeValidityUpdateRequest {
   validityMonths: number;
-  neverExpires: boolean;
   validityBasis: DocumentTypeValidityBasis;
   warningDays: number;
 }

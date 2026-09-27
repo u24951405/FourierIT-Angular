@@ -1,8 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -35,27 +33,42 @@ export class ReviewQueueComponent implements OnInit {
   private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
-  private route = inject(ActivatedRoute);
-  private sanitizer = inject(DomSanitizer);
 
   readonly pepScanUrl = 'https://www.verifynow.co.za/verifynow?reportType=check-aml-pep';
-  readonly safePepScanUrl: SafeResourceUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.pepScanUrl);
-  readonly canManage = this.isDevAccess() || this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
+  readonly canManage = this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly reviews = signal<ReviewQueueItem[]>([]);
   readonly processingCheckId = signal<number | null>(null);
   readonly notes = signal<Record<number, string>>({});
-  readonly pepScanOpen = signal(false);
+  readonly rejectionCategories = signal<Record<number, string>>({});
+  readonly rejectionCategoryOptions = [
+    'Illegible or poor quality',
+    'Expired',
+    'Not certified',
+    'Wrong document',
+    'Details do not match',
+    'Other'
+  ];
+  searchTerm = '';
+
+  get filteredReviews(): ReviewQueueItem[] {
+    const query = this.searchTerm.trim().toLowerCase();
+    if (!query) return this.reviews();
+
+    return this.reviews().filter(review => [
+      this.getDocumentName(review),
+      this.getDocumentType(review),
+      review.ownerName ?? '',
+      review.departmentName ?? '',
+      review.manualReviewReason ?? '',
+      review.nonComplianceReason ?? ''
+    ].some(value => value.toLowerCase().includes(query)));
+  }
 
   ngOnInit(): void {
     this.loadReviews();
-  }
-
-  private isDevAccess(): boolean {
-    const dev = this.route.snapshot.queryParamMap.get('dev');
-    return dev === '1' || dev === 'true';
   }
 
   loadReviews(): void {
@@ -92,8 +105,26 @@ export class ReviewQueueComponent implements OnInit {
     this.notes.update((current) => ({ ...current, [checkId]: value }));
   }
 
+  getRejectionCategory(checkId: number): string {
+    return this.rejectionCategories()[checkId] ?? '';
+  }
+
+  setRejectionCategory(checkId: number, value: string): void {
+    this.rejectionCategories.update((current) => ({ ...current, [checkId]: value }));
+  }
+
+  // A category is always required; "Other" also needs notes so the owner knows what to fix.
   canReject(checkId: number): boolean {
-    return this.getNotes(checkId).trim().length > 0;
+    const category = this.getRejectionCategory(checkId);
+    if (!category) return false;
+    return category !== 'Other' || this.getNotes(checkId).trim().length > 0;
+  }
+
+  private buildRejectionReason(checkId: number): string {
+    const category = this.getRejectionCategory(checkId);
+    const notes = this.getNotes(checkId).trim();
+    if (category === 'Other') return notes;
+    return notes ? `${category}: ${notes}` : category;
   }
 
   getDocumentName(review: ReviewQueueItem): string {
@@ -118,12 +149,17 @@ export class ReviewQueueComponent implements OnInit {
     });
   }
 
+  /**
+   * Opens VerifyNow in a small window centred over the app. It can't be shown inside the page:
+   * VerifyNow sends X-Frame-Options: DENY, so browsers refuse to load it in an iframe.
+   */
   openPepScan(): void {
-    this.pepScanOpen.set(true);
-  }
-
-  closePepScan(): void {
-    this.pepScanOpen.set(false);
+    const width = 760;
+    const height = 640;
+    const left = Math.max(0, Math.round(window.screenX + (window.outerWidth - width) / 2));
+    const top = Math.max(0, Math.round(window.screenY + (window.outerHeight - height) / 2));
+    const features = `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+    window.open(this.pepScanUrl, 'verifynow-pep-scan', features)?.focus();
   }
 
   getComplianceStatus(review: ReviewQueueItem): 'Pending' | 'Needs review' | 'Compliant' {
@@ -148,15 +184,15 @@ export class ReviewQueueComponent implements OnInit {
 
     const request = decision === 'approve'
       ? this.complianceService.approveDocument(checkId, this.getNotes(checkId))
-      : this.complianceService.rejectDocument(checkId, this.getNotes(checkId));
+      : this.complianceService.rejectDocument(checkId, this.buildRejectionReason(checkId));
 
     request.pipe(finalize(() => this.processingCheckId.set(null))).subscribe({
       next: () => {
-        this.toast.show(
-          decision === 'approve' ? 'Document approved successfully.' : 'Document rejected successfully.',
-          'success'
-        );
-        this.loadReviews();
+        this.toast.show(decision === 'approve' ? 'Document approved.' : 'Document rejected.', 'success');
+        // A decided document leaves the queue straight away; it returns only if the owner resubmits.
+        this.reviews.update((current) => current.filter((item) => item.checkId !== checkId));
+        this.notes.update(({ [checkId]: _, ...rest }) => rest);
+        this.rejectionCategories.update(({ [checkId]: _, ...rest }) => rest);
       },
       error: (err) => {
         const message = err?.error?.error ?? err?.error?.message ?? 'Could not update this review.';

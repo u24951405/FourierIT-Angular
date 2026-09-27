@@ -94,8 +94,11 @@
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="request-card__actions">
+      <!-- Actions (only the recipient decides; the Super Admin views) -->
+      <p *ngIf="isViewOnly" class="request-card__view-only">
+        View only — the {{ request.requestType === 'department' ? 'department' : 'person' }} this request is addressed to decides whether to share.
+      </p>
+      <div class="request-card__actions" *ngIf="!isViewOnly">
         <button 
           class="btn btn-approve" 
           type="button" 

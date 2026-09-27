@@ -4,7 +4,7 @@ import { documentOwnerGuard } from './core/guards/document-owner.guard';
 import { restrictDocumentOwnerOnlyGuard } from './core/guards/restrict-document-owner-only.guard';
 import { stakeholderMutationGuard } from './core/guards/stakeholder-mutation.guard';
 import { documentUploadGuard } from './core/guards/document-upload.guard';
-import { adminGuard } from './core/guards/admin.guard';
+import { systemDashboardGuard, userDirectoryGuard } from './core/guards/admin.guard';
 import { adminOrDepartmentAdminGuard } from './core/guards/admin-or-department-admin.guard';
 import { departmentAdminGuard, departmentScopedGuard } from './core/guards/department-admin.guard';
 import { documentManagementGuard } from './core/guards/document-management.guard';
@@ -41,49 +41,64 @@ export const routes: Routes = [
   },
   {
     path: 'institution/auth/access',
+    data: { helpKey: 'login-otp' },
     loadComponent: () => import('./features/institution-portal/auth/token-entry/token-entry').then(m => m.TokenEntryComponent)
   },
   {
     path: 'institution/auth/verify',
+    data: { helpKey: 'login-otp' },
     canActivate: [institutionOtpGuard],
     loadComponent: () => import('./features/institution-portal/auth/otp-verify/otp-verify').then(m => m.OtpVerifyComponent)
   },
   {
     path: 'institution/auth/expired',
+    data: { helpKey: 'login-otp' },
     loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
   },
   {
     path: 'institution/auth/token-requested',
+    // Same card as the link-problem page, in its "new link sent" state.
+    data: { reason: 'sent', helpKey: 'login-otp' },
     loadComponent: () => import('./features/institution-portal/auth/token-expired/token-expired').then(m => m.TokenExpiredComponent)
   },
   {
     path: 'institution/thank-you',
+    data: { helpKey: 'institution-requests' },
     loadComponent: () => import('./features/institution-portal/auth/thank-you/thank-you.component').then(m => m.ThankYouComponent)
-  },
-  {
-    path: 'institution/dashboard',
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
-  },
-  {
-    path: 'institution/request-documents',
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
-  },
-  {
-    path: 'institution/my-requests',
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
-  },
-  {
-    path: 'institution/approved-documents',
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
   },
   {
     path: 'institution',
     redirectTo: 'institution/auth/access',
     pathMatch: 'full'
+  },
+  // Signed-in institution pages share one layout (top bar, tabs, footer); the URLs stay /institution/<page>.
+  {
+    path: 'institution',
+    canActivate: [institutionAuthGuard],
+    canActivateChild: [institutionAuthGuard],
+    loadComponent: () => import('./features/institution-portal/shell/institution-shell').then(m => m.InstitutionShellComponent),
+    children: [
+      {
+        path: 'dashboard',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
+      },
+      {
+        path: 'request-documents',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
+      },
+      {
+        path: 'my-requests',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
+      },
+      {
+        path: 'approved-documents',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
+      },
+    ]
   },
   {
     path: '',
@@ -98,7 +113,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/dashboard-redirect/dashboard-redirect.component')
           .then(m => m.DashboardRedirectComponent) },
       { path: 'dashboard/system',
-        canActivate: [restrictDocumentOwnerOnlyGuard, adminGuard],
+        canActivate: [restrictDocumentOwnerOnlyGuard, systemDashboardGuard],
         data: { dashboardScope: 'system', helpKey: 'dashboard' },
         loadComponent: () => import('./features/dashboard/dashboard/dashboard.component')
           .then(m => m.DashboardComponent) },
@@ -127,6 +142,11 @@ export const routes: Routes = [
         data: { helpKey: 'user-role-management' },
         loadComponent: () => import('./features/departments/department-admin-management/department-admin-management.component')
           .then(m => m.DepartmentAdminManagementComponent) },
+      { path: 'users/all',
+        canActivate: [restrictDocumentOwnerOnlyGuard, userDirectoryGuard],
+        data: { pageTitle: 'All Users' },
+        loadComponent: () => import('./features/users/user-management/user-management.component')
+          .then(m => m.UserManagementComponent) },
       { path: 'users/department-admins',
         canActivate: [restrictDocumentOwnerOnlyGuard, departmentAdminGuard],
         data: { managedRole: 'Department Admin', pageTitle: 'Department Admin Management', helpKey: 'user-role-management' },
@@ -207,16 +227,17 @@ export const routes: Routes = [
         data: { helpKey: 'backup-restore' },
         loadComponent: () => import('./features/backup-restore/backup-restore')
           .then(m => m.BackupRestoreComponent) },
+      // System Settings: one page with tabs; each tab keeps its own address.
       { path: 'system-settings',
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
-        data: { helpKey: 'timer-settings' },
+        data: { tab: 'security', helpKey: 'timer-settings' },
         loadComponent: () => import('./features/system/system-settings/system-settings.component')
           .then(m => m.SystemSettingsComponent) },
       { path: 'system-settings/document-types',
         canActivate: [restrictDocumentOwnerOnlyGuard, superAdminGuard],
-        data: { helpKey: 'document-validity' },
-        loadComponent: () => import('./features/system/document-type-validity/document-type-validity.component')
-          .then(m => m.DocumentTypeValidityComponent) },
+        data: { tab: 'documents', helpKey: 'document-validity' },
+        loadComponent: () => import('./features/system/system-settings/system-settings.component')
+          .then(m => m.SystemSettingsComponent) },
       { path: 'help',
         canActivate: [authGuard],
         loadComponent: () => import('./features/help/help.component')

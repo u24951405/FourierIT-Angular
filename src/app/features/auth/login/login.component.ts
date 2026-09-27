@@ -8,7 +8,7 @@ import {
   ElementRef
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
@@ -31,6 +31,8 @@ export class LoginComponent implements AfterViewInit {
 
   isLoading  = signal(false);
   errorMsg   = signal<string | null>(null);
+  /** Set when the user was signed out because their session timer ran out. */
+  readonly sessionExpired = inject(ActivatedRoute).snapshot.queryParamMap.get('expired') === '1';
   showPass   = signal(false);
 
   ngAfterViewInit(): void {

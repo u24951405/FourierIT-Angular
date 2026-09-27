@@ -1,82 +1,83 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { ReportFrameComponent, ReportFrameConfig } from '../../shared/report-frame/report-frame';
-import { SystemAuditReportData, InstitutionAuditBlock, AuditLogRow } from '../../reports.models';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ReportsService, SystemAuditReport } from '../../../../core/services/reports.service';
 
+/** What each institution did, and what was decided about its requests, from the audit log. */
 @Component({
   selector: 'app-system-audit-report',
   standalone: true,
-  imports: [CommonModule, ReportFrameComponent],
+  imports: [CommonModule, FormsModule, ReportFrameComponent],
   templateUrl: './system-audit-report.html',
   styleUrls: ['./system-audit-report.scss'],
 })
-export class SystemAuditReportComponent {
-  private authService = inject(AuthService);
+export class SystemAuditReportComponent implements OnInit {
+  private readonly authService = inject(AuthService);
+  private readonly reports = inject(ReportsService);
+
+  readonly loading = signal(true);
+  readonly error = signal<string | null>(null);
+  readonly report = signal<SystemAuditReport | null>(null);
+
+  /** Defaults to the last 90 days. */
+  from = this.isoDate(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+  to = this.isoDate(new Date());
+
   frameConfig: ReportFrameConfig = {
-    reportId: 'DV-SAR-4164163896',
+    reportId: '—',
     dateGenerated: new Date().toISOString(),
     createdBy: this.generatedBy(),
-    reportType: 'External Enquiry & Token Lifecycle',
-    framework: 'FICA · POPIA · DocuVault v35',
+    reportType: 'Institution activity audit',
+    framework: 'FICA · POPIA',
     badgeLabel: 'AUDIT TRAIL',
     badgeIcon: 'lock',
     accentColors: ['#1e2a3a', '#4b5a6e', '#7bafd4'],
   };
 
-  data: SystemAuditReportData = {
-    reportId: 'DV-SAR-4164163896',
-    dateGenerated: new Date().toISOString(),
-    createdBy: this.generatedBy(),
-    totalLogs: 8,
-    totalSessions: 2,
-    totalAnomalies: 2,
-    cleanInteractions: 6,
-    institutions: [
-      {
-        institutionName: 'SARS',
-        tokenWindow: '48 hours',
-        windowStatus: 'Expired',
-        enquiryReason: 'Statutory tax compliance verification — annual FICA obligation under s25(B) of the Income Tax Act',
-        tokenId: '#E7A55B934F7E3E55D3EA2368',
-        totalInteractions: 4,
-        anomalies: 1,
-        logs: [
-          { sessionId: 'SARS-SYS-SESSION-4471', sessionRole: 'Automated Revenue Verification Engine', targetDocument: 'SARS Income Tax Registration Confirmation', actionExecuted: 'Document View', timestamp: '2026-05-14 08:32:17 SAST', securityStatus: 'Clean' },
-          { sessionId: 'SARS-SYS-SESSION-4471', sessionRole: 'Automated Revenue Verification Engine', targetDocument: 'SARS VAT Registration Certificate', actionExecuted: 'Document View', timestamp: '2026-05-14 08:33:05 SAST', securityStatus: 'Clean' },
-          { sessionId: 'SARS-USR-SESSION-8812', sessionRole: 'Senior Compliance Auditor', targetDocument: 'Tax Clearance Certificate — 2025', actionExecuted: 'Document Download (Watermarked)', timestamp: '2026-05-14 09:11:44 SAST', securityStatus: 'Clean' },
-          { sessionId: 'SARS-USR-SESSION-8812', sessionRole: 'Senior Compliance Auditor', targetDocument: 'Shareholder Register v3', actionExecuted: 'Access Attempt — Permission Denied', timestamp: '2026-05-14 09:17:22 SAST', securityStatus: 'Anomaly Detected' },
-        ],
-      },
-      {
-        institutionName: 'FNB',
-        tokenWindow: '12 hours',
-        windowStatus: 'Expired',
-        enquiryReason: 'Commercial facility renewal — credit risk and FICA document refresh for existing facilities',
-        tokenId: '#9CD845088E331CDF02F8F12E',
-        totalInteractions: 4,
-        anomalies: 1,
-        logs: [
-          { sessionId: 'FNB-RM-SESSION-2209', sessionRole: 'Relationship Manager', targetDocument: 'CIPC Registration Certificate', actionExecuted: 'Document View', timestamp: '2026-06-02 11:04:38 SAST', securityStatus: 'Clean' },
-          { sessionId: 'FNB-RM-SESSION-2209', sessionRole: 'Relationship Manager', targetDocument: 'Memorandum of Incorporation (CoR14.1)', actionExecuted: 'Document Download', timestamp: '2026-06-02 11:06:12 SAST', securityStatus: 'Clean' },
-          { sessionId: 'FNB-CRED-SESSION-5530', sessionRole: 'Credit Risk Analyst', targetDocument: 'Bank Statement — FG HQ (Q1 2026)', actionExecuted: 'Document View', timestamp: '2026-06-02 13:22:57 SAST', securityStatus: 'Clean' },
-          { sessionId: 'FNB-CRED-SESSION-5530', sessionRole: 'Credit Risk Analyst', targetDocument: 'Beneficial Ownership Declaration', actionExecuted: 'Token Expiry — Access Revoked Mid-Session', timestamp: '2026-06-02 21:05:11 SAST', securityStatus: 'Expired Token' },
-        ],
-      },
-    ],
-  };
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    if (this.from && this.to && this.from > this.to) {
+      this.error.set('The start date must be on or before the end date.');
+      return;
+    }
+
+    this.loading.set(true);
+    this.error.set(null);
+    this.reports.getSystemAudit(this.from, this.to)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: report => {
+          this.report.set(report);
+          this.frameConfig = {
+            ...this.frameConfig,
+            reportId: report.reportId,
+            dateGenerated: report.dateGenerated,
+            period: `${this.formatDay(report.periodFrom)} – ${this.formatDay(report.periodTo)}`,
+          };
+        },
+        error: err => this.error.set(err?.error?.error ?? 'Could not load the audit report.'),
+      });
+  }
+
+  private formatDay(value: string): string {
+    return new Date(value).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  private isoDate(date: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
 
   private generatedBy(): string {
     const user = this.authService.currentUser();
-    if (!user) return 'Unknown User';
+    if (!user) return 'Unknown user';
     const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
-    return name || user.email || 'Unknown User';
-  }
-
-  statusClass(status: string): string {
-    if (status === 'Clean') return 'audit-status--clean';
-    if (status === 'Anomaly Detected') return 'audit-status--anomaly';
-    if (status === 'Expired Token') return 'audit-status--expired';
-    return '';
+    return name || user.email || 'Unknown user';
   }
 }

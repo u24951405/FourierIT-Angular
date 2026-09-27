@@ -17,8 +17,63 @@
 }
 
 .table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
   padding: 1rem;
   border-bottom: 1px solid var(--border);
+}
+
+.role-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 32px;
+  padding: 0 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--white, #fff);
+  color: var(--text-mid);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover { border-color: var(--blue-muted); color: var(--text); }
+  &:focus-visible { outline: 2px solid var(--blue-light); outline-offset: 2px; }
+
+  &--active {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+
+    &:hover { color: #fff; }
+
+    .role-chip__count { background: rgba(255, 255, 255, 0.2); color: #fff; }
+  }
+}
+
+.role-chip__count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-mid);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .search-box { width: 100%; }
 }
 
 .search-box {
@@ -64,7 +119,10 @@ th, td {
 }
 
 .modal {
-  width: min(700px, 94vw);
+  width: min(760px, 94vw);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border-radius: 12px;
   overflow: hidden;
@@ -81,9 +139,73 @@ th, td {
 }
 
 .modal__body {
+  min-height: 0;
+  overflow-y: auto;
   padding: 1rem 1.25rem;
   display: grid;
+  gap: 1rem;
+}
+
+.edit-section {
+  display: grid;
   gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.edit-section--admin {
+  border-color: #b7d8d1;
+  background: #f4fbf9;
+}
+
+.edit-section__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.edit-section__heading h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.98rem;
+}
+
+.edit-section__heading p {
+  margin: 0.25rem 0 0;
+  color: var(--text-light);
+  font-size: 0.8rem;
+}
+
+.edit-section__badge {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-light);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.edit-section__badge--admin {
+  border-color: #8fc7bb;
+  color: #176b5e;
+  background: #e4f5f1;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field--readonly input {
+  color: #526170;
+  background: #f1f4f6;
+  border-color: #d9e0e5;
+  cursor: default;
 }
 
 .form-row {
@@ -97,4 +219,47 @@ th, td {
   justify-content: flex-end;
   gap: 12px;
   padding-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .modal__header,
+  .modal__body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide {
+    grid-column: auto;
+  }
+
+  .edit-section__heading {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+// Change-role dialog
+.modal--narrow { max-width: 460px; }
+
+.role-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--input-bg, #f5f7fa);
+
+  dt { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--text-mid, #64748b); }
+  dd { margin: 0; font-size: 14px; color: var(--text, #0f172a); }
+}
+
+.role-note {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  color: var(--text-mid, #64748b);
 }

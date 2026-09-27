@@ -190,7 +190,7 @@ export class DepartmentAdminManagementComponent implements OnInit {
   }
 
   private isUnassignedAdmin(userId: string): boolean {
-    return this.unassignedAdmins().some(admin => admin.userId === userId);
+    return this.unassignedAdmins().some(admin => admin.userId === userId && !admin.departmentId);
   }
 
   private mapDepartment(dto: ApiDepartmentDto): Department {

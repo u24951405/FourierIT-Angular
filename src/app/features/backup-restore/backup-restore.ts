@@ -83,7 +83,8 @@ export class BackupRestoreComponent implements OnInit {
       error: (err) => {
         console.error('Error initiating backup', err);
         this.showBackingUpModal = false;
-        const message = err?.error?.message || err?.error?.error || err?.error?.title || 'Backup initiation failed. Please try again.';
+        // A failed backup returns 400 with the backup result, whose reason is in statusMessage.
+        const message = err?.error?.statusMessage || err?.error?.message || err?.error?.error || err?.error?.title || 'Backup initiation failed. Please try again.';
         this.errorMessage = message;
         this.showErrorBanner = true;
         this.showSuccessBanner = false;

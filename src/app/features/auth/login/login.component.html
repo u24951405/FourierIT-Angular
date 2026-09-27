@@ -24,6 +24,8 @@
 
     @if (errorMsg()) {
       <div class="login-card__error">{{ errorMsg() }}</div>
+    } @else if (sessionExpired) {
+      <div class="login-card__notice" role="status">Your session has expired. Please sign in again.</div>
     }
 
     <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>

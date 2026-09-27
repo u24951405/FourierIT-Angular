@@ -23,11 +23,6 @@ export enum ReportFocus {
   UPLOAD_VOLUME = 'UPLOAD_VOLUME',
 }
  
-export enum RiskLevel {
-  HIGH = 'HIGH',
-  MEDIUM = 'MEDIUM',
-  LOW = 'LOW',
-}
  
 // ─── Ad Hoc ──────────────────────────────────────────────────────────────────
  
@@ -58,6 +53,8 @@ export interface AdHocReportData {
 export interface AdHocComplianceResult {
   statusId: number;
   userId: string;
+  /** The person's name (or an institution, or "System"). */
+  name: string;
   overallStatus: string;
   riskLevel: string;
   compliancePercentage: number;
@@ -78,6 +75,8 @@ export interface AdHocDocumentResult {
 export interface AdHocSecurityResult {
   auditLogId: number;
   userId: string;
+  /** The person's name (or an institution, or "System"). */
+  name: string;
   action: string;
   timestamp: string;
   description: string;
@@ -115,7 +114,9 @@ export interface RecentReport {
 export interface DocumentProcessingStats {
   verified: number;
   pendingVerification: number;
+  rejected: number;
   flaggedAnomalies: number;
+  /** Institution document requests received in the period (requests, not documents). */
   partOfEnquiry: number;
 }
  
@@ -206,7 +207,7 @@ export interface VaultAccessLogEntry {
 export interface ClientRelationship {
   organisation: string;
   documentsShared: number;
-  status: 'Active' | 'Pending' | 'Expired';
+  status: 'Active' | 'Expired' | 'Revoked';
 }
  
 export interface ActivityReportData {
@@ -214,6 +215,9 @@ export interface ActivityReportData {
   dateGenerated: string;
   documentOwner: string;
   ownerId: string;
+  /** Latest compliance result; null when no compliance check has run for this owner yet. */
+  complianceStatus: string | null;
+  compliancePercentage: number | null;
   activeDocuments: number;
   inactiveDocuments: number;
   totalDocuments: number;
@@ -225,67 +229,13 @@ export interface ActivityReportData {
  
 // ─── System Audit ─────────────────────────────────────────────────────────────
  
-export interface AuditLogRow {
-  sessionId: string;
-  sessionRole: string;
-  targetDocument: string;
-  actionExecuted: string;
-  timestamp: string;
-  securityStatus: 'Clean' | 'Anomaly Detected' | 'Expired Token';
-}
  
-export interface InstitutionAuditBlock {
-  institutionName: string;
-  tokenWindow: string;
-  windowStatus: 'Active' | 'Expired';
-  enquiryReason: string;
-  tokenId: string;
-  logs: AuditLogRow[];
-  totalInteractions: number;
-  anomalies: number;
-}
  
-export interface SystemAuditReportData {
-  reportId: string;
-  dateGenerated: string;
-  createdBy: string;
-  institutions: InstitutionAuditBlock[];
-  totalLogs: number;
-  totalSessions: number;
-  totalAnomalies: number;
-  cleanInteractions: number;
-}
  
 // ─── Client Risk Rating ───────────────────────────────────────────────────────
  
-export interface ClientRiskProfile {
-  name: string;
-  referenceId: string;
-  entityType: string;
-  jurisdiction: string;
-  baseScore: number;
-  pepMultiplier: number;
-  isPep: boolean;
-  geographicScore: number;
-  finalCompositeScore: number;
-  riskLevel: RiskLevel;
-}
  
-export interface RiskStrataGroup {
-  level: RiskLevel;
-  profiles: ClientRiskProfile[];
-  averageScore: number;
-  pepElevatedCount: number;
-}
  
-export interface ClientRiskReportData {
-  reportId: string;
-  dateGenerated: string;
-  createdBy: string;
-  totalProfiles: number;
-  portfolioAvgScore: number;
-  strata: RiskStrataGroup[];
-}
  
 // ─── Shared ───────────────────────────────────────────────────────────────────
  

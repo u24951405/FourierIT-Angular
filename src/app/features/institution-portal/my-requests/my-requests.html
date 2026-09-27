@@ -1,91 +1,135 @@
-<div class="my-requests-page">
-  <header class="my-requests-header">
-    <div class="my-requests-header__left">
-      <button class="my-requests-back" type="button" (click)="goToDashboard()" aria-label="Back to dashboard">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M19 12H6M12 5l-7 7 7 7"></path>
-        </svg>
-      </button>
-      <div>
-        <h1>My Pending Requests</h1>
-        <p class="my-requests-subtitle">Review access requests sent to you and approve or deny document access.</p>
-      </div>
-    </div>
-    <div class="my-requests-header__right">
-      <img src="/Logo.png" alt="Portal logo" class="my-requests-logo" />
-    </div>
-  </header>
+<app-portal-page-header title="My requests" subtitle="Every document request your institution has made, newest first.">
+  <button type="button" class="btn btn--outline" (click)="loadRequests()" [disabled]="loading()">Refresh</button>
+  <a class="btn btn--primary" routerLink="/institution/request-documents">New request</a>
+</app-portal-page-header>
 
-  <div *ngIf="loading()" class="my-requests-loading">
-    <p>Loading pending requests…</p>
-  </div>
-
-  <div *ngIf="!loading() && error()" class="my-requests-error">
-    <p>{{ error() }}</p>
-  </div>
-
-  <div *ngIf="!loading() && !error() && pendingRequests().length === 0" class="my-requests-empty">
-    <p>No pending requests found. Check back after your institution submits a new access request.</p>
-    <div class="my-requests-empty__actions">
-      <button class="rd-btn rd-btn--primary" type="button" (click)="loadPendingRequests()">Reload</button>
-      <button class="rd-btn rd-btn--outline" type="button" (click)="goToDashboard()">Back to Dashboard</button>
-    </div>
-  </div>
-  <div *ngIf="!loading() && pendingRequests().length > 0" class="my-requests-list">
-    <div class="request-card" *ngFor="let request of pendingRequests()">
-      <div class="request-card__meta">
-        <img src="/Logo.png" alt="Institution logo" class="request-card__logo" />
-        <div class="request-card__titles">
-          <div class="request-card__row">
-            <div class="request-card__name">#{{ request.enquiryRequestId }} · {{ request.institutionName || '—' }}</div>
-            <div class="request-card__time">{{ request.requestDate | date:'medium' }}</div>
-          </div>
-          <div class="request-card__meta-line">
-            <small>To: <strong>{{ request.recipient.name || '—' }}</strong> <span class="recipient-type">({{ request.recipient.type || 'Unknown' }})</span></small>
-          </div>
-          <div class="request-card__purpose--compact">{{ request.purposeNote || 'No purpose provided' }}</div>
-        </div>
-        <div class="request-card__status-wrapper">
-          <span class="request-card__status request-card__status--{{ request.status.toLowerCase() }}">{{ request.status }}</span>
-        </div>
-        <div class="request-card__checklist">
-          <span *ngIf="request.isComplete === true" class="request-card__checklist--complete">Complete</span>
-          <span *ngIf="request.isComplete === false" class="request-card__checklist--missing">{{ request.missingCount || 0 }} missing</span>
-          <span *ngIf="request.isComplete === undefined" class="request-card__checklist--loading">Checking checklist…</span>
-        </div>
-      </div>
-
-      <div class="request-card__body">
-        <div class="request-card__documents">
-          <span class="request-card__documents-title">Requested documents</span>
-          <p class="request-card__scope-note">If approved, access covers all of the recipient's documents in each requested type, not individual files.</p>
-          <div class="request-card__doc-list">
-            <span class="doc-chip" *ngFor="let doc of request.documents">{{ doc.documentTypeName }}<b *ngIf="doc.isMandatory" class="doc-chip--required">*</b></span>
-          </div>
-        </div>
-
-        <div *ngIf="request.requestedDocumentStatuses?.length" class="request-card__status-details">
-          <span class="request-card__status-details-title">Document checklist</span>
-          <div class="request-card__status-tags">
-            <span
-              class="doc-chip"
-              *ngFor="let status of request.requestedDocumentStatuses"
-              [ngClass]="{
-                'doc-chip--uploaded': status.state === 'Uploaded',
-                'doc-chip--rejected': status.state === 'Rejected',
-                'doc-chip--missing': status.state === 'Missing'
-              }"
-            >
-              {{ status.documentTypeName }} — {{ status.state }}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="request-card__actions">
-        <button class="rd-btn rd-btn--outline" type="button" (click)="editRequest(request.enquiryRequestId)">Edit Request</button>
-        <button class="rd-btn rd-btn--outline" type="button" (click)="revokeRequest(request.enquiryRequestId)">Revoke</button>
-      </div>
-    </div>
-  </div>
+<div class="filters" role="tablist" aria-label="Filter requests">
+  @for (option of filters; track option.value) {
+    <button type="button" class="filter" role="tab"
+            [class.filter--active]="filter() === option.value"
+            [attr.aria-selected]="filter() === option.value"
+            (click)="setFilter(option.value)">
+      {{ option.label }} <span class="filter__count">{{ countFor(option.value) }}</span>
+    </button>
+  }
 </div>
+
+@if (notice()) {
+  <div class="banner banner--success" role="status">{{ notice() }}</div>
+}
+@if (error()) {
+  <div class="banner banner--error" role="alert">{{ error() }}</div>
+}
+
+@if (loading() && !requests().length) {
+  <p class="state">Loading your requests…</p>
+} @else if (!error() && !visibleRequests().length) {
+  <div class="empty">
+    @if (requests().length) {
+      <p>No requests in this list.</p>
+    } @else {
+      <p>You haven't made any requests yet.</p>
+      <a class="btn btn--primary" routerLink="/institution/request-documents">Request documents</a>
+    }
+  </div>
+} @else {
+  <ul class="list">
+    @for (request of visibleRequests(); track request.enquiryRequestId) {
+      <li class="card" [attr.data-status]="statusGroup(request.status)">
+        <header class="card__header">
+          <div class="card__title">
+            <span class="card__id">Request #{{ request.enquiryRequestId }}</span>
+            @if (request.referenceNumber) { <span class="card__ref">Ref. {{ request.referenceNumber }}</span> }
+          </div>
+          <span class="status status--{{ statusGroup(request.status) }}">{{ statusLabel(request) }}</span>
+        </header>
+
+        <dl class="card__facts">
+          <div><dt>Sent to</dt><dd>{{ request.recipient.name || '—' }} <span class="muted">({{ request.recipient.type === 'Department' ? 'department' : 'person' }})</span></dd></div>
+          <div><dt>Requested</dt><dd>{{ request.requestDate | date:'d MMM y' }}</dd></div>
+          @if (request.submissionDeadline) {
+            <div><dt>Needed by</dt><dd>{{ request.submissionDeadline | date:'d MMM y' }}</dd></div>
+          }
+          @if (request.respondedAt) {
+            <div><dt>{{ statusGroup(request.status) === 'cancelled' ? 'Cancelled' : 'Decided' }}</dt><dd>{{ request.respondedAt | date:'d MMM y' }}</dd></div>
+          }
+          @if (request.status === 'Approved' && request.accessExpiresAt) {
+            <div><dt>{{ accessEnded(request) ? 'Access ended' : 'Access ends' }}</dt><dd>{{ request.accessExpiresAt | date:'d MMM y, HH:mm' }}</dd></div>
+          }
+        </dl>
+
+        @if (request.extensionStatus === 'Pending') {
+          <p class="card__hint">You asked for more time (until {{ request.extensionRequestedUntil | date:'d MMM y' }}). Waiting for the owner's answer.</p>
+        } @else if (request.extensionStatus === 'Denied') {
+          <p class="card__reason"><strong>More time was declined.</strong>@if (request.extensionResponseNote) { {{ request.extensionResponseNote }} }</p>
+        } @else if (request.extensionStatus === 'Approved') {
+          <p class="card__hint">More time was approved.</p>
+        }
+
+        @if (request.purposeNote) {
+          <p class="card__purpose"><span class="muted">Purpose:</span> {{ request.purposeNote }}</p>
+        }
+
+        @if (statusGroup(request.status) === 'denied' && request.responseNote) {
+          <p class="card__reason"><strong>Reason given:</strong> {{ request.responseNote }}</p>
+        }
+
+        <div class="card__docs">
+          <span class="card__docs-title">Documents</span>
+          <div class="chips">
+            @if (request.requestedDocumentStatuses?.length) {
+              @for (doc of request.requestedDocumentStatuses; track doc.documentTypeId) {
+                <span class="chip chip--{{ doc.state.toLowerCase() }}"
+                      [title]="doc.state === 'Uploaded' ? 'Uploaded by the recipient' : doc.state === 'Rejected' ? 'Rejected in review; the recipient must replace it' : 'Not uploaded yet'">
+                  {{ doc.documentTypeName }}@if (doc.isMandatory) {<b class="chip__req" aria-label="required">*</b>}
+                  <span class="chip__state">{{ doc.state === 'Uploaded' ? 'Ready' : doc.state === 'Rejected' ? 'Rejected' : 'Missing' }}</span>
+                </span>
+              }
+            } @else {
+              @for (doc of request.documents; track doc.documentTypeId) {
+                <span class="chip">{{ doc.documentTypeName }}@if (doc.isMandatory) {<b class="chip__req" aria-label="required">*</b>}</span>
+              }
+            }
+          </div>
+          @if (isOpen(request) && request.missingCount) {
+            <p class="card__hint">{{ request.missingCount }} document{{ request.missingCount === 1 ? ' is' : 's are' }} not ready yet. The recipient has been asked to provide {{ request.missingCount === 1 ? 'it' : 'them' }}.</p>
+          }
+        </div>
+
+        @if (isOpen(request)) {
+          <footer class="card__actions">
+            <button type="button" class="btn btn--outline" (click)="editRequest(request.enquiryRequestId)">Edit</button>
+            <button type="button" class="btn btn--danger" (click)="cancelRequest(request)" [disabled]="cancellingId() === request.enquiryRequestId">
+              {{ cancellingId() === request.enquiryRequestId ? 'Cancelling…' : 'Cancel request' }}
+            </button>
+          </footer>
+        } @else if (statusGroup(request.status) === 'approved') {
+          @if (extendingId() === request.enquiryRequestId) {
+            <form class="extend" (submit)="$event.preventDefault(); submitExtension(request)">
+              <label class="extend__label" [attr.for]="'extend-days-' + request.enquiryRequestId">How many more days do you need?</label>
+              <input class="extend__days" type="number" min="1" max="30" [id]="'extend-days-' + request.enquiryRequestId"
+                     [value]="extensionDays()" (input)="extensionDays.set(+$any($event.target).value || 1)">
+              <label class="extend__label" [attr.for]="'extend-reason-' + request.enquiryRequestId">Why? (the owner sees this)</label>
+              <textarea rows="2" [id]="'extend-reason-' + request.enquiryRequestId" [value]="extensionReason()"
+                        (input)="extensionReason.set($any($event.target).value)" placeholder="For example: the account review is still running."></textarea>
+              <div class="extend__actions">
+                <button type="button" class="btn btn--outline" (click)="extendingId.set(null)">Cancel</button>
+                <button type="submit" class="btn btn--primary" [disabled]="submittingExtension() || !extensionReason().trim()">
+                  {{ submittingExtension() ? 'Sending…' : 'Ask for more time' }}
+                </button>
+              </div>
+            </form>
+          }
+          <footer class="card__actions">
+            @if (canAskForMoreTime(request) && extendingId() !== request.enquiryRequestId) {
+              <button type="button" class="btn btn--outline" (click)="startExtension(request)">Ask for more time</button>
+            }
+            @if (!accessEnded(request)) {
+              <a class="btn btn--primary" routerLink="/institution/approved-documents">View documents</a>
+            }
+          </footer>
+        }
+      </li>
+    }
+  </ul>
+}

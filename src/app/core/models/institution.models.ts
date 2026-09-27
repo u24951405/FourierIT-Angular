@@ -135,8 +135,22 @@ export interface PendingDocumentAccessRequest {
   purposeNote: string;
   requestDate: string;
   documents: PendingDocumentAccessRequestDocument[];
-  isComplete?: boolean;
-  missingCount?: number;
+  referenceNumber?: string | null;
+  submissionDeadline?: string | null;
+  /** When the recipient decided (approved/denied) or the institution cancelled. */
+  respondedAt?: string | null;
+  /** The recipient's note, e.g. the reason a request was denied. */
+  responseNote?: string | null;
+  /** When access to an approved request's documents ends (null once withdrawn). */
+  accessExpiresAt?: string | null;
+  /** Pending, Approved or Denied when more time was asked for. */
+  extensionStatus?: string | null;
+  extensionRequestedUntil?: string | null;
+  extensionResponseNote?: string | null;
+  /** Only filled while the request is still waiting for a decision. */
+  isComplete?: boolean | null;
+  missingCount?: number | null;
+  requestedDocumentStatuses?: InstitutionRequestChecklistResponse['requestedDocumentStatuses'] | null;
 }
 
 export interface PendingDepartmentAccessRequest {
@@ -220,6 +234,21 @@ export interface ApprovedInstitutionDocument {
   documentTypeName: string;
   approvedAt: string;
   expiresAt?: string;
+  /** Pending, Approved or Denied when the institution asked for more time on this request. */
+  extensionStatus?: string | null;
+  extensionRequestedUntil?: string | null;
+}
+
+/** An institution asking the owner for more time on access they approved. */
+export interface PendingAccessExtension {
+  enquiryRequestId: number;
+  referenceNumber?: string | null;
+  institutionName: string;
+  purposeNote: string;
+  currentAccessEndsAt?: string | null;
+  extensionRequestedUntil: string;
+  extensionReason: string;
+  extensionRequestedAt: string;
 }
 
 export interface InstitutionNotification {

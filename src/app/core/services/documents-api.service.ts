@@ -14,9 +14,17 @@ export interface DocumentListItem {
   uploadedDate: string;
   lastModifiedDate: string | null;
   expiryDate: string;
+  /** Date the copy was certified (latest certification); null when none was captured. */
+  certificationDate?: string | null;
   documentTypeId: number;
   documentTypeName: string;
+  reviewStatus?: DocumentReviewStatus;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
 }
+
+/** Outcome of a Compliance Officer review of the current file; null when no decision has been made. */
+export type DocumentReviewStatus = 'Approved' | 'Rejected' | null;
 
 export interface DocumentDetailItem {
   documentId: number;
@@ -30,6 +38,9 @@ export interface DocumentDetailItem {
   uploadedDate: string;
   lastModifiedDate: string | null;
   documentTypeName: string;
+  reviewStatus?: DocumentReviewStatus;
+  reviewedAt?: string | null;
+  reviewNotes?: string | null;
 }
 
 export interface DocumentAccessApprovalItem {
@@ -203,7 +214,7 @@ export class DocumentsApiService {
     return this.http.get<DocumentFlagItem[]>(`${this.base}/flags`);
   }
 
-  resolveDocumentFlag(documentId: number, flagId: number): Observable<void> {
-    return this.http.post<void>(`${this.base}/${documentId}/flags/${flagId}/resolve`, null);
+  resolveDocumentFlag(documentId: number, flagId: number, note?: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/${documentId}/flags/${flagId}/resolve`, { note: note?.trim() || null });
   }
 }

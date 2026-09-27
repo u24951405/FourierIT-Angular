@@ -73,7 +73,7 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
     month: 'Loading',
     dateGenerated: '',
     createdBy: this.generatedBy(),
-    processing: { verified: 0, pendingVerification: 0, flaggedAnomalies: 0, partOfEnquiry: 0 },
+    processing: { verified: 0, pendingVerification: 0, rejected: 0, flaggedAnomalies: 0, partOfEnquiry: 0 },
     securityEvents: [],
     distribution: [],
     storage: { usedGb: 0, availableGb: 0, totalGb: 0, usedPercentage: 0 },
@@ -163,10 +163,11 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
     const chart = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Verified', 'Pending Verification', 'Flagged Anomalies', 'Part of Enquiry'],
+        // Documents only: institution requests and flags are counted in the stats below, not as documents.
+        labels: ['Verified', 'Pending Verification', 'Rejected'],
         datasets: [{
-          data: [p.verified, p.pendingVerification, p.flaggedAnomalies, p.partOfEnquiry],
-          backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+          data: [p.verified, p.pendingVerification, p.rejected],
+          backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
           borderRadius: 3,
           borderSkipped: false,
           barThickness: 22,
@@ -190,7 +191,7 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
             grid: { color: '#e5e7eb' },
             ticks: { font: { size: 11 }, color: '#6b7280' },
             title: { display: true, text: 'Documents', color: '#9ca3af', font: { size: 10, weight: 600 } },
-            suggestedMax: Math.max(...[p.verified, p.pendingVerification, p.flaggedAnomalies, p.partOfEnquiry].map(value => Number(value || 0)), 1) * 1.25,
+            suggestedMax: Math.max(...[p.verified, p.pendingVerification, p.rejected].map(value => Number(value || 0)), 1) * 1.25,
           },
           y: {
             grid: { display: false },
@@ -221,14 +222,14 @@ export class MonthlyReportComponent implements OnInit, AfterViewInit, OnDestroy 
             tension: 0.4, pointRadius: 3,
           },
           {
-            label: 'Unusual Access Pattern',
+            label: 'Flagged or access revoked',
             data: this.data.securityEvents.map((e: { unusualAccessPattern: number }) => e.unusualAccessPattern),
             borderColor: '#f59e0b',
             backgroundColor: 'transparent',
             tension: 0.4, pointRadius: 3,
           },
           {
-            label: 'Permission Elevation Request',
+            label: 'Role changes',
             data: this.data.securityEvents.map((e: { permissionElevationRequest: number }) => e.permissionElevationRequest),
             borderColor: '#8b5cf6',
             backgroundColor: 'transparent',

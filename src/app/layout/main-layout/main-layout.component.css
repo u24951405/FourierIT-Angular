@@ -5,18 +5,20 @@
 }
 
 .app-shell__content {
-  display: flex;
-  flex-direction: column;
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   background: var(--bg);
+  /* Pages rely on this gutter; without it they run into the sidebar and the window edge. */
+  padding: 32px 36px;
 }
 
 .app-header {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding: 18px 32px 0;
+  /* Sits in the top gutter so it doesn't push every page down. */
+  margin: -18px 0 8px;
 }
 
 .app-header__spacer {

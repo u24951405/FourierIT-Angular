@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { InstitutionAuthService } from '../institution-auth';
@@ -22,6 +22,8 @@ export class TokenEntryComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private authService = inject(InstitutionAuthService);
+  // The app has no Zone.js, so async updates (API replies, timers) must ask for a redraw.
+  private cdr = inject(ChangeDetectorRef);
 
   validating = true;
   error: string | null = null;
@@ -37,7 +39,7 @@ export class TokenEntryComponent implements OnInit {
     const token = this.route.snapshot.queryParamMap.get('token');
 
     if (!token) {
-      this.router.navigate(['/institution/auth/expired']);
+      this.showLinkProblem('missing');
       return;
     }
 
@@ -61,24 +63,40 @@ export class TokenEntryComponent implements OnInit {
             this.router.navigate(['/institution/auth/verify']);
           });
         } else {
-          this.validating = false;
-          this.error = 'This invitation link is invalid or no longer available. Please request a new link or contact your administrator.';
+          this.showLinkProblem('invalid');
         }
       },
       error: (err) => {
+        // Expired, already used or revoked links get their own page explaining what to do next.
+        const reason = err?.error?.reason;
+        if (reason === 'expired' || reason === 'used' || reason === 'revoked') {
+          this.showLinkProblem(reason, err?.error?.institutionId);
+          return;
+        }
         this.validating = false;
         const message = err?.error?.error ?? err?.error?.title ?? 'Unable to validate your invitation. Please try again later.';
         this.error = message;
+        this.cdr.markForCheck();
       },
+    });
+  }
+
+  private showLinkProblem(reason: string, institutionId?: number | string): void {
+    this.router.navigate(['/institution/auth/expired'], {
+      queryParams: { reason, institution: institutionId ?? null },
+      replaceUrl: true
     });
   }
 
   private animateSteps(onComplete: () => void): void {
     this.steps[0].done = true;
+    this.cdr.markForCheck();
     setTimeout(() => {
       this.steps[1].done = true;
+      this.cdr.markForCheck();
       setTimeout(() => {
         this.steps[2].done = true;
+        this.cdr.markForCheck();
         setTimeout(onComplete, 600);
       }, 400);
     }, 400);

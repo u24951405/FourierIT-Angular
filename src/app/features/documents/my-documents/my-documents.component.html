@@ -14,11 +14,15 @@
     <div class="calendar-panel__header">
       <div>
         <p class="eyebrow eyebrow--dark">Document timeline</p>
-        <h2>Expiry & update calendar</h2>
+        <h2>Document calendar</h2>
       </div>
-      <div class="calendar-panel__summary">
-        <span class="calendar-chip calendar-chip--expiring">{{ calendarSummary().expiring }} expiring</span>
-        <span class="calendar-chip calendar-chip--update">{{ calendarSummary().update }} updates</span>
+      <div class="calendar-panel__summary" aria-label="This month">
+        <span class="calendar-chip calendar-chip--uploaded">{{ calendarSummary().uploaded }} uploaded</span>
+        <span class="calendar-chip calendar-chip--certified">{{ calendarSummary().certified }} certified</span>
+        <span class="calendar-chip calendar-chip--expiry">{{ calendarSummary().expiries }} expir{{ calendarSummary().expiries === 1 ? 'y' : 'ies' }}</span>
+        @if (calendarSummary().expiring) {
+          <span class="calendar-chip calendar-chip--expiring">{{ calendarSummary().expiring }} expired or expiring soon</span>
+        }
       </div>
     </div>
 
@@ -27,6 +31,11 @@
       <strong>{{ calendarMonth() | date:'MMMM yyyy' }}</strong>
       <button type="button" class="btn btn--outline" (click)="nextMonth()">Next</button>
     </div>
+
+    <p class="calendar-panel__legend">
+      Expiry dates are calculated from each document type's validity period, counted from the certification date
+      (or the upload date where the type is set up that way, or no certification date was captured).
+    </p>
 
     <div class="calendar-grid" role="grid" aria-label="Document calendar">
       <div class="calendar-grid__header">Mon</div>
@@ -42,7 +51,7 @@
           <span class="calendar-day__number">{{ day.getDate() }}</span>
 
           @for (event of calendarEvents().filter(item => item.date === formatCalendarDate(day)); track event.title) {
-            <button type="button" class="calendar-event" [class.calendar-event--expiring]="event.type === 'expiring'" [class.calendar-event--update]="event.type === 'update'" [title]="event.title" (click)="openEventDocument(event)">
+            <button type="button" class="calendar-event" [ngClass]="'calendar-event--' + event.type" [class.calendar-event--expiring]="event.type === 'expiry' && event.expiryState !== 'scheduled'" [class.calendar-event--expired]="event.expiryState === 'expired'" [title]="event.title" (click)="openEventDocument(event)">
               {{ event.label }}: {{ event.fileName }}
             </button>
           }
@@ -84,7 +93,8 @@
         <app-document-hierarchy-tree
           [showDocuments]="true"
           [mode]="'search'"
-          (documentSelected)="onDocumentSelectedFromTree($event)">
+          (documentSelected)="onDocumentSelectedFromTree($event)"
+          (documentDeleteRequested)="deleteDocumentFromTree($event)">
         </app-document-hierarchy-tree>
       </div>
     }
@@ -143,6 +153,11 @@
               <dd>{{ doc.isEncrypted ? doc.encryptionAlgorithm || 'Yes' : 'No' }}</dd>
             </div>
           </dl>
+          @if (doc.reviewStatus === 'Rejected') {
+            <p class="document-card__review">
+              <strong>Action needed:</strong> {{ doc.reviewNotes || 'Rejected by a Compliance Officer.' }}
+            </p>
+          }
           <div class="document-card__actions">
             <button type="button" class="btn btn--outline" (click)="openPreview(doc)">View</button>
             <button type="button" class="btn btn--outline" (click)="openDetails(doc)">Details</button>
@@ -201,6 +216,21 @@
         @if (loadingDetail()) {
           <div class="documents-page__state">Loading document details…</div>
         } @else {
+          @if (detailDocument()?.reviewStatus === 'Rejected') {
+            <div class="review-banner review-banner--rejected" role="status">
+              <strong>Rejected by a Compliance Officer{{ detailDocument()?.reviewedAt ? ' on ' + (detailDocument()?.reviewedAt | date:'mediumDate') : '' }}</strong>
+              <p><span>Reason:</span> {{ detailDocument()?.reviewNotes || 'No reason given.' }}</p>
+              <p>Choose a corrected file below and select <em>Replace &amp; resubmit</em> to send it back for review.</p>
+            </div>
+          } @else if (detailDocument()?.reviewStatus === 'Approved') {
+            <div class="review-banner review-banner--approved" role="status">
+              <strong>Approved by a Compliance Officer{{ detailDocument()?.reviewedAt ? ' on ' + (detailDocument()?.reviewedAt | date:'mediumDate') : '' }}</strong>
+              @if (detailDocument()?.reviewNotes) {
+                <p><span>Notes:</span> {{ detailDocument()?.reviewNotes }}</p>
+              }
+            </div>
+          }
+
           <dl class="document-detail-grid">
             <div><dt>Status</dt><dd>{{ detailDocument()?.currentStatus }}</dd></div>
             <div><dt>Certified</dt><dd>{{ detailDocument()?.isCertified ? 'Yes' : 'No' }}</dd></div>
@@ -284,9 +314,9 @@
             }
           </section>
 
-          <div class="field">
-            <label>Replace file</label>
-            <input type="file" (change)="onEditFileSelected($event)">
+          <div class="field" [class.field--highlight]="detailIsRejected()">
+            <label for="replace-file-input">{{ detailIsRejected() ? 'Upload a corrected file' : 'Replace file' }}</label>
+            <input id="replace-file-input" type="file" (change)="onEditFileSelected($event)">
             @if (selectedEditFile()) {
               <p class="field__hint">Selected file: {{ selectedEditFile()?.name }}</p>
             }
@@ -296,7 +326,11 @@
         <div class="modal__footer">
           <button type="button" class="btn btn--outline" (click)="closeDetail()">Close</button>
           <button type="button" class="btn btn--primary" [disabled]="!selectedEditFile() || savingEdit()" (click)="saveDocumentEdit()">
-            {{ savingEdit() ? 'Saving…' : 'Save changes' }}
+            @if (detailIsRejected()) {
+              {{ savingEdit() ? 'Resubmitting…' : 'Replace & resubmit' }}
+            } @else {
+              {{ savingEdit() ? 'Saving…' : 'Save changes' }}
+            }
           </button>
         </div>
       </div>

@@ -32,7 +32,7 @@
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   box-shadow: 0 8px 24px rgba(26, 46, 69, 0.06);
 }
 
@@ -95,7 +95,42 @@
 .wizard-panel {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
+}
+
+.panel-intro {
+  padding: 1.1rem 1.15rem;
+  border: 1px solid #dce7f0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f7fbfd, #eef6fa);
+}
+
+.panel-intro__eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel-intro h2 {
+  margin: 0;
+  color: var(--navy);
+  font-size: 1.3rem;
+}
+
+.panel-intro p {
+  margin: 0.35rem 0 0;
+  color: var(--text-mid);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.panel-intro--review {
+  border-color: #b8dcca;
+  background: linear-gradient(135deg, #f3fbf6, #edf8f1);
 }
 
 .form-section-title {
@@ -155,22 +190,76 @@
 
 .review-card {
   display: grid;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.review-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #b8dcca;
+  border-radius: 10px;
+  background: #f4fbf6;
+  color: #185c39;
+}
+
+.review-summary__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #2f9b62;
+  color: #fff;
+  font-weight: 800;
+}
+
+.review-summary p {
+  margin: 0.2rem 0 0;
+  color: #4d765e;
+  font-size: 0.82rem;
 }
 
 .review-group {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
-  background: #f8fafc;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(26, 46, 69, 0.04);
   position: relative;
 }
 
+.review-group--personal {
+  grid-column: 1 / -1;
+}
+
+.review-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
 .review-group h3 {
-  margin: 0 0 0.75rem;
+  margin: 0;
   font-size: 1rem;
   color: var(--navy);
+}
+
+.review-group__step {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e7f1f8;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .review-row {
@@ -179,6 +268,11 @@
   gap: 1rem;
   padding: 0.3rem 0;
   color: var(--text-mid);
+  border-bottom: 1px solid #edf2f6;
+}
+
+.review-row:last-of-type {
+  border-bottom: 0;
 }
 
 .review-row strong {
@@ -194,6 +288,36 @@
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+}
+
+.checkbox-row--review {
+  display: flex;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.checkbox-row--review span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.checkbox-row--review small {
+  color: var(--text-mid);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.review-confirmation {
+  padding-top: 0.2rem;
+}
+
+.review-actions {
+  margin-top: 0.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
 }
 
 .checkbox-row {
@@ -234,6 +358,14 @@
 
   .wizard-actions .btn {
     width: 100%;
+  }
+
+  .review-card {
+    grid-template-columns: 1fr;
+  }
+
+  .review-group--personal {
+    grid-column: auto;
   }
 }
 
@@ -529,4 +661,11 @@
 .field__hint--valid[aria-live],
 .field__hint--valid[role] {
   color: var(--success, #198754);
+}
+
+/* Date of birth read from a South African ID number: shown but not editable. */
+.input--locked {
+  background: var(--input-bg, #f7f9fb);
+  color: var(--text-mid, #4a6278);
+  cursor: default;
 }

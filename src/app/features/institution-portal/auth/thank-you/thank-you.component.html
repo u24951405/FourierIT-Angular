@@ -1,25 +1,42 @@
-<div class="thankyou-root">
-  <div class="thankyou-card">
-    <div class="thankyou-brand">
-      <div class="logo">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-        </svg>
-      </div>
-      <div class="thankyou-badge">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
-          <path d="M20 6L9 17l-5-5"></path>
-        </svg>
+<!-- Same card as the other sign-in pages (access link, code, link problems). -->
+<div class="portal-shell">
+  <div class="portal-card">
+    <div class="portal-card__header">
+      <div class="portal-card__brand">
+        <span class="portal-card__logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </span>
+        <div>
+          <span class="portal-card__brand-name">DocuVault</span>
+          <span class="portal-card__brand-sub">Institution Secure Portal</span>
+        </div>
       </div>
     </div>
 
-    <h1 class="thankyou-title">Thank you</h1>
-    <p class="thankyou-message">Your institution session has been securely ended.</p>
-    <p class="thankyou-note">For your safety, the session data was cleared from this browser. You can now close this tab.</p>
+    <div class="portal-card__body">
+      <div class="done-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
 
-    <div class="thankyou-actions">
-      <button class="thankyou-btn thankyou-btn--primary" type="button" (click)="closeTab()">Close tab</button>
-      <button class="thankyou-btn thankyou-btn--outline" type="button" (click)="returnToSignIn()">Return to sign-in</button>
+      <h1 class="done-title">You're signed out</h1>
+      <p class="done-desc">Your portal session has ended and was removed from this browser. You can close this tab.</p>
+
+      @if (closeHint()) {
+        <p class="done-hint" role="status">Your browser won't let this page close itself. Close the tab from the browser's tab bar.</p>
+      }
+
+      <div class="done-actions">
+        <button class="done-btn done-btn--primary" type="button" (click)="closeTab()">Close tab</button>
+        <button class="done-btn done-btn--outline" type="button" (click)="returnToSignIn()">Sign in again</button>
+      </div>
+    </div>
+
+    <div class="portal-card__footer">
+      Powered by Fourier Group · FICA/KYC Compliance Platform
     </div>
   </div>
 </div>

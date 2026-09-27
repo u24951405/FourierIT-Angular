@@ -1,373 +1,91 @@
-<!-- ── Top Nav ──────────────────────────────────────────────────────────────── -->
-<nav class="inst-nav">
-  <div class="inst-nav__left">
-    <span class="inst-nav__logo">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+<section class="welcome">
+  <div class="welcome__text">
+    <p class="welcome__eyebrow">Welcome</p>
+    <h1 class="welcome__name">{{ institutionName() }}</h1>
+    <p class="welcome__meta">
+      @if (institutionCode()) { <span>{{ institutionCode() }}</span> }
+      @if (signedInAt()) { <span>Signed in at {{ signedInAt() }}</span> }
+      @if (sessionEnds()) { <span>Session ends {{ sessionEnds() }}</span> }
+    </p>
+  </div>
+  <a class="btn btn--primary welcome__cta" routerLink="/institution/request-documents">New request</a>
+</section>
+
+<section class="stats" aria-label="Your requests">
+  @if (error()) {
+    <div class="stats__error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" class="btn btn--outline" (click)="loadSummary()">Try again</button>
+    </div>
+  } @else {
+    <a class="stat stat--amber" routerLink="/institution/my-requests" [queryParams]="{ status: 'pending' }">
+      <span class="stat__label">Waiting for a decision</span>
+      <span class="stat__value">{{ loading() ? '–' : stats().pendingRequests }}</span>
+    </a>
+    <a class="stat stat--green" routerLink="/institution/my-requests" [queryParams]="{ status: 'approved' }">
+      <span class="stat__label">Approved</span>
+      <span class="stat__value">{{ loading() ? '–' : stats().approvedRequests }}</span>
+    </a>
+    <a class="stat stat--red" routerLink="/institution/my-requests" [queryParams]="{ status: 'denied' }">
+      <span class="stat__label">Denied</span>
+      <span class="stat__value">{{ loading() ? '–' : stats().deniedRequests }}</span>
+    </a>
+  }
+</section>
+
+<h2 class="section-title">What would you like to do?</h2>
+<div class="actions">
+  <a class="action" routerLink="/institution/request-documents">
+    <span class="action__icon action__icon--blue" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="12" y1="18" x2="12" y2="12"></line>
+        <line x1="9" y1="15" x2="15" y2="15"></line>
       </svg>
     </span>
-    <span class="inst-nav__brand">DocuVault</span>
-    <span class="inst-nav__divider"></span>
-    <span class="inst-nav__portal-label">Institution Portal</span>
-  </div>
-
-  <div class="inst-nav__right">
-    <span class="inst-nav__encrypted">
-      <span class="inst-nav__encrypted-dot"></span>
-      Encrypted Session
+    <span class="action__body">
+      <span class="action__title">Request documents</span>
+      <span class="action__desc">Ask a person or a department for the documents you need, and say why you need them.</span>
     </span>
-    <div class="inst-nav__notif-container">
-      <button class="inst-nav__notif" type="button" aria-label="Notifications" (click)="toggleNotifications()" [attr.aria-expanded]="notificationsOpen()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-        </svg>
-        <span *ngIf="stats().approvedRequests > 0" class="inst-nav__notif-badge">{{ stats().approvedRequests }}</span>
-      </button>
-      <div *ngIf="notificationsOpen()" class="inst-nav__notif-dropdown">
-        <div class="inst-nav__notif-dropdown-header">
-          <span>Notifications</span>
-          <span class="inst-nav__notif-dropdown-count">{{ notifications().length }} recent</span>
-        </div>
-        <div class="inst-nav__notif-dropdown-body">
-          <div *ngIf="notificationsLoading()" class="inst-nav__notif-empty">Loading notifications…</div>
-          <div *ngIf="!notificationsLoading() && notificationsError()" class="inst-nav__notif-error">{{ notificationsError() }}</div>
-          <ul *ngIf="!notificationsLoading() && !notificationsError() && notifications().length" class="inst-nav__notif-list">
-            <li *ngFor="let item of notifications()" class="inst-nav__notif-item">
-              <strong>{{ item.status === 'Approved' ? 'Approved' : 'Denied' }}</strong> for <span>{{ item.recipientName }}</span>
-              <div class="inst-nav__notif-item-message">{{ item.message }}</div>
-              <div class="inst-nav__notif-item-time">{{ item.timestamp | date:'medium' }}</div>
-            </li>
-          </ul>
-          <div *ngIf="!notificationsLoading() && !notificationsError() && !notifications().length" class="inst-nav__notif-empty">
-            No recent approval or denial updates.
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="inst-nav__user">
-      <span class="inst-nav__user-icon">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </span>
-      <div class="inst-nav__user-info">
-        <span class="inst-nav__user-name">{{ institutionName() }}</span>
-        <span class="inst-nav__user-code">{{ institutionCode() }}</span>
-      </div>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-    </div>
-    <button class="inst-nav__end-session" type="button" (click)="endSession()" title="End Session">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-        <polyline points="16 17 21 12 16 7"></polyline>
-        <line x1="21" y1="12" x2="9" y2="12"></line>
-      </svg>
-    </button>
-  </div>
-</nav>
+    <span class="action__arrow" aria-hidden="true">→</span>
+  </a>
 
-<!-- ── Tab Bar ──────────────────────────────────────────────────────────────── -->
-<div class="inst-tabs">
-  <button class="inst-tab inst-tab--active" type="button" routerLink="/institution/dashboard">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="3" width="7" height="7"></rect>
-      <rect x="14" y="3" width="7" height="7"></rect>
-      <rect x="14" y="14" width="7" height="7"></rect>
-      <rect x="3" y="14" width="7" height="7"></rect>
-    </svg>
-    Home
-  </button>
-  <button class="inst-tab" type="button" routerLink="/institution/request-documents">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-      <line x1="12" y1="18" x2="12" y2="12"></line>
-      <line x1="9" y1="15" x2="15" y2="15"></line>
-    </svg>
-    Request Documents
-  </button>
-  <button class="inst-tab" type="button" routerLink="/institution/my-requests">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10"></circle>
-      <polyline points="12 6 12 12 16 14"></polyline>
-    </svg>
-    My Requests
-  </button>
-  <button class="inst-tab" type="button" routerLink="/institution/approved-documents">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline>
-    </svg>
-    Approved Documents
-  </button>
+  <a class="action" routerLink="/institution/my-requests">
+    <span class="action__icon action__icon--amber" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+    </span>
+    <span class="action__body">
+      <span class="action__title">My requests</span>
+      <span class="action__desc">Follow each request, see which documents are ready, and edit or cancel requests that are still waiting.</span>
+    </span>
+    <span class="action__arrow" aria-hidden="true">→</span>
+  </a>
+
+  <a class="action" routerLink="/institution/approved-documents">
+    <span class="action__icon action__icon--green" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="9 15 11 17 15 13"></polyline>
+      </svg>
+    </span>
+    <span class="action__body">
+      <span class="action__title">Approved documents</span>
+      <span class="action__desc">Download the documents you were given access to, or flag one that isn't up to standard.</span>
+    </span>
+    <span class="action__arrow" aria-hidden="true">→</span>
+  </a>
 </div>
 
-<!-- ── Hero Banner ──────────────────────────────────────────────────────────── -->
-<div class="inst-hero">
-  <div class="inst-hero__inner">
-    <div class="inst-hero__welcome">
-      <div class="inst-hero__avatar">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-        </svg>
-      </div>
-      <div>
-        <p class="inst-hero__welcome-label">Welcome back</p>
-        <h1 class="inst-hero__name">{{ institutionName() }}</h1>
-        <p class="inst-hero__code">{{ institutionCode() }} · FICA/KYC Compliance Portal</p>
-      </div>
-    </div>
-
-    <div class="inst-hero__session" *ngIf="!loading">
-      <div class="inst-hero__session-header">
-        <span class="inst-hero__session-dot"></span>
-        Session Active
-      </div>
-      <div class="inst-hero__session-row">
-        <span class="inst-hero__session-key">Authenticated</span>
-        <span class="inst-hero__session-val">{{ authenticatedTime() }}</span>
-      </div>
-      <div class="inst-hero__session-row">
-        <span class="inst-hero__session-key">Auth method</span>
-        <span class="inst-hero__session-val">OTP verified</span>
-      </div>
-      <div class="inst-hero__session-row">
-        <span class="inst-hero__session-key">Expires</span>
-        <span class="inst-hero__session-val">{{ sessionExpiryLabel() }}</span>
-      </div>
-      <button class="inst-hero__signout" type="button" (click)="endSession()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-          <polyline points="16 17 21 12 16 7"></polyline>
-          <line x1="21" y1="12" x2="9" y2="12"></line>
-        </svg>
-        Sign Out
-      </button>
-    </div>
-  </div>
-
-  <!-- Stats strip -->
-  <div class="inst-stats" *ngIf="!loading">
-    <div class="inst-stat inst-stat--amber">
-      <span class="inst-stat__label">Pending Requests</span>
-      <span class="inst-stat__value">{{ stats().pendingRequests }}</span>
-    </div>
-    <div class="inst-stat inst-stat--green">
-      <span class="inst-stat__label">Approved Requests</span>
-      <span class="inst-stat__value">{{ stats().approvedRequests }}</span>
-    </div>
-    <div class="inst-stat inst-stat--neutral">
-      <span class="inst-stat__label">Denied Requests</span>
-      <span class="inst-stat__value">{{ stats().deniedRequests }}</span>
-    </div>
-  </div>
-
-  <!-- Stats skeleton -->
-  <div class="inst-stats" *ngIf="loading">
-    <div class="inst-stat inst-stat--skeleton" *ngFor="let i of [1,2,3]">
-      <span class="skeleton-line skeleton-line--short"></span>
-      <span class="skeleton-line skeleton-line--tiny"></span>
-    </div>
-  </div>
-</div>
-
-<!-- ── Main Content ─────────────────────────────────────────────────────────── -->
-<div class="inst-content">
-
-  <!-- Action Cards -->
-  <div class="inst-section">
-    <p class="inst-section__title">What would you like to do?</p>
-    <p class="inst-section__subtitle">Select an option below to get started</p>
-
-    <div class="action-cards">
-
-      <!-- Request Documents -->
-      <div class="action-card action-card--blue" (click)="goToRequestDocuments()">
-        <div class="action-card__left">
-          <div class="action-card__icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="12" y1="18" x2="12" y2="12"></line>
-              <line x1="9" y1="15" x2="15" y2="15"></line>
-            </svg>
-          </div>
-          <div class="action-card__body">
-            <div class="action-card__header-row">
-              <h3 class="action-card__title">Request Documents</h3>
-              <button class="action-card__cta" type="button" (click)="goToRequestDocuments()">
-                Start new request
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </button>
-            </div>
-            <p class="action-card__desc">
-              Submit a new document access request to the FICA Compliance Officer. Select the documents you need, provide your justification, and track approval status.
-            </p>
-            <div class="action-card__meta">
-              <span class="action-card__meta-item">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                6 Purposes available
-              </span>
-              <span class="action-card__meta-item">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                4 Document categories
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- My Requests -->
-      <div class="action-card action-card--amber" (click)="goToMyRequests()">
-        <div class="action-card__left">
-          <div class="action-card__icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
-          <div class="action-card__body">
-            <div class="action-card__header-row">
-              <h3 class="action-card__title">
-                My Requests
-                <span class="action-card__badge action-card__badge--amber" *ngIf="stats().pendingRequests > 0">
-                  {{ stats().pendingRequests }} active
-                </span>
-              </h3>
-              <button class="action-card__cta" type="button" (click)="goToMyRequests()">
-                View all requests
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </button>
-            </div>
-            <p class="action-card__desc">
-              View and track the status of all your submitted document access requests. Respond to compliance officer queries and resubmit rejected requests.
-            </p>
-            <div class="action-card__meta">
-              <span class="action-card__meta-item" *ngIf="stats().pendingRequests > 0">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                {{ stats().pendingRequests }} Pending review
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <!-- Approved Documents -->
-      <div class="action-card action-card--green" (click)="goToApprovedDocuments()">
-        <div class="action-card__left">
-          <div class="action-card__icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-            </svg>
-          </div>
-          <div class="action-card__body">
-            <div class="action-card__header-row">
-              <h3 class="action-card__title">
-                Approved Documents
-                <span class="action-card__badge action-card__badge--green" *ngIf="stats().approvedRequests > 0">
-                  {{ stats().approvedRequests }} available
-                </span>
-              </h3>
-              <button class="action-card__cta" type="button" (click)="goToApprovedDocuments()">
-                View documents
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </button>
-            </div>
-            <p class="action-card__desc">
-              Access documents that have been approved for your institution. View in the secure viewer or download watermarked copies within your permitted access period.
-            </p>
-            <div class="action-card__meta">
-              <span class="action-card__meta-item" *ngIf="stats().approvedRequests > 0">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                {{ stats().approvedRequests }} Available to view
-              </span>
-              <span class="action-card__meta-item action-card__meta-item--warn" *ngIf="expiryNoticeCount() > 0">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                {{ expiryNoticeCount() }} Expiring within 30 days
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- Expiry Notice -->
-  <div class="expiry-notice" *ngIf="showExpiryNotice()">
-    <div class="expiry-notice__left">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-      <div>
-        <p class="expiry-notice__title">Access Expiry Notice</p>
-        <p class="expiry-notice__desc">
-          {{ expiryNoticeCount() }} document access approval{{ expiryNoticeCount() > 1 ? 's are' : ' is' }} expiring within 30 days.
-          Submit a renewal request before your access period ends to avoid interruption.
-        </p>
-      </div>
-    </div>
-    <button class="expiry-notice__btn" type="button" (click)="goToRenew()">
-      Renew
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M5 12h14M12 5l7 7-7 7"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Compliance Footer Banner -->
-  <div class="compliance-banner">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="10"></circle>
-      <line x1="12" y1="8" x2="12" y2="12"></line>
-      <line x1="12" y1="16" x2="12.01" y2="16"></line>
-    </svg>
-    <div>
-      <p class="compliance-banner__title">FICA/KYC Compliance Portal</p>
-      <p class="compliance-banner__body">
-        All document access is governed by the Financial Intelligence Centre Act (FICA). Every view and download
-        is logged in the audit trail and linked to your access request. Documents are watermarked with your
-        institution identity on download. Misuse of access may result in revocation and regulatory reporting to the FIC.
-      </p>
-    </div>
-  </div>
-
-</div>
-
-<!-- ── Page Footer ──────────────────────────────────────────────────────────── -->
-<footer class="inst-footer">
-  <span>Powered by <strong>Fourier Group</strong> · FICA/KYC Compliance Platform</span>
-  <button class="inst-footer__signout" type="button" (click)="signOut()">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-      <polyline points="16 17 21 12 16 7"></polyline>
-      <line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-    Sign Out
-  </button>
-</footer>
+<aside class="notice">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+  </svg>
+  <p>
+    Access to documents is granted per request and ends automatically after the approved period.
+    Every view and download is recorded in the audit trail, so only use documents for the purpose you stated.
+  </p>
+</aside>

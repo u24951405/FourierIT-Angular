@@ -1,4 +1,5 @@
 import { Component, inject, ChangeDetectorRef, OnInit } from '@angular/core';
+import { PortalPageHeaderComponent } from '../shell/portal-page-header';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -14,7 +15,7 @@ type RequestType = 'Department' | 'Individual';
 @Component({
   selector: 'app-request-documents',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, PortalPageHeaderComponent],
   templateUrl: './request-documents.html',
   styleUrl: './request-documents.css',
 })
@@ -337,12 +338,9 @@ export class RequestDocuments implements OnInit {
           this.documentTypes = payload.documentTypes ?? [];
           this.documentLoadError = null;
 
+          // The API explains an empty list (e.g. a department with no document types set up).
           if (!this.documentTypes.length) {
-            this.documentLoadError = 'No required document types were found for the selected recipient.';
-          }
-
-          if (payload.warning) {
-            console.warn('[RequestDocuments] document types warning', payload.warning);
+            this.documentLoadError = payload.warning ?? 'No required document types were found for the selected recipient.';
           }
         },
         error: () => {

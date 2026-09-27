@@ -187,19 +187,12 @@
   height: 42px;
 }
 
+/* Chart.js sizes the canvas to this box. The box needs a fixed height and the canvas must not be sized
+   with CSS, otherwise the chart and its container keep resizing each other forever and freeze the page. */
 .dash-doughnut-wrap {
   position: relative;
   width: 100%;
-  min-height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.dash-doughnut-wrap canvas {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: 240px;
+  height: 240px;
 }
 
 .dash-chart-grid {
@@ -384,7 +377,7 @@
   }
 
   .dash-doughnut-wrap {
-    min-height: 200px;
+    height: 200px;
   }
 
   .dash-legend {

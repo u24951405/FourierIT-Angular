@@ -20,18 +20,18 @@ import { ReportFrameComponent, ReportFrameConfig } from '../../shared/report-fra
 import {
   ActivityReportData,
   DocumentInventoryItem,
-  VaultAccessLogEntry,
-  ClientRelationship,
 } from '../../reports.models';
 import { AuthService } from '../../../../core/services/auth.service';
 import { environment } from '../../../../../environments/environment';
+import { ReportOwnerOption } from '../../../../core/services/reports.service';
+import { OwnerPickerComponent } from '../../shared/owner-picker/owner-picker';
 
 Chart.register(DoughnutController, ArcElement, Tooltip, Legend);
 
 @Component({
   selector: 'app-activity-report',
   standalone: true,
-  imports: [CommonModule, ReportFrameComponent],
+  imports: [CommonModule, ReportFrameComponent, OwnerPickerComponent],
   templateUrl: './activity-report.html',
   styleUrls: ['./activity-report.scss'],
 })
@@ -56,8 +56,8 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
     createdBy: this.generatedBy(),
     reportType: 'Document Activity Report',
     framework: 'FICA · POPIA · DocuVault v35',
-    badgeLabel: 'ID VERIFIED',
-    badgeIcon: 'check',
+    badgeLabel: 'ACTIVITY',
+    badgeIcon: 'lock',
     accentColors: ['#10b981', '#3b82f6'],
   };
 
@@ -66,6 +66,8 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
     dateGenerated: new Date().toISOString(),
     documentOwner: 'Loading...',
     ownerId: '',
+    complianceStatus: null,
+    compliancePercentage: null,
     activeDocuments: 0,
     inactiveDocuments: 0,
     totalDocuments: 0,
@@ -76,13 +78,36 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
   };
 
   pdfUrl = '';
+  loaded = false;
+  private groups: InventoryGroup[] = [];
+
+  /**
+   * People who don't upload documents (e.g. the Super Admin) have no vault of their own,
+   * so they choose which document owner the report is about.
+   */
+  readonly showOwnerPicker = !this.authService.canUploadDocuments();
+  selectedOwner: ReportOwnerOption | null = null;
 
   ngOnInit(): void {
+    if (this.showOwnerPicker) return; // the owner picker reports the chosen owner (see onOwnerChange)
     const ownerId = this.authService.currentUser()?.id || 'unknown';
+    this.loadReport(ownerId);
+  }
+
+  onOwnerChange(owner: ReportOwnerOption): void {
+    this.selectedOwner = owner;
+    this.loadReport(owner.userId);
+  }
+
+  private loadReport(ownerId: string): void {
     this.pdfUrl = `${environment.apiUrl}/reports/activity/${ownerId}/pdf`;
+    this.loaded = false;
+    this.data = { ...this.data, documentOwner: 'Loading...' };
     this.http.get<ActivityReportData>(`${environment.apiUrl}/reports/activity/${ownerId}`).subscribe({
       next: response => {
         this.data = response;
+        this.groups = this.buildInventoryGroups();
+        this.loaded = true;
         this.frameConfig = {
           ...this.frameConfig,
           reportId: response.reportId,
@@ -112,10 +137,13 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
   private buildTotalDocsChart(): void {
     const ctx = this.totalDocsChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;
+    // Drawn when the page appears and again when the data arrives: replace the earlier chart, don't stack on it.
+    Chart.getChart(this.totalDocsChartRef.nativeElement)?.destroy();
+    this.charts = this.charts.filter(c => c.canvas !== this.totalDocsChartRef.nativeElement);
     const chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: ['Active', 'Inactive / Expiring'],
+        labels: ['Active', 'Not active'],
         datasets: [{
           data: [this.data.activeDocuments, this.data.inactiveDocuments],
           backgroundColor: ['#10b981', '#e5e7eb'],
@@ -145,6 +173,9 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
   private buildCategoryChart(): void {
     const ctx = this.categoryChartRef?.nativeElement?.getContext('2d');
     if (!ctx) return;
+    // Drawn when the page appears and again when the data arrives: replace the earlier chart, don't stack on it.
+    Chart.getChart(this.categoryChartRef.nativeElement)?.destroy();
+    this.charts = this.charts.filter(c => c.canvas !== this.categoryChartRef.nativeElement);
     const chart = new Chart(ctx, {
       type: 'doughnut',
       data: {
@@ -177,77 +208,82 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
 
   statusClass(status: string): string {
     const map: Record<string, string> = {
-      'Verified': 'inv-status--verified',
-      'Expiring Soon': 'inv-status--expiring',
-      'Pending': 'inv-status--pending',
-      'Expired': 'inv-status--expired',
+      'Verified': 'act-pill--good',
+      'Expiring Soon': 'act-pill--warn',
+      'Pending': 'act-pill--neutral',
+      'Expired': 'act-pill--bad',
+      'Rejected': 'act-pill--bad',
     };
-    return map[status] ?? '';
+    return map[status] ?? 'act-pill--neutral';
   }
 
   clientStatusClass(status: string): string {
     const map: Record<string, string> = {
-      'Active': 'client-status--active',
-      'Pending': 'client-status--pending',
-      'Expired': 'client-status--expired',
+      'Active': 'act-pill--good',
+      'Expired': 'act-pill--neutral',
+      'Revoked': 'act-pill--bad',
     };
-    return map[status] ?? '';
+    return map[status] ?? 'act-pill--neutral';
+  }
+
+  /** e.g. "Compliant (100%)", or a plain note when no compliance check has run yet. */
+  complianceSummary(): string {
+    if (!this.loaded) return 'Loading…';
+    if (!this.data.complianceStatus) return 'No compliance check yet';
+    return `${this.data.complianceStatus} (${this.data.compliancePercentage ?? 0}%)`;
+  }
+
+  complianceClass(): string {
+    const status = (this.data.complianceStatus ?? '').toLowerCase();
+    if (!this.loaded || !status) return 'act-pill--neutral';
+    if (status === 'compliant') return 'act-pill--good';
+    return status.includes('non') ? 'act-pill--bad' : 'act-pill--warn';
   }
 
   activePercent(): number {
     return this.data.totalDocuments ? Math.round((this.data.activeDocuments / this.data.totalDocuments) * 100) : 0;
   }
 
-  getInventoryGroups(): Array<{ category: string; rows: DocumentInventoryItem[]; totalCount: number; verifiedCount: number; expiringCount: number }> {
+  inactivePercent(): number {
+    return this.data.totalDocuments ? 100 - this.activePercent() : 0;
+  }
+
+  activeClientCount(): number {
+    return this.data.clientRelationships.filter(c => c.status === 'Active').length;
+  }
+
+  totalShared(): number {
+    return this.data.clientRelationships.reduce((sum, c) => sum + c.documentsShared, 0);
+  }
+
+  inventoryGroups(): InventoryGroup[] {
+    return this.groups;
+  }
+
+  /** Groups the inventory by document type once per load, rather than on every change detection. */
+  private buildInventoryGroups(): InventoryGroup[] {
+    const colorByType = new Map(this.data.distributionByCategory.map(d => [d.label, d.color]));
     const groups = new Map<string, DocumentInventoryItem[]>();
-
     for (const item of this.data.inventory ?? []) {
-      const key = item.category;
-      const rows = groups.get(key) ?? [];
-      rows.push(item);
-      groups.set(key, rows);
+      groups.set(item.category, [...(groups.get(item.category) ?? []), item]);
     }
-
     return [...groups.entries()].map(([category, rows]) => ({
       category,
+      color: colorByType.get(category) ?? rows[0]?.categoryColor ?? '#9ca3af',
       rows,
       totalCount: rows.length,
-      verifiedCount: rows.filter(item => item.verificationStatus === 'Verified').length,
-      expiringCount: rows.filter(item => item.verificationStatus === 'Expiring Soon').length,
+      activeCount: rows.filter(r => r.verificationStatus === 'Verified' || r.verificationStatus === 'Expiring Soon').length,
+      attentionCount: rows.filter(r => r.verificationStatus !== 'Verified' && r.verificationStatus !== 'Pending').length,
     }));
   }
+}
 
-  getAccessLogGroups(): Array<{ organisation: string; rows: VaultAccessLogEntry[]; count: number }> {
-    const groups = new Map<string, VaultAccessLogEntry[]>();
-
-    for (const item of this.data.vaultAccessLog ?? []) {
-      const key = item.organisation;
-      const rows = groups.get(key) ?? [];
-      rows.push(item);
-      groups.set(key, rows);
-    }
-
-    return [...groups.entries()].map(([organisation, rows]) => ({
-      organisation,
-      rows,
-      count: rows.length,
-    }));
-  }
-
-  getClientGroups(): Array<{ organisation: string; rows: ClientRelationship[]; totalShared: number }> {
-    const groups = new Map<string, ClientRelationship[]>();
-
-    for (const item of this.data.clientRelationships ?? []) {
-      const key = item.organisation;
-      const rows = groups.get(key) ?? [];
-      rows.push(item);
-      groups.set(key, rows);
-    }
-
-    return [...groups.entries()].map(([organisation, rows]) => ({
-      organisation,
-      rows,
-      totalShared: rows.reduce((sum, item) => sum + item.documentsShared, 0),
-    }));
-  }
+interface InventoryGroup {
+  category: string;
+  color: string;
+  rows: DocumentInventoryItem[];
+  totalCount: number;
+  activeCount: number;
+  /** Expiring soon, expired or rejected. */
+  attentionCount: number;
 }

@@ -102,14 +102,14 @@ export class SuperAdminReportsComponent {
     {
       id: 'owner',
       icon: '📊',
-      title: 'View Client Risk Rating Report',
-      description: 'Tracks every document owner against required uploads, missing records and current compliance posture.',
+      title: 'Document Owner Compliance',
+      description: 'Each document owner against their required documents: valid uploads, what is missing and their compliance status.',
     },
     {
       id: 'requests',
       icon: '📥',
-      title: 'System Audit Report',
-      description: 'Review institution requests, request control breaks, and institution access history.',
+      title: 'Institution Requests & Access',
+      description: 'Institution document requests, requests grouped by institution, and the access institutions were given.',
       children: [
         { id: 'requests', label: 'Institution Document Request Report' },
         { id: 'cb-institution', label: 'Document Requests by Institution' },
@@ -119,14 +119,14 @@ export class SuperAdminReportsComponent {
     {
       id: 'department',
       icon: '🏢',
-      title: 'View Compliance Certificate',
+      title: 'Department Compliance',
       description: 'Summarises department-wide document coverage, compliance percentage and risk rating at a glance.',
     },
     {
       id: 'cb-department',
       icon: '🧭',
-      title: 'View Compliance History Report',
-      description: 'Provides a department control-break view with owner-level compliance detail and supporting totals.',
+      title: 'Compliance by Department',
+      description: 'Each department broken down by compliance status, with owner-level detail and subtotals.',
     },
     {
       id: 'inventory',
@@ -137,8 +137,8 @@ export class SuperAdminReportsComponent {
     {
       id: 'expiring',
       icon: '⏳',
-      title: 'Operational Report',
-      description: 'Shows near-expiry documents by owner and department with the remaining days to expiry.',
+      title: 'Near-Expiry Documents',
+      description: 'Documents inside their expiry warning period, by owner and department, with the days left.',
     },
     {
       id: 'outstanding',
@@ -249,7 +249,7 @@ export class SuperAdminReportsComponent {
       case 'outstanding':
         return ['startDate', 'endDate', 'institutionId', 'departmentId', 'complianceStatus'].includes(key);
       case 'access':
-        return ['startDate', 'endDate', 'institutionId', 'departmentId', 'recipientType'].includes(key);
+        return ['startDate', 'endDate', 'institutionId'].includes(key);
       case 'expiring':
         return ['startDate', 'endDate', 'institutionId', 'departmentId'].includes(key);
       default:
@@ -260,12 +260,13 @@ export class SuperAdminReportsComponent {
   statusBadgeClass(value: string): string {
     const normalized = (value || '').trim().toLowerCase().replace(/\s+/g, '-');
 
+    if (normalized.includes('non-compliant') || normalized.includes('noncompliant')) return 'is-noncompliant';
     if (normalized.includes('compliant')) return 'is-compliant';
     if (normalized.includes('partial')) return 'is-partial';
-    if (normalized.includes('non-compliant') || normalized.includes('noncompliant')) return 'is-noncompliant';
-    if (normalized.includes('pending') || normalized.includes('department_pending')) return 'is-pending';
-    if (normalized.includes('approved') || normalized.includes('routed_to_owner')) return 'is-approved';
-    if (normalized.includes('denied')) return 'is-denied';
+    if (normalized.includes('pending')) return 'is-pending';
+    if (normalized.includes('approved') || normalized.includes('routed_to_owner') || normalized === 'active') return 'is-approved';
+    if (normalized.includes('denied') || normalized.includes('revoked')) return 'is-denied';
+    if (normalized.includes('expired')) return 'is-pending';
 
     return 'is-neutral';
   }
@@ -370,11 +371,13 @@ export class SuperAdminReportsComponent {
     return { required, uploaded, missing, avgCompliance };
   }
 
-  accessHistoryTotals(): { total: number; active: number; expired: number } {
+  accessHistoryTotals(): { total: number; active: number; expired: number; revoked: number } {
+    const count = (status: string) => this.accessHistoryRows.filter(r => r.accessStatus === status).length;
     return {
       total: this.accessHistoryRows.length,
-      active: this.accessHistoryRows.filter(r => this.accessStatusBucket(r.accessStatus) === 'active').length,
-      expired: this.accessHistoryRows.filter(r => this.accessStatusBucket(r.accessStatus) === 'expired').length,
+      active: count('Active'),
+      expired: count('Expired'),
+      revoked: count('Revoked'),
     };
   }
 
@@ -408,7 +411,7 @@ export class SuperAdminReportsComponent {
     const totals = this.ownerTotals();
     await this.exportTablePdf({
       fileName: 'document-owner-compliance-report.pdf',
-      title: 'View Client Risk Rating Report',
+      title: 'Document Owner Compliance Report',
       columns: ['Document Owner', 'Entity Type', 'Email', 'Compliance Status', 'Uploaded', 'Missing', 'Compliance %', 'Last Upload Date', 'Risk Rating'],
       body: this.ownerRows.map(r => [
         r.documentOwner,
@@ -459,7 +462,7 @@ export class SuperAdminReportsComponent {
     const totals = this.departmentTotals();
     await this.exportTablePdf({
       fileName: 'department-compliance-report.pdf',
-      title: 'View Compliance Certificate',
+      title: 'Department Compliance Report',
       columns: ['Department', 'Department Admin', 'Required Documents', 'Uploaded Documents', 'Missing Documents', 'Compliance %', 'Risk Rating'],
       body: this.departmentRows.map(r => [
         r.department,
@@ -514,7 +517,7 @@ export class SuperAdminReportsComponent {
 
     await this.exportTablePdf({
       fileName: 'control-break-document-requests-by-institution.pdf',
-      title: 'Control Break - Document Requests by Institution',
+      title: 'Document Requests by Institution',
       columns: ['Institution / Group', 'Recipient', 'Recipient Type', 'Request Date', 'Status / Ref'],
       body,
       totals: [
@@ -562,7 +565,7 @@ export class SuperAdminReportsComponent {
 
     await this.exportTablePdf({
       fileName: 'control-break-compliance-by-department.pdf',
-      title: 'View Compliance History Report',
+      title: 'Compliance by Department Report',
       columns: ['Department / Group', 'Owner', 'Compliance Status', 'Documents', 'Compliance % / Risk'],
       body,
       totals: [
@@ -604,7 +607,7 @@ export class SuperAdminReportsComponent {
     await this.exportTablePdf({
       fileName: 'institution-access-history-report.pdf',
       title: 'Institution Access History Report',
-      columns: ['Institution', 'Recipient', 'Recipient Type', 'Access Granted Date', 'Access Expiry', 'Access Status', 'Documents Accessed'],
+      columns: ['Institution', 'Recipient', 'Recipient Type', 'Access Granted', 'Access Expiry', 'Access Status', 'Documents Downloaded'],
       body: this.accessHistoryRows.map(r => [
         r.institution,
         r.recipient,
@@ -612,12 +615,13 @@ export class SuperAdminReportsComponent {
         this.formatDateTime(r.accessGrantedDate),
         this.formatDateTime(r.accessExpiry),
         r.accessStatus,
-        r.documentsAccessed.join(', '),
+        r.documentsAccessed.join(', ') || 'None yet',
       ]),
       totals: [
-        ['Total Access Entries', String(totals.total)],
+        ['Total Access Grants', String(totals.total)],
         ['Active', String(totals.active)],
         ['Expired', String(totals.expired)],
+        ['Revoked', String(totals.revoked)],
       ],
     });
   }
@@ -626,7 +630,7 @@ export class SuperAdminReportsComponent {
     const totals = this.expiringDocumentsTotals();
     await this.exportTablePdf({
       fileName: 'expiring-documents-report.pdf',
-      title: 'View Operational Report',
+      title: 'Near-Expiry Documents Report',
       columns: ['Owner', 'Department', 'Document Type', 'Expiry Date', 'Days Remaining'],
       body: this.expiringDocumentsRows.map(r => [
         r.owner,
@@ -682,13 +686,6 @@ export class SuperAdminReportsComponent {
     if (normalized === 'approved' || normalized === 'routed_to_owner') return 'approved';
     if (normalized === 'pending' || normalized === 'department_pending') return 'pending';
     if (normalized === 'denied') return 'denied';
-    return 'other';
-  }
-
-  private accessStatusBucket(status: string): 'active' | 'expired' | 'other' {
-    const normalized = (status || '').trim().toLowerCase();
-    if (normalized === 'approved' || normalized === 'routed_to_owner' || normalized === 'active') return 'active';
-    if (normalized === 'denied' || normalized === 'expired') return 'expired';
     return 'other';
   }
 
@@ -776,11 +773,17 @@ export class SuperAdminReportsComponent {
       rowHeight: 20,
     });
 
-    doc.setDrawColor(214, 223, 238);
-    doc.line(contentX, pageWidth - 34, pageWidth - contentX, pageWidth - 34);
-    doc.setTextColor(111, 124, 146);
-    doc.setFontSize(8);
-    doc.text('Prepared for Super Admin review', contentX, pageWidth - 20);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const pageCount = doc.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page);
+      doc.setDrawColor(214, 223, 238);
+      doc.line(contentX, pageHeight - 34, pageWidth - contentX, pageHeight - 34);
+      doc.setTextColor(111, 124, 146);
+      doc.setFontSize(8);
+      doc.text('Prepared for Super Admin review', contentX, pageHeight - 20);
+      doc.text(`Page ${page} of ${pageCount}`, pageWidth - contentX, pageHeight - 20, { align: 'right' });
+    }
 
     doc.save(input.fileName);
   }

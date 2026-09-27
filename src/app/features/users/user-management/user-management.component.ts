@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, ChangeDetectorRef, computed } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -6,12 +6,7 @@ import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { RoleService } from '../../../core/services/role.service';
-import { ManagedUserDto, UpdateManagedUserPayload, UserManagementService } from '../../../core/services/user-management.service';
-import {
-  birthDateReasonable,
-  formatIsoDateLocal,
-  saMobilePhoneRequired
-} from '../../../core/validators/profile.validators';
+import { ManagedUserDto, UserManagementService } from '../../../core/services/user-management.service';
 
 export interface UserProfile {
   id: number;
@@ -24,6 +19,9 @@ export interface UserProfile {
   phone: string;
   dateOfBirth: string;
   jobTitle: string;
+  entityTypeName: string;
+  entityIdentificationNumber: string;
+  departmentName: string;
   roleId: string;
   roleName: string;
   roles: string[];
@@ -54,32 +52,33 @@ export class UserManagementComponent {
   managedRoleNames = signal<string[] | null>(null);
 
   showModal = signal(false);
-  editId = signal<number | null>(null);
+  /** The user whose role is being changed. */
+  readonly roleUser = signal<UserProfile | null>(null);
   isLoadingUsers = signal(false);
   isLoadingRoles = signal(false);
   isSubmitting = signal(false);
   search = signal('');
+  /** Role chosen in the filter chips; empty means every role. */
+  readonly roleFilter = signal('');
+
+  /** Roles present in the list, with how many users hold each (someone with two roles counts under both). */
+  readonly roleOptions = computed(() => {
+    const counts = new Map<string, number>();
+    for (const user of this.users()) {
+      for (const role of this.rolesOf(user)) counts.set(role, (counts.get(role) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, count]) => ({ name, count }));
+  });
 
   roles: Array<{ id: string; name: string }> = [];
 
   users = signal<UserProfile[]>([]);
 
-  readonly maxBirthDate = formatIsoDateLocal(new Date());
-  readonly minBirthDate = formatIsoDateLocal((() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 120);
-    return d;
-  })());
-
+  // Only the role can be changed here; people edit their own personal details from their profile.
   form = this.fb.group({
-    firstName: ['', Validators.required],
-    lastName: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    phone: ['', saMobilePhoneRequired()],
-    dateOfBirth: ['', [Validators.required, birthDateReasonable()]],
-    jobTitle: ['', Validators.required],
-    roleId: ['', Validators.required],
-    status: ['Active'],
+    role: ['', Validators.required],
   });
 
   constructor() {
@@ -98,91 +97,75 @@ export class UserManagementComponent {
 
   get filtered() {
     const q = this.search().toLowerCase();
-    return this.users().filter(user =>
-      `${user.firstName} ${user.lastName}`.toLowerCase().includes(q) ||
-      user.email.toLowerCase().includes(q) ||
-      user.roleName.toLowerCase().includes(q)
-    );
+    const role = this.roleFilter().toLowerCase();
+    return this.users().filter(user => {
+      const roles = this.rolesOf(user);
+      const matchesRole = !role || roles.some(r => r.toLowerCase() === role);
+      const matchesSearch = `${user.firstName} ${user.lastName}`.toLowerCase().includes(q)
+        || user.email.toLowerCase().includes(q)
+        || roles.some(r => r.toLowerCase().includes(q));
+      return matchesRole && matchesSearch;
+    });
+  }
+
+  /** Clicking the active chip again clears the filter. */
+  toggleRoleFilter(role: string): void {
+    this.roleFilter.set(this.roleFilter() === role ? '' : role);
+  }
+
+  rolesOf(user: UserProfile): string[] {
+    const roles = user.roles?.length ? user.roles : [user.roleName];
+    return roles.filter(role => !!role && role.trim().length > 0);
   }
 
   openPepScan(): void {
     window.open(this.verifyNowAmlPepUrl, '_blank', 'noopener,noreferrer');
   }
 
-  openEdit(user: UserProfile): void {
-    if (this.isSuperAdmin(user) || user.profileId === null) {
-      return;
-    }
+  openRoleChange(user: UserProfile): void {
+    if (this.isSuperAdmin(user) || !user.userId) return;
 
-    this.editId.set(user.profileId);
-    this.form.patchValue({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      dateOfBirth: user.dateOfBirth,
-      jobTitle: user.jobTitle,
-      roleId: user.roleId,
-      status: user.status,
-    });
+    this.roleUser.set(user);
+    this.form.reset({ role: this.rolesOf(user).length === 1 ? this.rolesOf(user)[0] : '' });
     this.showModal.set(true);
   }
 
   closeModal(): void {
+    if (this.isSubmitting()) return;
     this.showModal.set(false);
+    this.roleUser.set(null);
+  }
+
+  /** True when the chosen role is exactly what the user already has, so there is nothing to save. */
+  roleUnchanged(): boolean {
+    const user = this.roleUser();
+    const chosen = this.form.value.role ?? '';
+    const current = user ? this.rolesOf(user) : [];
+    return current.length === 1 && current[0].toLowerCase() === chosen.toLowerCase();
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
+    const user = this.roleUser();
+    const role = this.form.value.role ?? '';
+    if (!user || !role) {
       this.form.markAllAsTouched();
       this.cdr.markForCheck();
       return;
     }
-
-    const value = this.form.value as {
-      firstName: string | null;
-      lastName: string | null;
-      email: string | null;
-      phone: string | null;
-      dateOfBirth: string | null;
-      jobTitle: string | null;
-      roleId: string | null;
-      status: string | null;
-    };
-
-    if (!this.editId()) {
-      this.toast.show('User creation is only available via registration.', 'error');
-      return;
-    }
-
-    const selectedRoleName = this.roles.find(r => r.id === value.roleId)?.name;
-    if (!selectedRoleName) {
-      this.toast.show('Please select a valid role.', 'error');
-      return;
-    }
-
-    const payload: UpdateManagedUserPayload = {
-      firstName: (value.firstName ?? '').trim(),
-      lastName: (value.lastName ?? '').trim(),
-      dateOfBirth: value.dateOfBirth ?? '',
-      phoneNumber: (value.phone ?? '').trim(),
-      jobTitle: (value.jobTitle ?? '').trim(),
-      emailAddress: (value.email ?? '').trim(),
-      role: selectedRoleName,
-      accountStatus: (value.status ?? 'Active').trim()
-    };
+    if (this.roleUnchanged()) return;
 
     this.isSubmitting.set(true);
-    this.userManagementService.updateUser(this.editId()!, payload)
+    this.userManagementService.changeRole(user.userId, role)
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => {
-          this.toast.show('User updated.', 'success');
+        next: (result) => {
+          this.toast.show(result?.message || `Role changed to ${role}.`, 'success');
           this.showModal.set(false);
+          this.roleUser.set(null);
           this.loadUsers();
         },
         error: (error) => {
-          const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Failed to update user.';
+          const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Could not change the role.';
           this.toast.show(message, 'error');
         }
       });
@@ -208,7 +191,7 @@ export class UserManagementComponent {
         this.toast.show('User deleted.', 'success');
       },
       error: (error) => {
-        const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Failed to delete user.';
+        const message = error?.error?.message || error?.error?.error || error?.error?.title || 'Failed to delete user.';
         this.toast.show(message, 'error');
       }
     });
@@ -221,10 +204,12 @@ export class UserManagementComponent {
       .subscribe({
         next: (roles) => {
           this.roles = (roles ?? []).map(role => ({ id: role.roleId, name: role.roleName }));
+          this.cdr.markForCheck();
           this.loadUsers();
         },
         error: () => {
           this.roles = [];
+          this.cdr.markForCheck();
           this.toast.show('Failed to load roles.', 'error');
         }
       });
@@ -273,12 +258,23 @@ export class UserManagementComponent {
       phone: user.phoneNumber ?? (user as any).PhoneNumber ?? '',
       dateOfBirth: profile?.dateOfBirth ?? profile?.DateOfBirth ?? '',
       jobTitle: profile?.jobTitle ?? profile?.JobTitle ?? '',
+      entityTypeName: user.entityTypeName ?? (user as any).EntityTypeName ?? 'Not specified',
+      entityIdentificationNumber: user.entityIdentificationNumber ?? (user as any).EntityIdentificationNumber ?? '',
+      departmentName: user.departmentName ?? (user as any).DepartmentName ?? 'Not assigned',
       roleId,
       roleName,
       roles,
       status: user.accountStatus ?? (user as any).AccountStatus ?? 'Active',
       createdAt: ''
     };
+  }
+
+  /**
+   * Only the Super Admin (or an Admin) may change roles, matching the API. Checked positively:
+   * hasRole() is true for every role when signed in as the Super Admin, so "not a Department Admin" would hide it from them.
+   */
+  get canChangeRoles(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.hasRole('Admin');
   }
 
   isSuperAdmin(user: UserProfile): boolean {

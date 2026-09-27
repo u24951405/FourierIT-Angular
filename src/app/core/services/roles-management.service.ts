@@ -44,8 +44,8 @@ export class RolesManagementService {
     return this.http.put<ApiRoleDto>(`${this.base}/${roleId}`, payload);
   }
 
-  getPermissions(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.base}/permissions`);
+  getPermissions(): Observable<RolePermissionDto[]> {
+    return this.http.get<RolePermissionDto[]>(`${this.base}/permissions`);
   }
 
   getRoleWithPermissions(roleId: string): Observable<RoleDetailDto> {

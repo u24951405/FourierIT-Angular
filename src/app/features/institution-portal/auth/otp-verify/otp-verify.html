@@ -31,13 +31,18 @@
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
         </div>
-        <h2 class="otp-locked__title">Session Locked</h2>
+        <h2 class="otp-locked__title">Code cancelled</h2>
         <p class="otp-locked__desc">
-          Maximum OTP attempts exceeded. Your authentication session has been locked for security.
+          Too many incorrect codes were entered, so this code was cancelled for security.
+          Send a new code to {{ maskedEmail }} to try again.
         </p>
-        <button class="otp-btn otp-btn--primary" type="button" (click)="requestNewToken()">
-          Request New Access Link
+        <button class="otp-btn otp-btn--primary" type="button" (click)="resendOtp()" [disabled]="!canResend">
+          {{ canResend ? 'Send a new code' : 'Send a new code in ' + resendCountdown + 's' }}
         </button>
+        <button class="otp-btn otp-btn--link" type="button" (click)="requestNewToken()">
+          Request a new access link instead
+        </button>
+        <p *ngIf="error" class="otp-locked__desc" role="alert">{{ error }}</p>
       </div>
 
       <!-- Normal OTP entry -->

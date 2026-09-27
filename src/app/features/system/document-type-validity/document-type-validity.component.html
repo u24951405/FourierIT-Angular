@@ -1,33 +1,69 @@
-<section class="document-types-page">
-  <header class="page-header">
+<section class="document-types-page" [class.document-types-page--embedded]="embedded">
+  <header class="page-header" *ngIf="!embedded">
     <p class="eyebrow">System Administration</p>
     <h1>Document Type Validity</h1>
     <p class="subtitle">Review expiry rules per document type and apply bulk recalculation safely.</p>
   </header>
 
-  <div *ngIf="loading()" class="status">Loading document types...</div>
+  <!-- Intro, search and totals -->
+  <div class="dv-toolbar">
+    <div class="dv-toolbar__intro">
+      <h2>Validity rules</h2>
+      <p>Each document type has a rule for how long it stays valid and when owners are warned before it expires.
+         Changing a rule re-checks existing documents of that type, and you can review the impact before applying it.</p>
+    </div>
+    <div class="dv-toolbar__controls">
+      <label class="dv-search">
+        <span class="dv-sr-only">Search document types</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.2-5.2m0 0A7.5 7.5 0 105.2 15.8 7.5 7.5 0 0015.8 15.8z"/>
+        </svg>
+        <input type="search" placeholder="Search document types" [(ngModel)]="search">
+      </label>
+      <span class="dv-count" *ngIf="!loading() && documentTypes().length">
+        {{ documentTypes().length }} type{{ documentTypes().length === 1 ? '' : 's' }}
+      </span>
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="status">Loading document types…</div>
   <div *ngIf="error()" class="status status--error">{{ error() }}</div>
 
-  <section class="table-card" *ngIf="!loading()">
-    <div class="table-wrap" *ngIf="documentTypes().length; else emptyState">
-      <table>
+  <section class="dv-card" *ngIf="!loading() && !error()">
+    <div class="dv-table-wrap" *ngIf="filteredTypes.length; else emptyState">
+      <table class="dv-table">
         <thead>
           <tr>
-            <th>Document type</th>
-            <th>Validity</th>
-            <th>Warning days</th>
-            <th>Documents</th>
-            <th class="actions-column">Action</th>
+            <th scope="col">Document type</th>
+            <th scope="col">Validity</th>
+            <th scope="col">Expiry warning</th>
+            <th scope="col" class="dv-num">Documents</th>
+            <th scope="col"><span class="dv-sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let type of documentTypes()">
-            <td>{{ type.name }}</td>
-            <td>{{ getValidityText(type) }}</td>
-            <td>{{ type.neverExpires ? 'N/A' : type.warningDays }}</td>
-            <td>{{ type.documentCount }}</td>
-            <td class="actions-column">
-              <button type="button" class="btn btn-primary btn-small" (click)="openEdit(type)">Edit</button>
+          <tr *ngFor="let type of filteredTypes">
+            <td data-label="Document type">
+              <span class="dv-type-name">{{ type.name }}</span>
+              <span class="dv-type-desc" *ngIf="type.description">{{ type.description }}</span>
+            </td>
+            <td data-label="Validity">
+              <span class="dv-pill">{{ type.validityMonths }} month{{ type.validityMonths === 1 ? '' : 's' }}</span>
+              <span class="dv-sub">from {{ basisLabel(type.validityBasis).toLowerCase() }}</span>
+            </td>
+            <td data-label="Expiry warning">
+              <span *ngIf="type.warningDays > 0">{{ type.warningDays }} day{{ type.warningDays === 1 ? '' : 's' }} before</span>
+              <span *ngIf="!type.warningDays" class="dv-muted">No warning</span>
+            </td>
+            <td data-label="Documents" class="dv-num">{{ type.documentCount }}</td>
+            <td class="dv-actions">
+              <button type="button" class="dv-btn dv-btn--outline dv-btn--small" (click)="openEdit(type)"
+                      [attr.aria-label]="'Edit validity rule for ' + type.name">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.86 4.49l1.69-1.69a1.88 1.88 0 112.65 2.65L10.58 16.07a4.5 4.5 0 01-1.9 1.13L6 18l.8-2.69a4.5 4.5 0 011.13-1.9l8.93-8.92z"/>
+                </svg>
+                Edit
+              </button>
             </td>
           </tr>
         </tbody>
@@ -35,82 +71,145 @@
     </div>
 
     <ng-template #emptyState>
-      <div class="empty-state">No document types are available.</div>
+      <div class="empty-state">
+        {{ search.trim() ? 'No document types match “' + search.trim() + '”.' : 'No document types are available.' }}
+      </div>
     </ng-template>
   </section>
 
-  <div class="modal-backdrop" *ngIf="showEditor()">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="document-type-validity-title">
-      <header class="modal-header">
-        <h2 id="document-type-validity-title">Edit {{ currentType()?.name || 'document type' }}</h2>
-        <button type="button" class="close-button" (click)="closeEditor()" aria-label="Close">×</button>
+  <!-- Edit rule -->
+  <div class="dv-modal" *ngIf="showEditor() && !showPreviewConfirm()" (click)="closeEditor()">
+    <div class="dv-dialog" role="dialog" aria-modal="true" aria-labelledby="dv-edit-title" (click)="$event.stopPropagation()">
+      <header class="dv-dialog__header">
+        <div>
+          <p class="dv-dialog__eyebrow">Edit validity rule</p>
+          <h2 id="dv-edit-title">{{ currentType()?.name || 'Document type' }}</h2>
+          <p>{{ currentType()?.documentCount ?? 0 }} document{{ currentType()?.documentCount === 1 ? '' : 's' }} use this type</p>
+        </div>
+        <button type="button" class="dv-close" (click)="closeEditor()" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
       </header>
 
-      <div class="modal-body">
-        <div class="field-row toggle-row">
-          <label for="neverExpires">Never expires</label>
-          <input id="neverExpires" type="checkbox" [(ngModel)]="form.neverExpires" />
+      <div class="dv-dialog__body">
+        <!-- Every document expires: it is valid for a number of months from its certification or upload date. -->
+          <!-- 1. How long -->
+          <fieldset class="dv-step">
+            <legend><span class="dv-step__num">1</span> How long is it valid?</legend>
+            <div class="dv-field" [class.dv-field--invalid]="monthsError">
+              <label for="validityMonths">Valid for</label>
+              <div class="dv-input">
+                <input id="validityMonths" type="number" min="1" max="120" step="1"
+                       [(ngModel)]="form.validityMonths" [attr.aria-invalid]="!!monthsError"
+                       aria-describedby="validityMonthsHint">
+                <span class="dv-input__unit">month{{ form.validityMonths === 1 ? '' : 's' }}</span>
+              </div>
+              <p id="validityMonthsHint" class="dv-field__hint" *ngIf="!monthsError">Between 1 and 120 months.</p>
+              <p class="dv-field__error" *ngIf="monthsError">{{ monthsError }}</p>
+            </div>
+
+            <p class="dv-field__label">Counted from</p>
+            <div class="dv-choices dv-choices--two">
+              <label class="dv-choice" *ngFor="let option of basisOptions" [class.dv-choice--selected]="form.validityBasis === option.value">
+                <input type="radio" name="dv-basis" [value]="option.value" [(ngModel)]="form.validityBasis">
+                <span class="dv-choice__title">{{ option.label }}</span>
+                <span class="dv-choice__desc">{{ option.description }}</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <!-- 3. Warning -->
+          <fieldset class="dv-step">
+            <legend><span class="dv-step__num">2</span> Expiry warning</legend>
+            <div class="dv-field" [class.dv-field--invalid]="warningError">
+              <label for="warningDays">Warn owners</label>
+              <div class="dv-input">
+                <input id="warningDays" type="number" min="0" [max]="maxWarningDays" step="1"
+                       [(ngModel)]="form.warningDays" [attr.aria-invalid]="!!warningError"
+                       aria-describedby="warningDaysHint">
+                <span class="dv-input__unit">days before expiry</span>
+              </div>
+              <p id="warningDaysHint" class="dv-field__hint" *ngIf="!warningError">
+                Use 0 for no warning. At most {{ maxWarningDays }} days for this validity period.
+              </p>
+              <p class="dv-field__error" *ngIf="warningError">{{ warningError }}</p>
+            </div>
+          </fieldset>
+
+        <div class="dv-summary" aria-live="polite">
+          <span class="dv-summary__label">Rule summary</span>
+          <p>{{ ruleSummary }}</p>
         </div>
 
-        <div class="field-row">
-          <label for="validityMonths">Validity months</label>
-          <input id="validityMonths" type="number" min="1" max="120" [(ngModel)]="form.validityMonths" [disabled]="form.neverExpires" />
-        </div>
-
-        <div class="field-row">
-          <label for="validityBasis">Validity basis</label>
-          <select id="validityBasis" [(ngModel)]="form.validityBasis">
-            <option *ngFor="let option of basisOptions" [ngValue]="option.value">{{ option.label }}</option>
-          </select>
-        </div>
-
-        <div class="field-note" *ngFor="let option of basisOptions">
-          <strong>{{ option.label }}:</strong> {{ option.description }}
-        </div>
-
-        <div class="field-row">
-          <label for="warningDays">Warning days</label>
-          <input id="warningDays" type="number" min="0" max="365" [(ngModel)]="form.warningDays" [disabled]="form.neverExpires" />
-        </div>
-
-        <div *ngIf="formError()" class="status status--error inline-status">{{ formError() }}</div>
+        <div *ngIf="formError()" class="status status--error inline-status" role="alert">{{ formError() }}</div>
       </div>
 
-      <footer class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="closeEditor()">Cancel</button>
-        <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="handleSave()">
-          {{ isSaving() ? 'Checking...' : 'Save' }}
+      <footer class="dv-dialog__footer">
+        <button type="button" class="dv-btn dv-btn--outline" (click)="closeEditor()">Cancel</button>
+        <button type="button" class="dv-btn dv-btn--primary" [disabled]="isSaving() || !!validateForm()" (click)="handleSave()">
+          {{ isSaving() ? 'Checking impact…' : 'Review impact' }}
         </button>
       </footer>
     </div>
   </div>
 
-  <div class="modal-backdrop" *ngIf="showPreviewConfirm()">
-    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="preview-confirm-title">
-      <header class="modal-header">
-        <h2 id="preview-confirm-title">Confirm validity changes</h2>
-        <button type="button" class="close-button" (click)="cancelPreview()" aria-label="Close">×</button>
+  <!-- Review impact -->
+  <div class="dv-modal" *ngIf="showPreviewConfirm()" (click)="cancelPreview()">
+    <div class="dv-dialog dv-dialog--narrow" role="dialog" aria-modal="true" aria-labelledby="dv-review-title" (click)="$event.stopPropagation()">
+      <header class="dv-dialog__header">
+        <div>
+          <p class="dv-dialog__eyebrow">Review impact</p>
+          <h2 id="dv-review-title">{{ currentType()?.name || 'Document type' }}</h2>
+          <p>{{ ruleSummary }}</p>
+        </div>
+        <button type="button" class="dv-close" (click)="cancelPreview()" aria-label="Back to edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
       </header>
 
-      <div class="modal-body confirm-body">
-        <p>
-          This will re-evaluate {{ previewSummary()?.affectedDocuments ?? 0 }} documents.
-          <span *ngIf="(previewSummary()?.becomeExpired ?? 0) > 0" class="warning-text">
-            {{ previewSummary()?.becomeExpired }} will become expired.
-          </span>
-          <span *ngIf="(previewSummary()?.noLongerExpired ?? 0) > 0">
-            {{ previewSummary()?.noLongerExpired }} will no longer be expired.
-          </span>
-          <span *ngIf="(previewSummary()?.missingSourceDate ?? 0) > 0">
-            {{ previewSummary()?.missingSourceDate }} have no source date and will not expire.
-          </span>
+      <div class="dv-dialog__body">
+        <div class="dv-stats">
+          <div class="dv-stat">
+            <span class="dv-stat__value">{{ previewSummary()?.affectedDocuments ?? 0 }}</span>
+            <span class="dv-stat__label">Documents re-checked</span>
+          </div>
+          <div class="dv-stat" [class.dv-stat--danger]="(previewSummary()?.becomeExpired ?? 0) > 0">
+            <span class="dv-stat__value">{{ previewSummary()?.becomeExpired ?? 0 }}</span>
+            <span class="dv-stat__label">Will become expired</span>
+          </div>
+          <div class="dv-stat" [class.dv-stat--success]="(previewSummary()?.noLongerExpired ?? 0) > 0">
+            <span class="dv-stat__value">{{ previewSummary()?.noLongerExpired ?? 0 }}</span>
+            <span class="dv-stat__label">No longer expired</span>
+          </div>
+          <div class="dv-stat">
+            <span class="dv-stat__value">{{ previewSummary()?.missingSourceDate ?? 0 }}</span>
+            <span class="dv-stat__label">No certification date</span>
+          </div>
+        </div>
+
+        <p class="dv-notice dv-notice--danger" *ngIf="(previewSummary()?.becomeExpired ?? 0) > 0">
+          {{ previewSummary()?.becomeExpired }} document{{ previewSummary()?.becomeExpired === 1 ? '' : 's' }} will be marked expired
+          straight away and their owners will need to upload a replacement.
         </p>
+        <p class="dv-notice" *ngIf="(previewSummary()?.missingSourceDate ?? 0) > 0">
+          {{ previewSummary()?.missingSourceDate }} document{{ previewSummary()?.missingSourceDate === 1 ? ' has' : 's have' }} no certification date,
+          so {{ previewSummary()?.missingSourceDate === 1 ? 'its' : 'their' }} validity is counted from the upload date instead.
+        </p>
+        <p class="dv-notice" *ngIf="(previewSummary()?.affectedDocuments ?? 0) === 0">
+          No existing documents use this type, so only future uploads are affected.
+        </p>
+
+        <div *ngIf="formError()" class="status status--error inline-status" role="alert">{{ formError() }}</div>
       </div>
 
-      <footer class="modal-footer">
-        <button type="button" class="btn btn-secondary" (click)="cancelPreview()">Cancel</button>
-        <button type="button" class="btn btn-primary" [disabled]="isSaving()" (click)="confirmSave()">
-          {{ isSaving() ? 'Saving...' : 'Confirm save' }}
+      <footer class="dv-dialog__footer">
+        <button type="button" class="dv-btn dv-btn--outline" (click)="cancelPreview()" [disabled]="isSaving()">Back to edit</button>
+        <button type="button" class="dv-btn dv-btn--primary" [disabled]="isSaving()" (click)="confirmSave()">
+          {{ isSaving() ? 'Applying…' : 'Apply changes' }}
         </button>
       </footer>
     </div>

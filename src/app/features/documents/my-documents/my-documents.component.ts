@@ -1,8 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { finalize, timeout, TimeoutError } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import {
   DocumentAccessApprovalItem,
@@ -14,10 +15,12 @@ import {
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
 import { ToastService } from '../../../core/services/toast.service';
-import { buildExpiryCalendarEvents, CalendarEvent } from './calendar-events';
+import { buildDocumentCalendarEvents, CalendarEvent } from './calendar-events';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { DocumentHierarchyTreeComponent } from '../../../shared/components/document-hierarchy-tree/document-hierarchy-tree.component';
 import { DocumentItemDto } from '../../../core/services/document-hierarchy.service';
+
+const REPLACE_TIMEOUT_MS = 120_000;
 
 @Component({
   selector: 'app-my-documents',
@@ -27,7 +30,10 @@ import { DocumentItemDto } from '../../../core/services/document-hierarchy.servi
   styleUrls: ['./my-documents.component.scss', '../../../features/dashboard/dashboard/dashboard.component.scss'],
 })
 export class MyDocumentsComponent {
+  @ViewChild(DocumentHierarchyTreeComponent) private hierarchyTree?: DocumentHierarchyTreeComponent;
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
   private docsApi = inject(DocumentsApiService);
   private requestService = inject(DocumentAccessRequestService);
   private complianceService = inject(ComplianceService);
@@ -65,6 +71,9 @@ export class MyDocumentsComponent {
   readonly blockedDeletionApprovals = signal<DocumentAccessApprovalItem[]>([]);
   readonly allFlags = signal<DocumentFlagItem[]>([]);
   readonly resolvingFlagId = signal<number | null>(null);
+  // Set when a notification links here (?document=<id>); opened once the documents have loaded.
+  private pendingDetailDocumentId: number | null = null;
+  readonly detailIsRejected = computed(() => this.detailDocument()?.reviewStatus === 'Rejected');
 
   readonly flaggedDocumentIds = computed(() => new Set(this.allFlags().filter(f => !f.isResolved).map(f => f.documentId)));
   readonly detailFlags = computed(() => {
@@ -115,33 +124,29 @@ export class MyDocumentsComponent {
   );
   readonly latestRequests = computed(() => this.pendingRequests().slice(0, 5));
   readonly calendarDays = computed(() => this.buildCalendarDays(this.calendarMonth()));
-  readonly calendarEvents = computed(() => {
-    const threshold = this.warningThresholdDays();
-    const documents = this.documents();
-    console.log('[TEMP DIAGNOSTIC] calendarEvents inputs', {
-      threshold,
-      documentCount: documents.length
-    });
-
-    if (threshold == null) {
-      console.log('[TEMP DIAGNOSTIC] calendarEvents output', { eventCount: 0 });
-      return [];
-    }
-
-    const events = this.buildCalendarEvents(documents, this.calendarMonth(), threshold);
-    console.log('[TEMP DIAGNOSTIC] calendarEvents output', { eventCount: events.length });
-    return events;
-  });
+  // Upload, certification and expiry dates for the month shown. The warning period only colours expiries.
+  readonly calendarEvents = computed(() =>
+    buildDocumentCalendarEvents(this.documents(), this.calendarMonth(), new Date(), this.warningThresholdDays() ?? 30)
+  );
   readonly calendarSummary = computed(() => {
     const events = this.calendarEvents();
     return {
-      expiring: events.filter(item => item.type === 'expiring').length,
-      update: events.filter(item => item.type === 'update').length
+      uploaded: events.filter(item => item.type === 'uploaded').length,
+      certified: events.filter(item => item.type === 'certified').length,
+      expiring: events.filter(item => item.type === 'expiry' && item.expiryState !== 'scheduled').length,
+      expiries: events.filter(item => item.type === 'expiry').length
     };
   });
 
   ngOnInit(): void {
-    console.log('[TEMP DIAGNOSTIC] calendarMonth initialized', this.calendarMonth());
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const id = Number(params.get('document'));
+        if (!Number.isInteger(id) || id <= 0) return;
+        this.pendingDetailDocumentId = id;
+        this.openPendingDetail();
+      });
     this.loadDocuments();
     this.loadPendingRequests();
     this.loadFlags();
@@ -319,6 +324,7 @@ export class MyDocumentsComponent {
       return;
     }
 
+    const wasRejected = document.reviewStatus === 'Rejected';
     this.savingEdit.set(true);
     this.docsApi.updateDocument(document.documentId, {
       file,
@@ -326,16 +332,24 @@ export class MyDocumentsComponent {
       isCertified: document.isCertified,
       entityTypeId: null,
     })
-      .pipe(finalize(() => this.savingEdit.set(false)))
+      // Never leave the button spinning forever if the server stalls.
+      .pipe(timeout(REPLACE_TIMEOUT_MS), finalize(() => this.savingEdit.set(false)))
       .subscribe({
         next: updated => {
           this.detailDocument.set(updated);
           this.selectedEditFile.set(null);
-          this.toast.show('Document updated.', 'success');
+          this.toast.show(
+            wasRejected
+              ? 'New file uploaded and resubmitted for compliance review.'
+              : 'Document updated. The new file has been sent for compliance review.',
+            'success'
+          );
           this.loadDocuments();
         },
         error: err => {
-          const message = err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not update the document.';
+          const message = err instanceof TimeoutError
+            ? 'The server took too long to save the new file. Refresh the page to check whether it was saved before trying again.'
+            : err?.error?.error ?? err?.error?.title ?? err?.error?.message ?? 'Could not update the document.';
           this.toast.show(message, 'error');
         }
       });
@@ -427,46 +441,6 @@ export class MyDocumentsComponent {
     return days;
   }
 
-  private buildCalendarEvents(documents: DocumentListItem[], monthDate: Date, warningWindowDays: number): CalendarEvent[] {
-    const events: CalendarEvent[] = [
-      ...buildExpiryCalendarEvents(documents, monthDate, new Date(), warningWindowDays)
-    ];
-    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-
-    for (const doc of documents) {
-      const status = (doc.currentStatus ?? '').toLowerCase();
-      let dueDate: Date | null = null;
-
-      if (status.includes('rejected') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification')) {
-        dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 7);
-      }
-
-      if (!dueDate) {
-        continue;
-      }
-
-      if (dueDate < monthStart || dueDate > monthEnd) {
-        continue;
-      }
-
-      const eventType: 'expiring' | 'update' = status.includes('reject') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification') ? 'update' : 'expiring';
-      const title = `${doc.fileName} (${eventType === 'expiring' ? 'Expiring' : 'Needs update'})`;
-      events.push({
-        date: this.toIsoDate(dueDate),
-        type: eventType,
-        label: eventType === 'expiring' ? 'Expiring' : 'Update',
-        title,
-        documentId: doc.documentId,
-        fileName: doc.fileName,
-        certified: doc.isCertified
-      });
-    }
-
-    return events;
-  }
-
   formatCalendarDate(value: Date): string {
     return this.toIsoDate(value);
   }
@@ -507,12 +481,7 @@ export class MyDocumentsComponent {
       .subscribe({
         next: docs => {
           this.documents.set(docs ?? []);
-          console.log('[TEMP DIAGNOSTIC] raw documents received', (docs ?? []).slice(0, 5).map(doc => ({
-            documentId: doc.documentId,
-            fileName: doc.fileName,
-            expiryDate: doc.expiryDate,
-            isCertified: doc.isCertified
-          })));
+          this.openPendingDetail();
         },
         error: err => {
           this.documents.set([]);
@@ -520,6 +489,18 @@ export class MyDocumentsComponent {
           this.error.set(message);
         }
       });
+  }
+
+  private openPendingDetail(): void {
+    const id = this.pendingDetailDocumentId;
+    if (id == null) return;
+    const doc = this.documents().find(item => item.documentId === id);
+    if (!doc) return;
+
+    this.pendingDetailDocumentId = null;
+    this.openDetails(doc);
+    // Drop the query param so closing the modal and refreshing does not reopen it.
+    this.router.navigate([], { relativeTo: this.route, queryParams: { document: null }, queryParamsHandling: 'merge', replaceUrl: true });
   }
 
   private loadWarningThreshold(): void {
@@ -532,10 +513,6 @@ export class MyDocumentsComponent {
         const threshold = Number(payload?.warningThresholdDays ?? payload?.WarningThresholdDays);
         if (Number.isFinite(threshold)) {
           this.warningThresholdDays.set(threshold);
-          console.log('[TEMP DIAGNOSTIC] warningThresholdDays set', {
-            value: this.warningThresholdDays(),
-            type: typeof this.warningThresholdDays()
-          });
         }
       }
     });
@@ -569,6 +546,21 @@ export class MyDocumentsComponent {
     if (fullDoc) {
       this.openPreview(fullDoc);
     }
+  }
+
+  deleteDocumentFromTree(doc: DocumentItemDto): void {
+    if (!doc.userCanDelete || !confirm(`Delete ${doc.fileName}?`)) return;
+
+    this.docsApi.deleteDocument(doc.documentId).subscribe({
+      next: () => {
+        this.toast.show('Document deleted.', 'success');
+        this.hierarchyTree?.loadHierarchy();
+      },
+      error: err => {
+        const message = err?.error?.error ?? err?.error?.message ?? err?.error?.title ?? 'Could not delete document.';
+        this.toast.show(message, 'error');
+      }
+    });
   }
 }
 

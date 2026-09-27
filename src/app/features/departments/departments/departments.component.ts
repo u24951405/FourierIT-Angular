@@ -15,7 +15,9 @@ export interface Department {
   branchId: number;
   registeredBy: string;
   branch: string;
-  userCount: number;
+  /** The department's only user. Null until the Super Admin assigns one. */
+  adminName: string | null;
+  adminEmail: string | null;
   docCount: number;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -62,6 +64,8 @@ export class DepartmentsComponent {
     const q = this.search().toLowerCase();
     return this.departments().filter(d =>
       d.name.toLowerCase().includes(q)
+      || (d.adminName ?? '').toLowerCase().includes(q)
+      || (d.adminEmail ?? '').toLowerCase().includes(q)
     );
   }
 
@@ -213,18 +217,25 @@ export class DepartmentsComponent {
       });
   }
 
+  adminInitials(name: string | null): string {
+    const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase() || '?';
+  }
+
   private mapDepartment(dto: ApiDepartmentDto): Department {
-    const user = this.auth.currentUser();
     const branchLabel = this.branchOptions().find(b => Number(b.id) === dto.branchId)?.name ?? `Branch ${dto.branchId}`;
     return {
       id: dto.departmentId,
       name: dto.departmentName ?? '',
       branchId: dto.branchId,
-      registeredBy: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || (user?.email ?? 'Current User'),
+      // Only the Super Admin can register departments.
+      registeredBy: 'Super Admin',
       branch: branchLabel,
-      userCount: 0,
-      docCount: 0,
-      status: 'active',
+      adminName: dto.adminName ?? null,
+      adminEmail: dto.adminEmail ?? null,
+      docCount: dto.documentCount ?? 0,
+      // A department is active once its Department Admin (its only user) is assigned.
+      status: dto.adminUserId ? 'active' : 'inactive',
       createdAt: dto.createdAt ? String(dto.createdAt).slice(0, 10) : ''
     };
   }

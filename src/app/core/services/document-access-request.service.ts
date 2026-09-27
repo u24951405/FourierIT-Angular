@@ -19,6 +19,7 @@ import {
   PendingDocumentAccessRequest,
   RouteRequestToOwnerPayload,
   RouteRequestToOwnerResponse,
+  PendingAccessExtension,
 } from '../models/institution.models';
 
 @Injectable({ providedIn: 'root' })
@@ -162,6 +163,27 @@ export class DocumentAccessRequestService {
       params,
       responseType: 'blob',
     });
+  }
+
+  /** The document for showing in the browser (PDFs and images); nothing is saved to the computer. */
+  viewInstitutionDocument(documentId: number, token: string): Observable<Blob> {
+    const params = new HttpParams().set('token', token).set('inline', 'true');
+    return this.http.get(`${this.base}/institution-access/documents/${documentId}`, { params, responseType: 'blob' });
+  }
+
+  /** The institution asks for more time on access it was given. */
+  requestAccessExtension(token: string, requestId: number, payload: { days: number; reason: string }): Observable<any> {
+    const params = new HttpParams().set('token', token);
+    return this.http.post<any>(`${this.base}/institution-access/requests/${requestId}/extension`, payload, { params });
+  }
+
+  /** Requests for more time waiting for the signed-in owner's answer. */
+  getPendingExtensions(): Observable<PendingAccessExtension[]> {
+    return this.http.get<PendingAccessExtension[]>(`${this.base}/document-access-requests/extensions`);
+  }
+
+  decideExtension(requestId: number, approve: boolean, note?: string): Observable<any> {
+    return this.http.post<any>(`${this.base}/document-access-requests/${requestId}/extension/${approve ? 'approve' : 'deny'}`, { note: note || null });
   }
 
   flagApprovedDocument(documentId: number, token: string, payload: { reason: string }): Observable<any> {

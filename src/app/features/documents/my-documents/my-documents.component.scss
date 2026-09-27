@@ -57,9 +57,25 @@
   color: #b45309;
 }
 
-.calendar-chip--update {
+.calendar-chip--uploaded {
   background: #eff6ff;
   color: #1d4ed8;
+}
+
+.calendar-chip--certified {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.calendar-chip--expiry {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.calendar-panel__legend {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-light);
 }
 
 .calendar-panel__controls {
@@ -126,19 +142,29 @@
   text-align: left;
 }
 
-.calendar-event--expiring {
+.calendar-event--uploaded {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.calendar-event--certified {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.calendar-event--expiry {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.calendar-event--expiry.calendar-event--expiring {
   background: #fff7ed;
   color: #b45309;
 }
 
-.calendar-event:not(.calendar-event--expiring):not(.calendar-event--update) {
-  background: #f3f4f6;
-  color: var(--text-light);
-}
-
-.calendar-event--update {
-  background: #eff6ff;
-  color: #1d4ed8;
+.calendar-event--expiry.calendar-event--expired {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .eyebrow--dark {
@@ -553,3 +579,45 @@ select {
   }
 }
 
+
+.document-card__review {
+  margin: 0.8rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: #fdf0f0;
+  color: #9b2c2c;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.review-banner {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border-left: 4px solid;
+  font-size: 0.9rem;
+  line-height: 1.45;
+
+  strong { display: block; margin-bottom: 0.25rem; }
+  p { margin: 0.25rem 0 0; }
+  span { font-weight: 600; }
+
+  &--rejected {
+    background: #fdf0f0;
+    border-color: var(--error);
+    color: #7f1d1d;
+  }
+
+  &--approved {
+    background: #eefaf4;
+    border-color: var(--success);
+    color: #14532d;
+  }
+}
+
+.field--highlight {
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--error);
+  border-radius: 10px;
+  background: #fffafa;
+}

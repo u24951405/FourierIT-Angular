@@ -247,6 +247,19 @@
   cursor: not-allowed;
 }
 
+.otp-btn--link {
+  margin-top: 0.5rem;
+  height: auto;
+  padding: 0.5rem;
+  background: transparent;
+  color: #4b5a6e;
+  text-decoration: underline;
+}
+
+.otp-btn--link:hover {
+  color: #1e2a3a;
+}
+
 .otp-btn__spinner {
   display: flex;
   align-items: center;

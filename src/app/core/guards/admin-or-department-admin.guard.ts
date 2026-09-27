@@ -15,5 +15,5 @@ export const adminOrDepartmentAdminGuard: CanActivateFn = () => {
   if (!auth.isLoggedIn()) return router.createUrlTree(['/auth/login']);
   return auth.hasRole('Admin') || auth.hasRole('Department Admin') || auth.isSuperAdmin()
     ? true
-    : router.createUrlTree(['/auth/login']);
+    : router.createUrlTree([auth.getDefaultAppPath()]);
 };

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewChecked, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { AfterViewChecked, Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -7,7 +7,6 @@ type HelpTopic = {
   id: string;
   title: string;
   keywords: string;
-  roles: string[];
 };
 
 @Component({
@@ -25,30 +24,78 @@ export class HelpComponent implements OnInit, AfterViewChecked {
   private pendingFragment: string | null = null;
 
   private readonly topics: HelpTopic[] = [
-    { id: 'login-otp', title: 'Login and OTP verification', keywords: 'login password register institution access token verification', roles: ['Admin', 'Department Admin', 'Document Owner', 'Compliance Officer', 'Stakeholder', 'Super Admin'] },
-    { id: 'dashboard', title: 'Dashboard', keywords: 'overview roles permissions compliance', roles: ['Admin', 'Department Admin', 'Document Owner', 'Compliance Officer', 'Stakeholder', 'Super Admin'] },
-    { id: 'document-upload', title: 'Documents and Upload Document', keywords: 'documents upload files metadata registry manage', roles: ['Document Owner', 'Department Admin'] },
-    { id: 'compliance-status', title: 'Compliance status', keywords: 'compliance FICA KYC required missing evidence', roles: ['Compliance Officer', 'Admin', 'Stakeholder', 'Super Admin'] },
-    { id: 'reports', title: 'Reports', keywords: 'reports activity monthly ad hoc summaries', roles: ['Super Admin'] },
-    { id: 'audit-log', title: 'Audit Log', keywords: 'audit security operations changes OTP activity', roles: ['Super Admin'] },
-    { id: 'user-role-management', title: 'User Management and Roles Management', keywords: 'users roles permissions institutions departments administration', roles: ['Admin', 'Department Admin', 'Super Admin'] },
-    { id: 'timer-settings', title: 'Timer Settings', keywords: 'timer expiry session OTP settings', roles: ['Super Admin'] },
-    { id: 'institutions', title: 'Institutions', keywords: 'institutions records types add edit access links invite portal', roles: ['Admin', 'Department Admin', 'Super Admin'] },
-    { id: 'department-requests', title: 'Department Requests', keywords: 'department requests route approve deny review owner', roles: ['Department Admin', 'Super Admin'] },
-    { id: 'backup-restore', title: 'Backup and Restore', keywords: 'backup restore database snapshot system file history', roles: ['Super Admin'] },
-    { id: 'document-validity', title: 'Document Type Validity', keywords: 'document type validity expiry warning months basis never expires re-evaluate', roles: ['Super Admin'] }
+    { id: 'login-otp', title: 'Login and OTP verification', keywords: 'login password register institution access token verification' },
+    { id: 'dashboard', title: 'Dashboard', keywords: 'overview roles permissions compliance' },
+    { id: 'institution-requests', title: 'Institution Portal and Request Documents', keywords: 'institution request documents approved my requests portal' },
+    { id: 'document-upload', title: 'Documents and Upload Document', keywords: 'documents upload files metadata registry manage' },
+    { id: 'compliance-status', title: 'Compliance status', keywords: 'compliance FICA KYC required missing evidence' },
+    { id: 'reports', title: 'Reports', keywords: 'reports activity monthly ad hoc summaries' },
+    { id: 'audit-log', title: 'Audit Log', keywords: 'audit security operations changes OTP activity' },
+    { id: 'user-role-management', title: 'User Management and Roles Management', keywords: 'users roles permissions institutions departments administration' },
+    { id: 'timer-settings', title: 'System Settings', keywords: 'system settings timer expiry session OTP code link validity limits' },
+    { id: 'institutions', title: 'Institutions', keywords: 'institutions records types add edit access links invite portal' },
+    { id: 'department-requests', title: 'Department Requests', keywords: 'department requests route approve deny review owner' },
+    { id: 'backup-restore', title: 'Backup and Restore', keywords: 'backup restore database snapshot system file history' },
+    { id: 'document-validity', title: 'Document Type Validity', keywords: 'document type validity expiry warning months basis certification upload re-evaluate' }
   ];
 
-  readonly visibleTopics = computed(() => this.topics.filter(topic => this.canAccessTopic(topic)));
+  currentRoleLabel(): string {
+    const roles = this.auth.getUserRoles();
+    if (roles.length > 0) {
+      return roles.join(', ');
+    }
+
+    return 'Guest';
+  }
+
+  getVisibleTopicIds(): string[] {
+    return this.getVisibleTopics().map(topic => topic.id);
+  }
+
+  getVisibleTopics(): HelpTopic[] {
+    return this.topics.filter(topic => this.isTopicVisible(topic.id));
+  }
+
+  private isTopicVisible(topicId: string): boolean {
+    if (this.auth.isSuperAdmin()) {
+      return true;
+    }
+
+    const isStakeholderViewer = this.auth.isStakeholderViewer();
+    const canUploadDocuments = this.auth.hasRole('Document Owner') || this.auth.hasRole('Department Admin');
+    const isDepartmentAdmin = this.auth.hasRole('Department Admin');
+    const isDocumentOwner = this.auth.hasRole('Document Owner');
+    const isComplianceOfficer = this.auth.hasRole('Compliance Officer');
+
+    switch (topicId) {
+      case 'login-otp':
+      case 'dashboard':
+        return true;
+      case 'institution-requests':
+        return !isDepartmentAdmin && !isDocumentOwner;
+      case 'document-upload':
+        return canUploadDocuments;
+      case 'compliance-status':
+        return !isStakeholderViewer;
+      case 'reports':
+      case 'audit-log':
+      case 'timer-settings':
+      case 'backup-restore':
+      case 'document-validity':
+        return false;
+      case 'user-role-management':
+        return isDepartmentAdmin || isComplianceOfficer;
+      case 'institutions':
+      case 'department-requests':
+        return isDepartmentAdmin;
+      default:
+        return isDocumentOwner || isDepartmentAdmin || isComplianceOfficer || !isStakeholderViewer;
+    }
+  }
 
   ngOnInit(): void {
     this.route.fragment.subscribe((fragment) => {
       this.pendingFragment = fragment ?? null;
-      if (this.pendingFragment && !this.isTopicAccessible(this.pendingFragment)) {
-        this.pendingFragment = null;
-        window.scrollTo({ top: 0, behavior: 'auto' });
-        return;
-      }
       this.scrollToPendingFragment();
     });
   }
@@ -57,34 +104,8 @@ export class HelpComponent implements OnInit, AfterViewChecked {
     this.scrollToPendingFragment();
   }
 
-  private normalizeRole(role: string): string {
-    return role.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
-  }
-
-  private canAccessTopic(topic: HelpTopic): boolean {
-    const allowedRoles = topic.roles.map(role => this.normalizeRole(role));
-    const userRoles = this.auth.getUserRoles().map(role => this.normalizeRole(role));
-
-    if (allowedRoles.some(role => userRoles.includes(role))) {
-      return true;
-    }
-
-    return this.auth.isSuperAdmin() && allowedRoles.includes(this.normalizeRole('Super Admin'));
-  }
-
-  private isTopicAccessible(topicId: string): boolean {
-    const topic = this.topics.find(item => item.id === topicId);
-    return !!topic && this.canAccessTopic(topic);
-  }
-
   private scrollToPendingFragment(): void {
     if (!this.pendingFragment) {
-      return;
-    }
-
-    if (!this.isTopicAccessible(this.pendingFragment)) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      this.pendingFragment = null;
       return;
     }
 
@@ -104,15 +125,15 @@ export class HelpComponent implements OnInit, AfterViewChecked {
   }
 
   matchesTopic(topicId: string): boolean {
-    const topic = this.topics.find(item => item.id === topicId);
-    if (!topic || !this.canAccessTopic(topic)) {
+    if (!this.isTopicVisible(topicId)) {
       return false;
     }
 
     const query = this.searchQuery().trim().toLowerCase();
     if (!query) return true;
 
-    return `${topic.title} ${topic.keywords}`.toLowerCase().includes(query);
+    const topic = this.topics.find(item => item.id === topicId);
+    return !!topic && `${topic.title} ${topic.keywords}`.toLowerCase().includes(query);
   }
 
   searchHelp(): void {
@@ -121,7 +142,7 @@ export class HelpComponent implements OnInit, AfterViewChecked {
 
     if (!query) return;
 
-    const firstMatch = this.visibleTopics().find(topic => this.matchesTopic(topic.id));
+    const firstMatch = this.getVisibleTopics().find(topic => this.matchesTopic(topic.id));
     if (firstMatch) {
       this.pendingFragment = firstMatch.id;
       this.scrollToPendingFragment();

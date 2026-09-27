@@ -3,12 +3,10 @@ import { CanActivateFn, Router } from '@angular/router';
 import { InstitutionAuthService } from './institution-auth';
 
 /**
- * Guards all institution portal routes.
- * Checks that a valid, non-expired institution session exists.
- * Redirects to expired screen if not authenticated.
+ * Guards the signed-in institution portal pages: a valid, unexpired institution session must exist,
+ * otherwise the institution sees the "signed out" page.
  *
- * This guard is COMPLETELY separate from the internal user AuthGuard.
- * It only reads from sessionStorage under the institution_session key.
+ * This guard is separate from the internal user AuthGuard; it only reads the institution session.
  */
 export const institutionAuthGuard: CanActivateFn = () => {
   const authService = inject(InstitutionAuthService);
@@ -18,9 +16,11 @@ export const institutionAuthGuard: CanActivateFn = () => {
     return true;
   }
 
-  // Session missing or expired — redirect to expired screen
-  router.navigate(['/institution/auth/expired']);
-  return false;
+  // Signed out or timed out: explain that, and let them email themselves a new link.
+  const institutionId = authService.getLastInstitutionId();
+  return router.createUrlTree(['/institution/auth/expired'], {
+    queryParams: { reason: 'session', ...(institutionId ? { institution: institutionId } : {}) },
+  });
 };
 
 /**

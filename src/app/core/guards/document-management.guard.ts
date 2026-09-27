@@ -12,5 +12,5 @@ export const documentManagementGuard: CanActivateFn = () => {
 
   return auth.hasRole('Document Management') || auth.isSuperAdmin()
     ? true
-    : router.createUrlTree(['/auth/login']);
+    : router.createUrlTree([auth.getDefaultAppPath()]);
 };

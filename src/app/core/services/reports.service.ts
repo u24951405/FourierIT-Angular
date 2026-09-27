@@ -137,6 +137,91 @@ export interface OutstandingComplianceReportRow {
   outstandingRequirements: string[];
 }
 
+/** A document owner the per-owner reports (history, activity, certificate) can be run for. */
+export interface ReportOwnerOption {
+  userId: string;
+  name: string;
+  entityType: string;
+  overallStatus: string;
+}
+
+export type RiskRatingLevel = 'Critical' | 'High' | 'Medium' | 'Low' | 'Not assessed';
+
+export interface RiskRatingProfile {
+  userId: string;
+  name: string;
+  entityType: string;
+  riskLevel: RiskRatingLevel;
+  riskScore: number | null;
+  compliancePercentage: number | null;
+  overallStatus: string;
+  isPep: boolean;
+  /** Why the owner is at this level, e.g. "2 expired documents". */
+  factors: string[];
+  lastChecked: string | null;
+}
+
+export interface RiskRatingReport {
+  reportId: string;
+  dateGenerated: string;
+  totalProfiles: number;
+  assessedProfiles: number;
+  averageRiskScore: number;
+  pepCount: number;
+  strata: { level: RiskRatingLevel; profiles: RiskRatingProfile[] }[];
+}
+
+export interface SystemAuditEvent {
+  timestamp: string;
+  action: string;
+  description: string;
+  requestId: number | null;
+  needsAttention: boolean;
+}
+
+export interface SystemAuditInstitution {
+  institutionId: number;
+  institutionName: string;
+  requests: number;
+  approved: number;
+  denied: number;
+  waiting: number;
+  cancelled: number;
+  downloads: number;
+  flags: number;
+  needsAttention: number;
+  events: SystemAuditEvent[];
+}
+
+export interface SystemAuditReport {
+  reportId: string;
+  dateGenerated: string;
+  periodFrom: string;
+  periodTo: string;
+  totalEvents: number;
+  totalRequests: number;
+  totalDownloads: number;
+  totalNeedingAttention: number;
+  institutions: SystemAuditInstitution[];
+}
+
+export interface ComplianceCertificate {
+  certificateId: string;
+  dateGenerated: string;
+  ownerName: string;
+  entityType: string;
+  identification: string;
+  isCompliant: boolean;
+  overallStatus: string;
+  compliancePercentage: number;
+  riskLevel: string;
+  lastChecked: string | null;
+  validUntil: string | null;
+  issues: string[];
+  documents: { typeName: string; fileName: string; status: string; expiryDate: string }[];
+  verificationHash: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportsService {
   private http = inject(HttpClient);
@@ -212,7 +297,7 @@ export class ReportsService {
     sortDirection: SortDirection = 'desc'
   ): Observable<InstitutionAccessHistoryReportRow[]> {
     return this.http.get<InstitutionAccessHistoryReportRow[]>(`${this.base}/institution-access-history`, {
-      params: this.withSorting(this.buildParams(filters, { status: filters.requestStatus }), sortBy, sortDirection),
+      params: this.withSorting(this.buildParams(filters, {}), sortBy, sortDirection),
     });
   }
 
@@ -257,5 +342,24 @@ export class ReportsService {
     return params
       .set('sortBy', sortBy)
       .set('sortDirection', sortDirection);
+  }
+
+  getDocumentOwners(): Observable<ReportOwnerOption[]> {
+    return this.http.get<ReportOwnerOption[]>(`${this.base}/document-owners`);
+  }
+
+  getClientRiskRating(): Observable<RiskRatingReport> {
+    return this.http.get<RiskRatingReport>(`${this.base}/client-risk-rating`);
+  }
+
+  getSystemAudit(from?: string, to?: string): Observable<SystemAuditReport> {
+    let params = new HttpParams();
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<SystemAuditReport>(`${this.base}/system-audit`, { params });
+  }
+
+  getComplianceCertificate(userId: string): Observable<ComplianceCertificate> {
+    return this.http.get<ComplianceCertificate>(`${this.base}/compliance-certificate/${encodeURIComponent(userId)}`);
   }
 }

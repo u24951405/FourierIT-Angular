@@ -26,6 +26,7 @@ export class DocumentHierarchyTreeComponent implements OnInit {
   @Output() entityTypeSelected = new EventEmitter<EntityTypeHierarchyDto>();
   @Output() documentTypeSelected = new EventEmitter<DocumentTypeHierarchyDto>();
   @Output() documentDetailsRequested = new EventEmitter<number>();
+  @Output() documentDeleteRequested = new EventEmitter<DocumentItemDto>();
 
   hierarchy: EntityTypeHierarchyDto[] = [];
   searchResults: SearchResultDto[] = [];
@@ -56,6 +57,8 @@ export class DocumentHierarchyTreeComponent implements OnInit {
       .pipe(finalize(() => {
         console.log('[loadHierarchy] Finalize - setting isLoading to false');
         this.isLoading = false;
+        // This tree sits inside OnPush pages (e.g. All Documents), so every async change must ask for a redraw.
+        this.cdr.markForCheck();
       }))
       .subscribe({
         next: (data) => {
@@ -84,10 +87,14 @@ export class DocumentHierarchyTreeComponent implements OnInit {
 
     this.isSearching = true;
     this.hierarchyService.searchDocuments(this.searchQuery)
-      .pipe(finalize(() => { this.isSearching = false; }))
+      .pipe(finalize(() => {
+        this.isSearching = false;
+        this.cdr.markForCheck();
+      }))
       .subscribe({
         next: (results) => {
           this.searchResults = results;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error searching documents:', error);
@@ -192,5 +199,12 @@ export class DocumentHierarchyTreeComponent implements OnInit {
 
   openDocumentDetails(doc: DocumentItemDto): void {
     this.documentDetailsRequested.emit(doc.documentId);
+  }
+
+  deleteDocument(doc: DocumentItemDto, event: Event): void {
+    event.stopPropagation();
+    if (doc.userCanDelete) {
+      this.documentDeleteRequested.emit(doc);
+    }
   }
 }

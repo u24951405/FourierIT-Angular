@@ -5,6 +5,7 @@ import {
   OnDestroy,
   ViewChild,
   ElementRef,
+  NgZone,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -45,6 +46,8 @@ interface DashboardStats {
 
 interface StatCard {
   key: string;
+  /** Where clicking the card goes, or null when this role has no page for it. */
+  link: string | null;
   value: string | number;
   label: string;
   sublabel: string;
@@ -70,6 +73,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
   private complianceService = inject(ComplianceService);
+  // Chart.js animates and watches its size constantly; running that outside Angular stops every
+  // animation frame and resize from triggering a redraw of the whole app.
+  private zone = inject(NgZone);
   private routeDataSubscription?: Subscription;
 
   today = new Date().toLocaleDateString('en-ZA', {
@@ -137,12 +143,14 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private renderDashboardCharts(): void {
-    this.charts.forEach(chart => chart.destroy());
-    this.charts = [];
+    this.zone.runOutsideAngular(() => {
+      this.charts.forEach(chart => chart.destroy());
+      this.charts = [];
 
-    this.buildVerificationChart();
-    this.buildCategoryChart();
-    this.buildRiskChart();
+      this.buildVerificationChart();
+      this.buildCategoryChart();
+      this.buildRiskChart();
+    });
   }
 
   // ── Verification Status Doughnut ──────────────────────────────────────────
@@ -176,6 +184,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
           legend: {
@@ -224,6 +233,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
           legend: {
@@ -272,6 +282,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         cutout: '68%',
         plugins: {
           legend: {
@@ -333,6 +344,9 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
                   },
                   error: () => this.handleDashboardError('Unable to load dashboard. Please refresh the page.')
                 });
+              } else if (this.auth.hasRole('Department Admin') && !this.auth.isSuperAdmin()) {
+                // Department Admins only see their own department's figures.
+                this.handleDashboardError('You are not assigned to a department yet. Ask the Super Admin to assign you to one.');
               } else {
                 this.handleDashboardError('Unable to load system dashboard.');
               }
@@ -400,6 +414,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return [
       {
         key: 'users',
+        link: this.cardLink('users'),
         value: dashboard.totalUsers,
         label: this.dashboardScope === 'department' ? 'Department Members' : 'Total Users',
         sublabel: this.dashboardScope === 'department' ? 'Members in your department' : 'Active users in system',
@@ -409,6 +424,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'compliant',
+        link: this.cardLink('compliant'),
         value: dashboard.compliantUsers,
         label: 'Compliant Users',
         sublabel: 'Full compliance achieved',
@@ -418,6 +434,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'noncompliant',
+        link: this.cardLink('noncompliant'),
         value: dashboard.nonCompliantUsers,
         label: 'Non-Compliant Users',
         sublabel: 'Immediate remediation needed',
@@ -427,6 +444,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'review',
+        link: this.cardLink('review'),
         value: dashboard.reviewRequiredUsers,
         label: 'Review Required',
         sublabel: 'Awaiting compliance review',
@@ -436,6 +454,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'alerts',
+        link: this.cardLink('alerts'),
         value: dashboard.totalOpenAlerts,
         label: 'Open Alerts',
         sublabel: 'Outstanding compliance actions',
@@ -445,6 +464,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'complianceRate',
+        link: this.cardLink('complianceRate'),
         value: `${dashboard.overallCompliancePercentage?.toFixed(1) ?? 0}%`,
         label: 'Compliance Rate',
         sublabel: 'Across current scope',
@@ -465,7 +485,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       dashboard.nonCompliantUsers,
       dashboard.pendingUsers ?? 0,
     ];
-    chart.update();
+    this.zone.runOutsideAngular(() => chart.update());
   }
 
   private updateCategoryChart(dashboard: ComplianceDashboard): void {
@@ -478,7 +498,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       dashboard.highRiskUsers,
       dashboard.mediumRiskUsers ?? 0,
     ];
-    chart.update();
+    this.zone.runOutsideAngular(() => chart.update());
   }
 
   private updateRiskChart(dashboard: ComplianceDashboard): void {
@@ -497,14 +517,20 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
 
     try {
-      chart.update();
+      this.zone.runOutsideAngular(() => chart.update());
     } catch (err) {
       // Guard against Chart.js errors when element detached
       console.warn('Skipped updating risk chart due to detached canvas or Chart error.', err);
     }
   }
 
+  /** Stakeholders and Compliance Officers don't upload documents, so they have no personal compliance to show. */
+  get showPersonalCompliance(): boolean {
+    return this.auth.canUploadDocuments() || this.auth.isSuperAdmin();
+  }
+
   private loadComplianceData(): void {
+    if (!this.showPersonalCompliance) return;
     this.complianceLoading = true;
     this.complianceError = '';
 
@@ -656,7 +682,42 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return summary as ComplianceUserSummary;
   }
 
-  navigate(path: string): void {
-    this.router.navigateByUrl(path);
+  /** Reports are Super Admin only. */
+  get canOpenReports(): boolean {
+    return this.auth.isSuperAdmin();
+  }
+
+  /** The users list: the Super Admin, Admins and Stakeholders (read-only) can open it. */
+  private get canOpenUsers(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.hasRole('Admin') || this.auth.isStakeholderViewer();
+  }
+
+  /** The review queue: the Super Admin, Admins and Compliance Officers. */
+  private get canOpenReviewQueue(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.hasRole('Admin') || this.auth.hasRole('Compliance Officer');
+  }
+
+  /**
+   * Each card opens the page that explains its number, if this role may open that page.
+   * Cards without a page for this role stay plain tiles instead of looking clickable and doing nothing.
+   */
+  private cardLink(key: string): string | null {
+    const report = this.canOpenReports ? '/reports/compliance' : null;
+    switch (key) {
+      case 'users':
+        return this.canOpenUsers ? '/users/all' : report;
+      case 'review':
+        return this.canOpenReviewQueue ? '/compliance/review-queue' : report;
+      default:
+        return report;
+    }
+  }
+
+  /** Chart cards: document and compliance breakdowns open the compliance report; risk opens the risk rating report. */
+  readonly complianceChartLink = (): string | null => this.canOpenReports ? '/reports/compliance' : null;
+  readonly riskChartLink = (): string | null => this.canOpenReports ? '/reports/client-risk-rating' : null;
+
+  navigate(path: string | null): void {
+    if (path) this.router.navigateByUrl(path);
   }
 }

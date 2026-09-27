@@ -16,6 +16,10 @@ import { ToastService } from '../../../core/services/toast.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UploadDocumentComponent implements OnInit {
+  /** Certification dates can't be in the future. */
+  // Local date (not UTC), so the latest date the picker allows is today where the user is.
+  readonly today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
   private docsApi = inject(DocumentsApiService);
@@ -78,6 +82,14 @@ export class UploadDocumentComponent implements OnInit {
       return;
     }
 
+    // The date picker stops future dates, but a typed-in date gets past it.
+    if (values.certificationDate && values.certificationDate > this.today) {
+      const message = "The certification date can't be in the future.";
+      this.error.set(message);
+      this.toast.show(message, 'error');
+      return;
+    }
+
     this.submitting.set(true);
     this.error.set(null);
 
@@ -97,11 +109,13 @@ export class UploadDocumentComponent implements OnInit {
           this.loadDocumentContext();
         },
         error: err => {
+          const traceId = err?.error?.traceId;
           const message = typeof err?.error === 'string'
             ? err.error
             : err?.error?.message ?? err?.error?.error ?? err?.error?.title ?? 'Upload failed.';
-          this.error.set(message);
-          this.toast.show(message, 'error');
+          const messageWithReference = traceId ? `${message} Reference: ${traceId}` : message;
+          this.error.set(messageWithReference);
+          this.toast.show(messageWithReference, 'error');
         }
       });
   }
