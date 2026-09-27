@@ -7,12 +7,19 @@
     </div>
 
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="openCreateModal()">
+      <button class="btn btn-primary" (click)="openCreateModal()" [disabled]="backupRunning">
         <span class="btn-icon">💾</span>
-        Create Backup Now
+        {{ backupRunning ? 'Backup running…' : 'Create Backup Now' }}
       </button>
     </div>
   </header>
+
+  <div *ngIf="backupRunning" class="banner banner--progress" role="status">
+    <div class="spinner spinner--small"></div>
+    <div>
+      <p>Backing up the database and uploading it. You can keep working; this message updates when it's done.</p>
+    </div>
+  </div>
 
   <div *ngIf="showSuccessBanner" class="banner banner--success">
     <div class="banner-icon">✅</div>

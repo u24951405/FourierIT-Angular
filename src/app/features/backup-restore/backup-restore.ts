@@ -1,8 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Subscription, switchMap, takeWhile, timer } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { BackupService } from '../../core/services/backup';
 import { AuthService } from '../../core/services/auth.service';
-import { Backup, BackupResponse } from '../../core/models/backup';
+import { Backup, BackupJob } from '../../core/models/backup';
 
 @Component({
   selector: 'app-backup-restore',
@@ -11,7 +12,7 @@ import { Backup, BackupResponse } from '../../core/models/backup';
   templateUrl: './backup-restore.html',
   styleUrls: ['./backup-restore.css']
 })
-export class BackupRestoreComponent implements OnInit {
+export class BackupRestoreComponent implements OnInit, OnDestroy {
   private backupService = inject(BackupService);
   private auth = inject(AuthService);
 
@@ -21,6 +22,9 @@ export class BackupRestoreComponent implements OnInit {
   successMessage = '';
   backupFilePath = '';
   showBackingUpModal = false;
+  /** A backup is running in the background; the page keeps working meanwhile. */
+  backupRunning = false;
+  private statusPolling?: Subscription;
 
   // Modal Visibility States
   showCreateModal = false;
@@ -35,6 +39,48 @@ export class BackupRestoreComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadBackupHistory();
+    // If a backup is still running (e.g. started before a refresh), pick up where it is.
+    this.backupService.getBackupStatus().subscribe({
+      next: job => { if (job?.status === 'Running') this.followBackup(); },
+      error: () => { /* the status is a nicety; the page works without it */ },
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.statusPolling?.unsubscribe();
+  }
+
+  /** Checks the running backup every 2 seconds until it finishes, then reports how it went. */
+  private followBackup(): void {
+    this.backupRunning = true;
+    this.statusPolling?.unsubscribe();
+    this.statusPolling = timer(2000, 2000).pipe(
+      switchMap(() => this.backupService.getBackupStatus()),
+      takeWhile(job => job?.status === 'Running', true),
+    ).subscribe({
+      next: job => { if (job && job.status !== 'Running') this.backupFinished(job); },
+      error: () => {
+        this.backupRunning = false;
+        this.errorMessage = 'Lost track of the backup. Refresh the page to see whether it finished.';
+        this.showErrorBanner = true;
+      },
+    });
+  }
+
+  private backupFinished(job: BackupJob): void {
+    this.backupRunning = false;
+    const result = job.result;
+    if (job.status === 'Succeeded') {
+      this.successMessage = result?.statusMessage || 'Backup created successfully.';
+      this.backupFilePath = '';
+      this.showSuccessBanner = true;
+      this.showErrorBanner = false;
+      this.loadBackupHistory();
+    } else {
+      this.errorMessage = result?.statusMessage || 'The backup failed.';
+      this.showErrorBanner = true;
+      this.showSuccessBanner = false;
+    }
   }
 
   loadBackupHistory(): void {
@@ -64,30 +110,24 @@ export class BackupRestoreComponent implements OnInit {
 
   proceedWithBackup(): void {
     this.closeCreateModal();
-    this.showBackingUpModal = true;
+    this.showSuccessBanner = false;
+    this.showErrorBanner = false;
     const currentUser = this.auth.currentUser();
     const request = {
       userId: currentUser?.id ?? '',
       isManualBackup: true
     };
+    // The backup runs in the background; the page follows it instead of waiting on the request.
     this.backupService.createBackup(request).subscribe({
-      next: (result: BackupResponse) => {
-        this.showBackingUpModal = false;
-        this.showSuccessBanner = true;
-        this.showErrorBanner = false;
-        const message = result.statusMessage || 'Backup created successfully.';
-        this.successMessage = message;
-        this.backupFilePath = result.filePath || '';
-        this.loadBackupHistory();
-      },
+      next: () => this.followBackup(),
       error: (err) => {
-        console.error('Error initiating backup', err);
-        this.showBackingUpModal = false;
-        // A failed backup returns 400 with the backup result, whose reason is in statusMessage.
-        const message = err?.error?.statusMessage || err?.error?.message || err?.error?.error || err?.error?.title || 'Backup initiation failed. Please try again.';
-        this.errorMessage = message;
+        if (err?.status === 409) {
+          this.followBackup(); // one is already running: follow that one
+          return;
+        }
+        console.error('Error starting backup', err);
+        this.errorMessage = err?.error?.error || err?.error?.message || err?.error?.title || 'The backup could not be started. Please try again.';
         this.showErrorBanner = true;
-        this.showSuccessBanner = false;
       }
     });
   }
