@@ -1,7 +1,9 @@
 <div class="compliance-page-header">
   <div class="compliance-page-header__left">
     <h1 class="compliance-page-header__title">Compliance History Report</h1>
-    <p class="compliance-page-header__subtitle">Full FICA/KYC compliance record since platform launch</p>
+    <p class="compliance-page-header__subtitle">
+      {{ selectedOwner ? 'Compliance record for ' + selectedOwner.name : scope === 'department' ? 'Compliance record for your department' : 'Your FICA/KYC compliance record since your first compliance check' }}
+    </p>
   </div>
   <div class="compliance-page-header__actions">
     <button class="rf-action-btn rf-action-btn--outline" type="button" (click)="viewCertificate()">
@@ -23,145 +25,122 @@
 </div>
 
 <div class="compliance-content">
+  @if (showOwnerPicker) {
+    <app-owner-picker (ownerChange)="onOwnerChange($event)" />
+  }
 
-  <!-- ── Uptime Ledger ──────────────────────────────────────────────────────── -->
-  <div class="uptime-card">
-    <div class="uptime-card__header">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-      <div>
-        <p class="uptime-card__title">Cumulative Compliance Uptime Ledger</p>
-        <p class="uptime-card__subtitle">Since launch · {{ data.launchDate }} — {{ data.presentDate }}</p>
+  @if (isLoading) {
+    <p class="compliance-empty">Loading the compliance record…</p>
+  } @else if (!ledger.hasHistory) {
+    <p class="compliance-empty">No compliance checks have been recorded yet{{ scope === 'department' ? ' for this department' : '' }}.</p>
+  } @else {
+    <!-- ── Time in each status ─────────────────────────────────────────────── -->
+    <div class="uptime-card">
+      <div class="uptime-card__header">
+        <div>
+          <p class="uptime-card__title">Time in each compliance status</p>
+          <p class="uptime-card__subtitle">Since the first check on {{ ledger.firstRecorded }} · {{ ledger.trackedDays }} day{{ ledger.trackedDays === 1 ? '' : 's' }} tracked</p>
+        </div>
+      </div>
+
+      <div class="uptime-pct-row">
+        <div>
+          <span class="uptime-pct">{{ ledger.compliantShare }}%</span>
+          <span class="uptime-pct-label">of the time compliant</span>
+        </div>
+        <div class="uptime-dates">
+          <p>Non-compliant: {{ ledger.nonCompliantShare }}% of the time</p>
+          <p>Pending or under review: {{ ledger.otherShare }}% of the time</p>
+        </div>
+      </div>
+
+      <!-- Each block's width is how long that status lasted. -->
+      <div class="uptime-timeline" role="img" aria-label="Compliance status over time">
+        @for (seg of ledger.segments; track $index) {
+          <div class="uptime-timeline__seg" [ngClass]="'uptime-timeline__seg--' + seg.kind" [style.flex-basis.%]="seg.widthPct" [title]="seg.title"></div>
+        }
+      </div>
+
+      <div class="uptime-legend">
+        <span class="uptime-legend__item"><span class="uptime-legend__dot uptime-legend__dot--green"></span>Compliant</span>
+        <span class="uptime-legend__item"><span class="uptime-legend__dot uptime-legend__dot--red"></span>Non-compliant</span>
+        <span class="uptime-legend__item"><span class="uptime-legend__dot uptime-legend__dot--amber"></span>Pending or under review</span>
       </div>
     </div>
 
-    <div class="uptime-pct-row">
-      <div>
-        <span class="uptime-pct">{{ data.uptimePercentage }}%</span>
-        <span class="uptime-pct-label">{{ data.compliantDays }} live compliant entries out of {{ data.totalDays }} total records</span>
+    <!-- ── Where things stand ──────────────────────────────────────────────── -->
+    <div class="compliance-stats">
+      <div class="compliance-stat" [ngClass]="ledger.currentKind === 'compliant' ? 'compliance-stat--green' : ledger.currentKind === 'noncompliant' ? 'compliance-stat--red' : 'compliance-stat--amber'">
+        <span class="compliance-stat__value">{{ ledger.currentStatus || '—' }}</span>
+        <span class="compliance-stat__label">Current status</span>
       </div>
-      <div class="uptime-dates">
-        <p>First update: {{ data.launchDate }}</p>
-        <p>Latest update: {{ data.presentDate }}</p>
-        <p class="uptime-dates__noncompliant">{{ data.nonCompliantDays }} non-compliant records</p>
+      <div class="compliance-stat compliance-stat--neutral">
+        <span class="compliance-stat__value">{{ ledger.currentPercentage }}%</span>
+        <span class="compliance-stat__label">Current compliance (required documents in place)</span>
       </div>
-    </div>
-
-    <!-- Timeline bar -->
-    <div class="uptime-timeline">
-      <ng-container *ngFor="let seg of timelineSegments">
-        <div
-          class="uptime-timeline__seg"
-          [class.uptime-timeline__seg--compliant]="seg.isCompliant"
-          [class.uptime-timeline__seg--gap]="!seg.isCompliant"
-          [style.flex]="seg.widthPct"
-        ></div>
-      </ng-container>
-    </div>
-
-    <div class="uptime-legend">
-      <span class="uptime-legend__item">
-        <span class="uptime-legend__dot uptime-legend__dot--green"></span>
-        Compliant
-      </span>
-      <span class="uptime-legend__item">
-        <span class="uptime-legend__dot uptime-legend__dot--red"></span>
-        Non-compliant period
-      </span>
-      <span class="uptime-legend__item uptime-legend__item--boundary">| Year boundary</span>
-    </div>
-  </div>
-
-  <!-- ── Stats Strip ────────────────────────────────────────────────────────── -->
-  <div class="compliance-stats">
-    <div class="compliance-stat compliance-stat--green">
-      <span class="compliance-stat__value">{{ data.compliantDays | number }}</span>
-      <span class="compliance-stat__label">Compliant Records</span>
-    </div>
-    <div class="compliance-stat compliance-stat--red">
-      <span class="compliance-stat__value">{{ data.nonCompliantDays }}</span>
-      <span class="compliance-stat__label">Non-Compliant Records</span>
-    </div>
-    <div class="compliance-stat compliance-stat--amber">
-      <span class="compliance-stat__value">{{ data.incidentCount }}</span>
-      <span class="compliance-stat__label">Open Alerts</span>
-    </div>
-    <div class="compliance-stat compliance-stat--neutral">
-      <span class="compliance-stat__value">{{ data.uptimePercentage }}%</span>
-      <span class="compliance-stat__label">Compliance %</span>
-    </div>
-  </div>
-
-  <div class="transition-card" *ngIf="!isLoading && (historyItems.length || alerts.length)">
-    <div class="transition-card__header">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-      <div>
-        <p class="transition-card__title">Latest Compliance Activity</p>
-        <p class="transition-card__subtitle">Real history and alerts from the compliance API</p>
+      <div class="compliance-stat compliance-stat--neutral">
+        <span class="compliance-stat__value">{{ ledger.statusChanges }}</span>
+        <span class="compliance-stat__label">Status changes</span>
+      </div>
+      <div class="compliance-stat" [ngClass]="ledger.openAlerts ? 'compliance-stat--amber' : 'compliance-stat--neutral'">
+        <span class="compliance-stat__value">{{ ledger.openAlerts }}</span>
+        <span class="compliance-stat__label">Open alerts</span>
       </div>
     </div>
 
-    <div *ngIf="alerts.length" style="margin-bottom: 1rem;">
-      <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">Open Alerts</h4>
-      <ul style="margin: 0; padding-left: 1rem;">
-        <li *ngFor="let alert of alerts.slice(0, 5)">
-          <strong>{{ alert.alertType || 'Compliance alert' }}</strong> — {{ alert.message }}
-        </li>
-      </ul>
-    </div>
+    @if (alerts.length) {
+      <div class="transition-card">
+        <div class="transition-card__header">
+          <div>
+            <p class="transition-card__title">Open alerts</p>
+            <p class="transition-card__subtitle">What still needs attention</p>
+          </div>
+        </div>
+        <ul class="compliance-alerts">
+          @for (alert of alerts.slice(0, 10); track $index) {
+            <li><strong>{{ alert.alertType || 'Compliance alert' }}</strong> — {{ alert.message }}</li>
+          }
+        </ul>
+      </div>
+    }
 
-    <div *ngIf="historyItems.length">
-      <h4 style="margin: 0 0 0.5rem; font-size: 0.95rem;">Recent History</h4>
-      <ul style="margin: 0; padding-left: 1rem;">
-        <li *ngFor="let item of historyItems.slice(0, 8)">
-          <strong>{{ item.status }}</strong> — {{ item.changeReason }} ({{ item.compliancePercentage }}%)
-        </li>
-      </ul>
-    </div>
-  </div>
+    <!-- ── Every change, newest first ──────────────────────────────────────── -->
+    <div class="transition-card">
+      <div class="transition-card__header">
+        <div>
+          <p class="transition-card__title">Status changes</p>
+          <p class="transition-card__subtitle">Every compliance check result, newest first</p>
+        </div>
+      </div>
 
-  <!-- ── State Changes Table ────────────────────────────────────────────────── -->
-  <div class="transition-card">
-    <div class="transition-card__header">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        <line x1="12" y1="9" x2="12" y2="13"></line>
-        <line x1="12" y1="17" x2="12.01" y2="17"></line>
-      </svg>
-      <div>
-        <p class="transition-card__title">Live Compliance History</p>
-        <p class="transition-card__subtitle">Recent compliance updates loaded directly from the backend</p>
+      <div class="transition-table-wrap">
+        <table class="transition-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Change</th>
+              <th>Compliance %</th>
+              <th>Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (change of ledger.changes; track $index) {
+              <tr>
+                <td class="transition-table__date">{{ change.changedAt | date:'d MMM y, HH:mm' }}</td>
+                <td>
+                  @if (change.previous && change.previous !== change.status) {
+                    <span class="transition-table__dash">{{ change.previous }} → </span>
+                  }
+                  <span class="state-badge" [ngClass]="'state-badge--' + change.kind">{{ change.status }}</span>
+                </td>
+                <td>{{ change.compliancePercentage }}%</td>
+                <td class="transition-table__event">{{ change.reason }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
       </div>
     </div>
-
-    <table class="transition-table">
-      <thead>
-        <tr>
-          <th>Updated</th>
-          <th>Status</th>
-          <th>Compliance %</th>
-          <th>Reason</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of historyItems.slice(0, 8)">
-          <td class="transition-table__date">{{ item.changedAt | date:'mediumDate' }}</td>
-          <td>
-            <span class="state-badge" [class.state-badge--compliant]="!item.status.toLowerCase().includes('non') && !item.status.toLowerCase().includes('review')" [class.state-badge--noncompliant]="item.status.toLowerCase().includes('non') || item.status.toLowerCase().includes('review')">
-              {{ item.status }}
-            </span>
-          </td>
-          <td>{{ item.compliancePercentage }}%</td>
-          <td class="transition-table__event">{{ item.changeReason || 'No reason provided' }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  }
 
 </div>

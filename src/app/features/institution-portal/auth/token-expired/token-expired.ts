@@ -4,7 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { InstitutionAuthService } from '../institution-auth';
 
-type LinkProblem = 'expired' | 'used' | 'revoked' | 'missing' | 'invalid' | 'sent';
+type LinkProblem = 'expired' | 'used' | 'revoked' | 'missing' | 'invalid' | 'sent' | 'session';
 
 interface LinkProblemCopy {
   title: string;
@@ -38,6 +38,11 @@ const COPY: Readonly<Record<LinkProblem, LinkProblemCopy>> = {
     title: 'This access link isn’t valid',
     description: 'Make sure you opened the full link from your invitation email. If it still doesn’t work, ask your DocuVault administrator for a new invitation.',
     canRequestNewLink: false
+  },
+  session: {
+    title: 'You’re signed out',
+    description: 'Your portal session ended, either because you signed out or because it timed out. To sign in again, have a new access link emailed to your institution’s registered address.',
+    canRequestNewLink: true
   },
   sent: {
     title: 'Check your email',
@@ -108,7 +113,7 @@ export class TokenExpiredComponent implements OnDestroy {
   }
 
   private toProblem(reason: string | null): LinkProblem {
-    return reason === 'expired' || reason === 'used' || reason === 'revoked' || reason === 'missing' || reason === 'sent'
+    return reason === 'expired' || reason === 'used' || reason === 'revoked' || reason === 'missing' || reason === 'sent' || reason === 'session'
       ? reason
       : 'invalid';
   }

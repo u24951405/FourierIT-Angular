@@ -273,3 +273,46 @@ $green: #10b981;
   .cert-wrapper { background: none; padding: 0; }
   .cert-document { max-width: 100%; }
 }
+
+// ── Live data states ──
+.cert-state { max-width: 760px; margin: 1rem auto; font-size: 0.875rem; color: $text-sub; }
+.cert-state--error { color: #b91c1c; }
+
+// A statement for an owner who is not compliant: red instead of the green certificate styling.
+.cert-document--not-compliant {
+  .cert-score { border-color: #ef4444; }
+  .cert-score__value, .cert-score__status { color: #ef4444; }
+}
+.cert-header__verified--no { color: #ef4444; }
+
+.cert-issues {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.2rem;
+  font-size: 0.8125rem;
+  color: #991b1b;
+
+  li { margin: 0.2rem 0; }
+}
+
+.cert-docs {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+
+  th {
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid $border;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-align: left;
+    text-transform: uppercase;
+    color: $text-sub;
+  }
+
+  td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #f3f4f6; color: $text-primary; }
+
+  &__file { display: block; font-size: 0.7rem; color: $text-muted; }
+}
+
+.rf-action-btn:disabled { opacity: 0.5; cursor: default; }

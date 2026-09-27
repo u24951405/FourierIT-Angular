@@ -2,36 +2,47 @@
   [config]="frameConfig"
   [pdfUrl]="pdfUrl"
   title="Document Activity Report"
-  subtitle="Full vault activity and document inventory for James Fourier"
+  [subtitle]="'Vault activity and document inventory for ' + (data.documentOwner || 'the selected owner')"
 >
 
-  <!-- ── Report Title ──────────────────────────────────────────────────────── -->
-  <div class="act-title-block">
-    <p class="act-title-block__org">PERSONAL DOCUMENT VAULT</p>
-    <h2 class="act-title-block__title">Document Activity Report</h2>
-    <div class="act-title-block__divider">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"></circle>
-      </svg>
-    </div>
+  @if (showOwnerPicker) {
+    <app-owner-picker (ownerChange)="onOwnerChange($event)" />
+  }
 
-    <!-- Verified Identity Badge -->
-    <div class="act-identity-badge">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-      </svg>
-      <div>
-        <span class="act-identity-badge__title">Verified Digital Identity</span>
-        <span class="act-identity-badge__sub">FICA & KYC Compliant · {{ data.documentOwner }} · {{ data.ownerId }}</span>
-      </div>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.5">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-      </svg>
+  <!-- ── Who the report is about ─────────────────────────────────────────── -->
+  <header class="act-owner">
+    <div>
+      <p class="act-owner__eyebrow">Document owner</p>
+      <h2 class="act-owner__name">{{ data.documentOwner }}</h2>
     </div>
-  </div>
+    <span class="act-compliance" [ngClass]="complianceClass()">{{ complianceSummary() }}</span>
+  </header>
 
-  <!-- ── Document Overview ──────────────────────────────────────────────────── -->
+  <!-- ── At a glance ──────────────────────────────────────────────────────── -->
+  <section class="act-kpis" aria-label="At a glance">
+    <div class="act-kpi">
+      <span class="act-kpi__value">{{ data.totalDocuments }}</span>
+      <span class="act-kpi__label">Documents</span>
+    </div>
+    <div class="act-kpi act-kpi--good">
+      <span class="act-kpi__value">{{ data.activeDocuments }}</span>
+      <span class="act-kpi__label">Active</span>
+    </div>
+    <div class="act-kpi" [class.act-kpi--warn]="data.inactiveDocuments > 0">
+      <span class="act-kpi__value">{{ data.inactiveDocuments }}</span>
+      <span class="act-kpi__label">Not active</span>
+    </div>
+    <div class="act-kpi">
+      <span class="act-kpi__value">{{ data.vaultAccessLog.length }}</span>
+      <span class="act-kpi__label">Access events</span>
+    </div>
+    <div class="act-kpi">
+      <span class="act-kpi__value">{{ activeClientCount() }}</span>
+      <span class="act-kpi__label">Institutions with access</span>
+    </div>
+  </section>
+
+  <!-- ── Document overview ────────────────────────────────────────────────── -->
   <div class="report-section-divider">
     <div class="report-section-divider__line"></div>
     <span class="report-section-divider__label">DOCUMENT OVERVIEW</span>
@@ -39,195 +50,174 @@
   </div>
 
   <div class="act-overview-grid">
-
-    <!-- Total Documents Doughnut -->
-    <div class="chart-card">
-      <h3 class="chart-card__subtitle">Total Documents</h3>
-      <p class="chart-card__desc">Active vs inactive / expiring</p>
-      <div class="act-doughnut-wrap">
-        <canvas #totalDocsChart></canvas>
-      </div>
-      <div class="act-legend">
-        <div class="act-legend-item">
-          <span class="act-legend-dot" style="background:#10b981"></span>
-          <span class="act-legend-label">Active</span>
-          <span class="act-legend-count">{{ data.activeDocuments }} ({{ activePercent() }}%)</span>
+    <div class="act-card">
+      <h3 class="act-card__title">Active vs not active</h3>
+      <p class="act-card__desc">Active = verified and not expired. Not active = pending review, rejected or expired.</p>
+      <div class="act-card__body">
+        <div class="act-doughnut-wrap" [class.act-doughnut-wrap--empty]="!data.totalDocuments">
+          <canvas #totalDocsChart></canvas>
         </div>
-        <div class="act-legend-item">
-          <span class="act-legend-dot" style="background:#e5e7eb"></span>
-          <span class="act-legend-label">Inactive / Expiring</span>
-          <span class="act-legend-count">{{ data.inactiveDocuments }} ({{ 100 - activePercent() }}%)</span>
-        </div>
-        <div class="act-legend-item act-legend-item--total">
-          <span class="act-legend-label">Total</span>
-          <span class="act-legend-count">{{ data.totalDocuments }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Category Doughnut -->
-    <div class="chart-card">
-      <h3 class="chart-card__subtitle">Documents by Category</h3>
-      <p class="chart-card__desc">Five core FICA material categories</p>
-      <div class="act-doughnut-wrap">
-        <canvas #categoryChart></canvas>
-      </div>
-      <div class="act-legend">
-        <div class="act-legend-item" *ngFor="let d of data.distributionByCategory">
-          <span class="act-legend-dot" [style.background]="d.color"></span>
-          <span class="act-legend-label">{{ d.label }}</span>
-          <span class="act-legend-count">{{ d.count }}</span>
+        <div class="act-legend">
+          <div class="act-legend-item">
+            <span class="act-legend-dot" style="background:#10b981"></span>
+            <span class="act-legend-label">Active</span>
+            <span class="act-legend-count">{{ data.activeDocuments }} ({{ activePercent() }}%)</span>
+          </div>
+          <div class="act-legend-item">
+            <span class="act-legend-dot" style="background:#e5e7eb"></span>
+            <span class="act-legend-label">Not active</span>
+            <span class="act-legend-count">{{ data.inactiveDocuments }} ({{ inactivePercent() }}%)</span>
+          </div>
+          <div class="act-legend-item act-legend-item--total">
+            <span></span>
+            <span class="act-legend-label">Total</span>
+            <span class="act-legend-count">{{ data.totalDocuments }}</span>
+          </div>
         </div>
       </div>
     </div>
 
+    <div class="act-card">
+      <h3 class="act-card__title">Documents by type</h3>
+      <p class="act-card__desc">How many documents of each type are in the vault.</p>
+      <div class="act-card__body">
+        <div class="act-doughnut-wrap" [class.act-doughnut-wrap--empty]="!data.totalDocuments">
+          <canvas #categoryChart></canvas>
+        </div>
+        <div class="act-legend">
+          @for (d of data.distributionByCategory; track d.label) {
+            <div class="act-legend-item">
+              <span class="act-legend-dot" [style.background]="d.color"></span>
+              <span class="act-legend-label">{{ d.label }}</span>
+              <span class="act-legend-count">{{ d.count }}</span>
+            </div>
+          } @empty {
+            <p class="act-empty act-empty--inline">No documents yet.</p>
+          }
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- ── Uploaded Document Inventory ───────────────────────────────────────── -->
+  <!-- ── Inventory ────────────────────────────────────────────────────────── -->
   <div class="report-section-divider">
     <div class="report-section-divider__line"></div>
-    <span class="report-section-divider__label">UPLOADED DOCUMENT INVENTORY</span>
+    <span class="report-section-divider__label">DOCUMENT INVENTORY</span>
     <div class="report-section-divider__line"></div>
   </div>
+  <p class="act-section-note">Every document in the vault, grouped by type. Dates are in SAST.</p>
 
   <div class="act-table-card">
     <table class="act-table">
       <thead>
         <tr>
-          <th>Document Name</th>
-          <th>Category</th>
-          <th>Upload Date</th>
-          <th>Expiry Date</th>
-          <th>Verification Status</th>
+          <th>Document</th>
+          <th>Uploaded</th>
+          <th>Expires</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
-        <ng-container *ngFor="let group of getInventoryGroups()">
-          <tr *ngFor="let doc of group.rows; let isLast = last">
-            <td class="act-table__doc-name">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-              </svg>
-              {{ doc.documentName }}
-            </td>
-            <td>
-              <span class="act-category-tag" [style.background]="doc.categoryColor">
-                {{ doc.category }}
-              </span>
-            </td>
-            <td class="act-table__date">{{ doc.uploadDate }}</td>
-            <td class="act-table__date">{{ doc.expiryDate ?? '—' }}</td>
-            <td>
-              <span class="inv-status" [ngClass]="statusClass(doc.verificationStatus)">
-                {{ doc.verificationStatus }}
+        @for (group of inventoryGroups(); track group.category) {
+          <tr class="act-group-row">
+            <td colspan="4">
+              <span class="act-group-row__dot" [style.background]="group.color"></span>
+              <span class="act-group-row__name">{{ group.category }}</span>
+              <span class="act-group-row__meta">
+                {{ group.totalCount }} document{{ group.totalCount === 1 ? '' : 's' }}
+                @if (group.activeCount) { · {{ group.activeCount }} active }
+                @if (group.attentionCount) { · <strong class="act-group-row__attention">{{ group.attentionCount }} need attention</strong> }
               </span>
             </td>
           </tr>
-          <tr class="act-subtotal-row">
-            <td colspan="5" class="act-subtotal-cell">
-              <span class="act-subtotal-label">Subtotal — {{ group.category }}</span>
-              <span class="act-subtotal-value">{{ group.totalCount }} docs</span>
-              <span class="act-subtotal-badge act-subtotal-badge--verified">{{ group.verifiedCount }} Verified</span>
-              <span *ngIf="group.expiringCount" class="act-subtotal-badge act-subtotal-badge--expiring">{{ group.expiringCount }} Expiring</span>
-            </td>
-          </tr>
-        </ng-container>
+          @for (doc of group.rows; track $index) {
+            <tr>
+              <td class="act-table__doc-name">{{ doc.documentName }}</td>
+              <td class="act-table__date">{{ doc.uploadDate }}</td>
+              <td class="act-table__date">{{ doc.expiryDate ?? '—' }}</td>
+              <td><span class="act-pill" [ngClass]="statusClass(doc.verificationStatus)">{{ doc.verificationStatus }}</span></td>
+            </tr>
+          }
+        } @empty {
+          <tr><td colspan="4" class="act-empty">{{ loaded ? 'No documents have been uploaded yet.' : 'Loading…' }}</td></tr>
+        }
       </tbody>
     </table>
   </div>
 
-  <!-- ── Vault Access Log ───────────────────────────────────────────────────── -->
+  <!-- ── Access log ───────────────────────────────────────────────────────── -->
   <div class="report-section-divider">
     <div class="report-section-divider__line"></div>
     <span class="report-section-divider__label">VAULT ACCESS LOG</span>
     <div class="report-section-divider__line"></div>
   </div>
+  <p class="act-section-note">Each time someone viewed or downloaded one of these documents, newest first: the owner, Compliance Officers and institutions. Latest 50, times in SAST.</p>
 
   <div class="act-table-card">
     <table class="act-table">
       <thead>
         <tr>
-          <th>Timestamp</th>
-          <th>Accessing Authority / Role</th>
-          <th>Authorised Action Reason</th>
-          <th>Organisation</th>
+          <th>When</th>
+          <th>Who</th>
+          <th>What happened</th>
         </tr>
       </thead>
       <tbody>
-        <ng-container *ngFor="let group of getAccessLogGroups()">
-          <tr *ngFor="let log of group.rows">
+        @for (log of data.vaultAccessLog; track $index) {
+          <tr>
             <td class="act-table__date">{{ log.timestamp }}</td>
             <td>
               <div class="act-accessor">
                 <span class="act-accessor__name">{{ log.accessorName }}</span>
-                <span class="act-accessor__role">{{ log.accessorRole }}</span>
+                <span class="act-accessor__role">{{ log.accessorRole }}@if (log.organisation !== log.accessorName) { · {{ log.organisation }} }</span>
               </div>
             </td>
             <td class="act-table__reason">{{ log.actionReason }}</td>
-            <td>
-              <div class="act-org">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
-                  <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                </svg>
-                {{ log.organisation }}
-              </div>
-            </td>
           </tr>
-          <tr class="act-subtotal-row act-subtotal-row--compact">
-            <td colspan="4" class="act-subtotal-cell">
-              <span class="act-subtotal-label">{{ group.count }} event{{ group.count > 1 ? 's' : '' }}</span>
-              <span class="act-subtotal-value">Subtotal — {{ group.organisation }}</span>
-            </td>
-          </tr>
-        </ng-container>
+        } @empty {
+          <tr><td colspan="3" class="act-empty">{{ loaded ? 'Nobody has viewed or downloaded these documents yet.' : 'Loading…' }}</td></tr>
+        }
       </tbody>
     </table>
   </div>
 
-  <!-- ── I Am a Client To ───────────────────────────────────────────────────── -->
+  <!-- ── Sharing ──────────────────────────────────────────────────────────── -->
   <div class="report-section-divider">
     <div class="report-section-divider__line"></div>
-    <span class="report-section-divider__label">I AM A CLIENT TO</span>
+    <span class="report-section-divider__label">SHARED WITH INSTITUTIONS</span>
     <div class="report-section-divider__line"></div>
   </div>
+  <p class="act-section-note">Institutions whose document requests the owner approved. Active = access still open, Expired = the access period ended, Revoked = access was withdrawn.</p>
 
   <div class="act-table-card">
     <table class="act-table">
       <thead>
         <tr>
-          <th>Organisation</th>
-          <th>Documents Shared</th>
-          <th>Status</th>
+          <th>Institution</th>
+          <th>Documents shared</th>
+          <th>Access</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let client of data.clientRelationships">
-          <td>
-            <div class="act-org">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5">
-                <rect x="2" y="7" width="20" height="14" rx="2"></rect>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-              </svg>
-              <span class="act-org__name">{{ client.organisation }}</span>
-            </div>
-          </td>
-          <td class="act-table__shared">{{ client.documentsShared }} documents</td>
-          <td>
-            <span class="client-status" [ngClass]="clientStatusClass(client.status)">
-              {{ client.status }}
-            </span>
-          </td>
-        </tr>
-        <tr class="act-grand-total-row">
-          <td colspan="3" class="act-grand-total-cell">
-            <span class="act-grand-total-label">GRAND TOTAL</span>
-            <span class="act-grand-total-value">{{ data.clientRelationships.length }} organisations</span>
-            <span class="act-grand-total-badge act-grand-total-badge--active">{{ data.clientRelationships.filter(c => c.status === 'Active').length }} Active</span>
-          </td>
-        </tr>
+        @for (client of data.clientRelationships; track client.organisation) {
+          <tr>
+            <td class="act-org__name">{{ client.organisation }}</td>
+            <td>{{ client.documentsShared }} document{{ client.documentsShared === 1 ? '' : 's' }}</td>
+            <td><span class="act-pill" [ngClass]="clientStatusClass(client.status)">{{ client.status }}</span></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="3" class="act-empty">{{ loaded ? 'No documents have been shared with an institution yet.' : 'Loading…' }}</td></tr>
+        }
       </tbody>
+      @if (data.clientRelationships.length) {
+        <tfoot>
+          <tr class="act-total-row">
+            <td>Total: {{ data.clientRelationships.length }} institution{{ data.clientRelationships.length === 1 ? '' : 's' }}</td>
+            <td>{{ totalShared() }} document{{ totalShared() === 1 ? '' : 's' }}</td>
+            <td>{{ activeClientCount() }} active</td>
+          </tr>
+        </tfoot>
+      }
     </table>
   </div>
 

@@ -326,3 +326,11 @@
     grid-template-columns: 1fr;
   }
 }
+
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-mid, #64748b);
+}

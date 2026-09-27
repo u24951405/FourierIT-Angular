@@ -86,6 +86,8 @@ export interface CurrentAccount {
   maskedIdentificationNumber?: string | null;
   /** True for South African ID holders: the date of birth comes from the ID and can't be edited. */
   dateOfBirthFromIdNumber?: boolean;
+  /** Whether notifications are also emailed. Sign-in codes and security notices are always sent. */
+  emailNotificationsEnabled?: boolean;
   profileImageUrl?: string | null;
   profileImage?: string | null;
   avatarUrl?: string | null;
@@ -266,6 +268,12 @@ export class AuthService {
     return this.hasRole('Compliance Officer') || this.hasRole('Department Admin');
   }
 
+  /** A Compliance Officer who isn't also a Department Admin: reviews documents and views compliance, but manages nothing else. */
+  isComplianceOfficerViewer(): boolean {
+    if (this.isSuperAdmin()) return false;
+    return this.hasRole('Compliance Officer') && !this.hasRole('Department Admin') && !this.hasRole('Admin');
+  }
+
   hasDocumentOwnerRole(): boolean {
     return this.getRolesFromToken().some(r => this.normalizeRole(r) === this.normalizeRole('Document Owner'));
   }
@@ -346,6 +354,11 @@ export class AuthService {
         this.currentUser.set(this.userFromToken(res.token, res.email));
       })
     );
+  }
+
+  setEmailNotifications(enabled: boolean): Observable<{ emailNotificationsEnabled: boolean }> {
+    return this.http.put<{ emailNotificationsEnabled: boolean }>(`${this.base}/me/notification-preferences`,
+      { emailNotificationsEnabled: enabled });
   }
 
   cancelEmailChange(): Observable<void> {

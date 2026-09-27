@@ -1,17 +1,25 @@
 <div id="top" class="help-page">
   <header class="help-page__header">
-    <p class="help-page__eyebrow">User guide</p>
-    <h1>DocuVault Help</h1>
-    <p class="help-page__intro">
-      This guide follows the live routes and menu labels in the application. Use the links below to jump directly to the section for the feature you need.
-    </p>
+    <div>
+      <p class="help-page__eyebrow">User guide</p>
+      <h1>DocuVault Help</h1>
+      <p class="help-page__intro">
+        This guide focuses on the features your account can actually use. Start with the overview below, then jump to the task you need to complete.
+      </p>
+    </div>
+
+    <aside class="help-page__scope" aria-live="polite">
+      <span class="help-page__scope-label">Current access</span>
+      <strong>{{ currentRoleLabel() }}</strong>
+      <span>Only the relevant help topics are shown.</span>
+    </aside>
   </header>
 
   <section class="help-video" aria-labelledby="help-video-title">
     <div>
       <p class="help-video__eyebrow">Getting started</p>
       <h2 id="help-video-title">What is DocuVault?</h2>
-      <p>Watch the short introduction to learn what DocuVault does and how it supports document compliance.</p>
+      <p>Watch this short overview to see how DocuVault helps your team manage document requests, approvals, compliance checks, and access in one place.</p>
     </div>
     <div class="help-video__frame">
       <iframe
@@ -23,53 +31,75 @@
     </div>
   </section>
 
-  <form class="help-search" (submit)="$event.preventDefault(); searchHelp()">
-    <label for="help-search-input">Search help topics</label>
-    <div class="help-search__controls">
-      <input
-        id="help-search-input"
-        type="search"
-        placeholder="Search login, documents, reports..."
-        [value]="searchText()"
-        (input)="searchText.set($any($event.target).value)"
-      />
-      <button type="submit">Search</button>
-      @if (searchQuery()) {
-        <button type="button" class="help-search__clear" (click)="clearSearch()">Clear</button>
-      }
+  <section class="help-overview" aria-label="Overview of DocuVault help">
+    <article class="help-overview__card">
+      <span class="help-overview__label">Getting started</span>
+      <h2>Sign in and navigate</h2>
+      <p>Understand login, OTP verification, dashboards, and how your role changes what you can see and do.</p>
+    </article>
+
+    <article class="help-overview__card">
+      <span class="help-overview__label">Documents</span>
+      <h2>Upload and manage files</h2>
+      <p>Review document submission, compliance review, and document management tasks for your account.</p>
+    </article>
+
+    <article class="help-overview__card">
+      <span class="help-overview__label">Administration</span>
+      <h2>Control access and settings</h2>
+      <p>Use the admin sections for users, institutions, system settings, backups, and compliance rules.</p>
+    </article>
+  </section>
+
+  <section class="help-panel" aria-labelledby="help-navigation-title">
+    <div class="help-panel__header">
+      <div>
+        <p class="help-panel__eyebrow">Quick navigation</p>
+        <h2 id="help-navigation-title">Jump to a topic</h2>
+      </div>
+      <p>Use these links to move straight to the relevant section.</p>
     </div>
-  </form>
 
-  @if (searchQuery()) {
-    <p class="help-search__status">Showing results for “{{ searchQuery() }}”.</p>
-  }
+    <form class="help-search" (submit)="$event.preventDefault(); searchHelp()">
+      <label for="help-search-input">Search help topics</label>
+      <div class="help-search__controls">
+        <input
+          id="help-search-input"
+          type="search"
+          placeholder="Search login, documents, reports..."
+          [value]="searchText()"
+          (input)="searchText.set($any($event.target).value)"
+        />
+        <button type="submit">Search</button>
+        @if (searchQuery()) {
+          <button type="button" class="help-search__clear" (click)="clearSearch()">Clear</button>
+        }
+      </div>
+    </form>
 
-  <nav class="help-page__toc" aria-label="Help topics">
-    @if (matchesTopic('login-otp')) { <a [routerLink]="['/help']" [fragment]="'login-otp'">Login &amp; OTP verification</a> }
-    @if (matchesTopic('dashboard')) { <a [routerLink]="['/help']" [fragment]="'dashboard'">Dashboard</a> }
-    @if (matchesTopic('institution-requests')) { <a [routerLink]="['/help']" [fragment]="'institution-requests'">Institution Portal · Request Documents</a> }
-    @if (matchesTopic('document-upload')) { <a [routerLink]="['/help']" [fragment]="'document-upload'">Documents · Upload Document</a> }
-    @if (matchesTopic('compliance-status')) { <a [routerLink]="['/help']" [fragment]="'compliance-status'">Compliance status</a> }
-    @if (matchesTopic('reports')) { <a [routerLink]="['/help']" [fragment]="'reports'">Reports</a> }
-    @if (matchesTopic('audit-log')) { <a [routerLink]="['/help']" [fragment]="'audit-log'">Audit Log</a> }
-    @if (matchesTopic('user-role-management')) { <a [routerLink]="['/help']" [fragment]="'user-role-management'">User Management &amp; Roles Management</a> }
-    @if (matchesTopic('timer-settings')) { <a [routerLink]="['/help']" [fragment]="'timer-settings'">System Settings</a> }
-    @if (matchesTopic('institutions')) { <a [routerLink]="['/help']" [fragment]="'institutions'">Institutions</a> }
-    @if (matchesTopic('department-requests')) { <a [routerLink]="['/help']" [fragment]="'department-requests'">Department Requests</a> }
-    @if (matchesTopic('backup-restore')) { <a [routerLink]="['/help']" [fragment]="'backup-restore'">Backup &amp; Restore</a> }
-    @if (matchesTopic('document-validity')) { <a [routerLink]="['/help']" [fragment]="'document-validity'">Document Type Validity</a> }
-  </nav>
+    @if (searchQuery()) {
+      <p class="help-search__status">Showing results for “{{ searchQuery() }}”.</p>
+    }
+
+    <nav class="help-page__toc" aria-label="Help topics">
+      @for (topic of getVisibleTopics(); track topic.id) {
+        @if (matchesTopic(topic.id)) {
+          <a [routerLink]="['/help']" [fragment]="topic.id">{{ topic.title }}</a>
+        }
+      }
+    </nav>
+  </section>
 
   <main class="help-page__content">
     <section id="login-otp" class="help-section" [hidden]="!matchesTopic('login-otp')">
       <h2>Login &amp; OTP verification</h2>
       <p>
-        Start at <strong>/auth/login</strong>. Enter your username and password, then continue through the normal sign-in flow. If your account is configured for MFA or OTP validation, you will be guided to the verification step before access is granted.
+        Use this page to sign in to your account. Enter your username and password, then complete the one-time code check if your account requires extra security.
       </p>
       <ul>
-        <li><strong>Forgot password</strong> is available from the login screen and sends the user through the reset flow.</li>
-        <li><strong>Register</strong> is available for new user onboarding and may require OTP confirmation before the account is activated.</li>
-        <li>For institution access, the portal flow begins at <strong>/institution/auth/access</strong> and verifies the secure token before moving to <strong>/institution/auth/verify</strong>.</li>
+        <li><strong>Forgot password</strong> takes you through the reset process if you cannot sign in.</li>
+        <li><strong>Register</strong> is for creating a new user account and may require an OTP confirmation.</li>
+        <li>If you are accessing the institution portal, you may need to confirm a secure link before you continue.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -77,11 +107,11 @@
     <section id="dashboard" class="help-section" [hidden]="!matchesTopic('dashboard')">
       <h2>Dashboard</h2>
       <p>
-        After login, the Dashboard is the main landing area. It shows the operational overview for the current user scope: the system dashboard for super admins, the department dashboard for department-scoped users, or the personal document dashboard for document owners.
+        Your dashboard is the home page for your work. It gives you a quick overview of the tasks, documents, and compliance issues relevant to your role.
       </p>
       <ul>
-        <li>Use the dashboard to review key compliance information and quick access areas.</li>
-        <li>Navigation depends on your role and access permissions, including Department Admin, Stakeholder, or Super Admin.</li>
+        <li>Check the key information for your team, department, or personal documents.</li>
+        <li>The content you see depends on your role, such as Department Admin, Stakeholder, or Super Admin.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -89,12 +119,12 @@
     <section id="institution-requests" class="help-section" [hidden]="!matchesTopic('institution-requests')">
       <h2>Institution Portal · Request Documents</h2>
       <p>
-        The institution portal is accessed from <strong>/institution/dashboard</strong> and supports the registration, request, and monitoring flow for external institutions. The work is grouped under the live tabs: <strong>Home</strong>, <strong>Request Documents</strong>, <strong>My Requests</strong>, and <strong>Approved Documents</strong>.
+        This is where an institution can request the documents it needs. The portal keeps everything in one place so you can view your requests and see which ones were approved.
       </p>
       <ul>
-        <li><strong>Request Documents</strong> lets an institution select the document types it needs and submit the request.</li>
-        <li><strong>My Requests</strong> tracks the status of those submissions.</li>
-        <li><strong>Approved Documents</strong> displays the documents the institution is allowed to access.</li>
+        <li><strong>Request Documents</strong> lets you choose the documents needed and send the request.</li>
+        <li><strong>My Requests</strong> shows the status of each request.</li>
+        <li><strong>Approved Documents</strong> lists the documents that your institution is allowed to access.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -102,12 +132,12 @@
     <section id="document-upload" class="help-section" [hidden]="!matchesTopic('document-upload')">
       <h2>Documents · Upload Document</h2>
       <p>
-        The document workflow is centered on <strong>Documents</strong> in the sidebar and the route <strong>/documents/upload</strong>. This is where document owners upload files and assign the relevant metadata for review.
+        Use this area to add a file to the system and fill in the details needed for review. It is the main place for uploading and managing documents.
       </p>
       <ul>
-        <li>Use <strong>All Documents</strong> to browse the document registry.</li>
-        <li>Use <strong>Document Requests</strong> to follow access or validation requests.</li>
-        <li>Only users with the permitted role can submit or manage uploads.</li>
+        <li><strong>All Documents</strong> lets you view the document list.</li>
+        <li><strong>Document Requests</strong> helps you track access or approval requests.</li>
+        <li>Only users with the correct permissions can upload or manage files here.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -115,12 +145,12 @@
     <section id="compliance-status" class="help-section" [hidden]="!matchesTopic('compliance-status')">
       <h2>Compliance status</h2>
       <p>
-        Compliance is the operational status view for FICA/KYC requirements and required-document checks. The live system exposes this through the dashboard and the report pages, and the summary is evaluated against the configured requirements for departments, owners, and institutions.
+        This page shows whether documents and records meet the required compliance checks. It helps you quickly see what is complete and what still needs attention.
       </p>
       <ul>
-        <li>Review required versus uploaded documents.</li>
+        <li>Compare the required documents with what has already been uploaded.</li>
         <li>Check whether a department or institution is missing required evidence.</li>
-        <li>Use the report pages to find the compliance picture across the system.</li>
+        <li>Use the reports page to look at the overall compliance picture.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -128,12 +158,12 @@
     <section id="reports" class="help-section" [hidden]="!matchesTopic('reports')">
       <h2>Reports</h2>
       <p>
-        Reports are grouped under <strong>/reports</strong> and include the system reporting pages such as <strong>View Document Activity Report</strong>, <strong>Compliance</strong>, <strong>Activity</strong>, and other operational summaries. These pages pull together document activity, compliance posture, and audit details into a reviewable format.
+        Reports are summary views that help you understand activity, compliance, and document status at a glance. They are useful when you need a clear snapshot instead of checking each record one by one.
       </p>
       <ul>
-        <li>Use the summary pages to monitor document volumes and compliance progress.</li>
-        <li>Ad-hoc and monthly report views are available in the reporting module.</li>
-        <li>Super Admin users typically have access to the full report set.</li>
+        <li>Use the report pages to monitor document activity and compliance progress.</li>
+        <li>Some reports are monthly or scheduled, while others are for quick review.</li>
+        <li>Super Admin users usually have access to the full report set.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -141,11 +171,11 @@
     <section id="audit-log" class="help-section" [hidden]="!matchesTopic('audit-log')">
       <h2>Audit Log</h2>
       <p>
-        The <strong>Audit Log</strong> page is a security and operations review screen for changes, requests, OTP events, and administrative activity. It is intended for control and accountability checks across the platform.
+        The audit log shows what happened in the system and who did it. It is useful when you need to check actions, approvals, sign-in events, or other changes.
       </p>
       <ul>
-        <li>Use the audit log to confirm who performed key actions and when.</li>
-        <li>It is especially useful for investigating login, OTP, request, approval, and configuration changes.</li>
+        <li>Use it to confirm who performed a task and when it happened.</li>
+        <li>It is especially helpful for checking login events, document actions, approvals, and settings changes.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -153,12 +183,12 @@
     <section id="user-role-management" class="help-section" [hidden]="!matchesTopic('user-role-management')">
       <h2>User Management &amp; Roles Management</h2>
       <p>
-        User administration is handled in the <strong>User Management</strong> and <strong>Roles Management</strong> sections. These reflect real routes such as <strong>/users/department-admins</strong>, <strong>/users/document-owners</strong>, <strong>/users/stakeholders-compliance</strong>, and <strong>/administration/roles</strong>.
+        This area is where administrators manage people, roles, and access levels. It helps keep each user in the right group and gives them only the permissions they need.
       </p>
       <ul>
-        <li><strong>Roles Management</strong> controls role setup and permissions.</li>
-        <li><strong>Institutions</strong> manages institution records and related access setup.</li>
-        <li><strong>Departments</strong> and <strong>Department Admin</strong> assignments are managed from the same administration area.</li>
+        <li><strong>Roles Management</strong> controls which rights are assigned to each role.</li>
+        <li><strong>Institutions</strong> stores the organizations connected to the system.</li>
+        <li><strong>Departments</strong> and <strong>Department Admin</strong> assignments help organize access across teams.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -166,16 +196,14 @@
     <section id="timer-settings" class="help-section" [hidden]="!matchesTopic('timer-settings')">
       <h2>System Settings</h2>
       <p>
-        The <strong>System Settings</strong> page (Super Admin only) has two tabs. <strong>Security &amp; Sessions</strong> controls
-        how long codes, sign-ins and emailed links stay valid, and the limits that protect against guessing codes.
-        <strong>Document Validity</strong> sets how long each document type is valid and when owners are warned before it expires.
+        System Settings lets administrators control security and document rules. This is where you can set how long access codes, sessions, and document expiry rules stay active.
       </p>
       <ul>
-        <li><strong>Verification codes:</strong> how long registration, email-change and institution sign-in codes last.</li>
-        <li><strong>Sessions:</strong> how long staff and institutions stay signed in before they must sign in again.</li>
-        <li><strong>Links:</strong> how long institution invitation, document access and password reset links work.</li>
-        <li><strong>Security limits:</strong> how many wrong codes are allowed, and how long to wait before another code can be sent.</li>
-        <li>Each setting shows its allowed range and default; use <strong>Reset to default</strong> to undo a change.</li>
+        <li><strong>Verification codes:</strong> decide how long sign-in and registration codes stay valid.</li>
+        <li><strong>Sessions:</strong> control how long users stay logged in before they need to sign in again.</li>
+        <li><strong>Links:</strong> decide how long invitation and password reset links remain usable.</li>
+        <li><strong>Security limits:</strong> manage retries and timeouts to help protect the system.</li>
+        <li>Use <strong>Reset to default</strong> if you want to undo a change.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -183,12 +211,12 @@
     <section id="institutions" class="help-section" [hidden]="!matchesTopic('institutions')">
       <h2>Institutions</h2>
       <p>
-        The <strong>Institutions</strong> page is under <strong>/administration/institutions</strong> and stores the institution records used across the system. Each record includes the institution name, verified domain, registration number, and institution type.
+        This page keeps records of the institutions connected to DocuVault. These records help the system manage access, requests, and the correct institution-level setup.
       </p>
       <ul>
-        <li>Use <strong>Add Institution</strong> to create a new record, and use the edit action to update an existing one.</li>
-        <li>Institution records can be searched by name, domain, registration number, or type.</li>
-        <li><strong>Send Access Link</strong> creates a secure link for an institution user and is tied to the institution portal flow for access validation.</li>
+        <li>Use <strong>Add Institution</strong> to create a new record.</li>
+        <li>You can search for institutions by name, domain, registration number, or type.</li>
+        <li><strong>Send Access Link</strong> creates a secure link for institution users to access the portal.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -196,12 +224,12 @@
     <section id="department-requests" class="help-section" [hidden]="!matchesTopic('department-requests')">
       <h2>Department Requests</h2>
       <p>
-        The <strong>Department Requests</strong> area is under <strong>/administration/department-requests</strong> and lists pending department document requests that still need action. This page is used to review requests before they are routed, approved, or denied.
+        This page shows requests that still need review before they are sent to the right person. It helps departments manage document work in a clear order.
       </p>
       <ul>
-        <li>Review each request and enter the target user ID before using <strong>Route</strong> to send it to an owner.</li>
-        <li><strong>Approve</strong> accepts the request and removes it from the pending list.</li>
-        <li><strong>Deny</strong> rejects the request and leaves a note describing the outcome.</li>
+        <li>Review the request and choose the user it should be routed to.</li>
+        <li><strong>Approve</strong> accepts the request and moves it forward.</li>
+        <li><strong>Deny</strong> rejects it and records the reason.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -209,12 +237,12 @@
     <section id="backup-restore" class="help-section" [hidden]="!matchesTopic('backup-restore')">
       <h2>Backup and Restore</h2>
       <p>
-        The <strong>Backup &amp; Restore</strong> page is at <strong>/backup-restore</strong> and manages system snapshot records. It shows backup history, lets administrators create new backups, and provides restore controls for a selected snapshot.
+        Backups are safety copies of the system. This page lets administrators create a backup and restore the system if needed.
       </p>
       <ul>
-        <li><strong>Create Backup Now</strong> starts a system snapshot and records the backup under the current user.</li>
-        <li>Each backup record includes the date, time, backup ID, user, and file name, and can be restored from the history list.</li>
-        <li><strong>Restore</strong> opens a confirmation step and then applies the selected backup to the current system state.</li>
+        <li><strong>Create Backup Now</strong> makes a fresh copy of the current system state.</li>
+        <li>You can view the backup history and choose a backup to restore.</li>
+        <li><strong>Restore</strong> brings back the selected saved version of the system.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>
@@ -222,13 +250,13 @@
     <section id="document-validity" class="help-section" [hidden]="!matchesTopic('document-validity')">
       <h2>Document Type Validity</h2>
       <p>
-        The <strong>Document Validity</strong> tab of <strong>System Settings</strong> (Super Admin only) controls the expiry rules for each document type, including the validity period, the basis used to calculate expiry, warning days, and whether a type never expires.
+        This section controls how long a document type stays valid. It helps you decide when files expire and when users should be warned before that happens.
       </p>
       <ul>
-        <li>Each document type can be set to a validity period in months, or marked as <strong>Never expires</strong>.</li>
-        <li>The validity basis can be <strong>Certification date</strong> or <strong>Upload date</strong>, and the rule is applied when the type is saved.</li>
-        <li><strong>Warning days</strong> can be entered as a countdown before expiry, with validation preventing values that exceed the configured validity window.</li>
-        <li><strong>Review impact</strong> shows how many existing documents would expire or become valid again; <strong>Apply changes</strong> saves the rule and re-checks those documents.</li>
+        <li>Every document type is valid for a set number of months, counted from the date the copy was <strong>certified</strong> or the date it was <strong>uploaded</strong>. No document is valid forever.</li>
+        <li>The validity can be based on the <strong>Certification date</strong> or the <strong>Upload date</strong>.</li>
+        <li><strong>Warning days</strong> tells the system how early to warn users before expiry.</li>
+        <li><strong>Review impact</strong> shows how many current documents will change status after the new rule is saved.</li>
       </ul>
       <a class="help-section__toplink" [routerLink]="['/help']" [fragment]="'top'">Back to top</a>
     </section>

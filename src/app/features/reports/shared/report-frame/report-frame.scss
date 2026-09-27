@@ -315,42 +315,45 @@ $text-muted: #9ca3af;
   }
 }
 
-/* ── Section Divider ─────────────────────────────────────────────────────────── */
+/* ── Section Divider & Chart Card ───────────────────────────────────────────── */
+/* The reports put these inside the frame (content projection), where the frame's own scoped styles don't reach,
+   so they are applied through ::ng-deep, limited to this frame. */
 
+:host ::ng-deep {
+  .report-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin: 1.1rem 0 0.7rem;
 
-.report-section-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  margin: 1.1rem 0 0.7rem;
+    &__label {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #6b7280;
+      white-space: nowrap;
+    }
 
-  &__label {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    color: #6b7280;
-    white-space: nowrap;
+    &__line {
+      flex: 1;
+      height: 1px;
+      background: #e5e7eb;
+    }
   }
 
-  &__line {
-    flex: 1;
-    height: 1px;
-    background: #e5e7eb;
-  }
-}
+  /* ── Chart Card ─────────────────────────────────────────────────────────────── */
 
-/* ── Chart Card ─────────────────────────────────────────────────────────────── */
+  .chart-card {
+    background: #fff;
+    border: 1px solid $border;
+    border-radius: 8px;
+    padding: 0.8rem 1rem 0.9rem;
 
-.chart-card {
-  background: #fff;
-  border: 1px solid $border;
-  border-radius: 8px;
-  padding: 0.8rem 1rem 0.9rem;
-
-  &__desc {
-    font-size: 0.8rem;
-    color: $text-muted;
-    margin: 0 0 0.75rem;
+    &__desc {
+      font-size: 0.8rem;
+      color: $text-muted;
+      margin: 0 0 0.75rem;
+    }
   }
 }
 

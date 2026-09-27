@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { InstitutionAuthService } from '../institution-auth';
@@ -13,12 +13,16 @@ import { InstitutionAuthService } from '../institution-auth';
 export class ThankYouComponent {
   constructor(public router: Router, private authService: InstitutionAuthService) {}
 
+  /** Browsers only let a page close tabs that a script opened, so explain when it can't. */
+  readonly closeHint = signal(false);
+
   closeTab(): void {
     try {
       window.close();
     } catch {
-      this.router.navigateByUrl('/');
+      // Ignored: the hint below covers it.
     }
+    setTimeout(() => this.closeHint.set(!window.closed), 150);
   }
 
   returnToSignIn(): void {

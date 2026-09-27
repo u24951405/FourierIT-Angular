@@ -2,12 +2,12 @@ import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
-/** The system dashboard: Admins and the Super Admin, plus Stakeholders, who view it read-only. */
+/** The system compliance dashboard: Admins and the Super Admin, plus Stakeholders and Compliance Officers, who view it read-only. */
 export const systemDashboardGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   if (!auth.isLoggedIn()) return router.createUrlTree(['/auth/login']);
-  return auth.hasRole('Admin') || auth.isSuperAdmin() || auth.isStakeholderViewer()
+  return auth.hasRole('Admin') || auth.isSuperAdmin() || auth.isStakeholderViewer() || auth.isComplianceOfficerViewer()
     ? true
     : router.createUrlTree([auth.getDefaultAppPath()]);
 };

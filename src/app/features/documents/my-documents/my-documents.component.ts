@@ -15,7 +15,7 @@ import {
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { PendingDocumentAccessRequest } from '../../../core/models/institution.models';
 import { ToastService } from '../../../core/services/toast.service';
-import { buildExpiryCalendarEvents, CalendarEvent } from './calendar-events';
+import { buildDocumentCalendarEvents, CalendarEvent } from './calendar-events';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { DocumentHierarchyTreeComponent } from '../../../shared/components/document-hierarchy-tree/document-hierarchy-tree.component';
 import { DocumentItemDto } from '../../../core/services/document-hierarchy.service';
@@ -124,33 +124,21 @@ export class MyDocumentsComponent {
   );
   readonly latestRequests = computed(() => this.pendingRequests().slice(0, 5));
   readonly calendarDays = computed(() => this.buildCalendarDays(this.calendarMonth()));
-  readonly calendarEvents = computed(() => {
-    const threshold = this.warningThresholdDays();
-    const documents = this.documents();
-    console.log('[TEMP DIAGNOSTIC] calendarEvents inputs', {
-      threshold,
-      documentCount: documents.length
-    });
-
-    if (threshold == null) {
-      console.log('[TEMP DIAGNOSTIC] calendarEvents output', { eventCount: 0 });
-      return [];
-    }
-
-    const events = this.buildCalendarEvents(documents, this.calendarMonth(), threshold);
-    console.log('[TEMP DIAGNOSTIC] calendarEvents output', { eventCount: events.length });
-    return events;
-  });
+  // Upload, certification and expiry dates for the month shown. The warning period only colours expiries.
+  readonly calendarEvents = computed(() =>
+    buildDocumentCalendarEvents(this.documents(), this.calendarMonth(), new Date(), this.warningThresholdDays() ?? 30)
+  );
   readonly calendarSummary = computed(() => {
     const events = this.calendarEvents();
     return {
-      expiring: events.filter(item => item.type === 'expiring').length,
-      update: events.filter(item => item.type === 'update').length
+      uploaded: events.filter(item => item.type === 'uploaded').length,
+      certified: events.filter(item => item.type === 'certified').length,
+      expiring: events.filter(item => item.type === 'expiry' && item.expiryState !== 'scheduled').length,
+      expiries: events.filter(item => item.type === 'expiry').length
     };
   });
 
   ngOnInit(): void {
-    console.log('[TEMP DIAGNOSTIC] calendarMonth initialized', this.calendarMonth());
     this.route.queryParamMap
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(params => {
@@ -453,46 +441,6 @@ export class MyDocumentsComponent {
     return days;
   }
 
-  private buildCalendarEvents(documents: DocumentListItem[], monthDate: Date, warningWindowDays: number): CalendarEvent[] {
-    const events: CalendarEvent[] = [
-      ...buildExpiryCalendarEvents(documents, monthDate, new Date(), warningWindowDays)
-    ];
-    const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-    const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-
-    for (const doc of documents) {
-      const status = (doc.currentStatus ?? '').toLowerCase();
-      let dueDate: Date | null = null;
-
-      if (status.includes('rejected') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification')) {
-        dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 7);
-      }
-
-      if (!dueDate) {
-        continue;
-      }
-
-      if (dueDate < monthStart || dueDate > monthEnd) {
-        continue;
-      }
-
-      const eventType: 'expiring' | 'update' = status.includes('reject') || status.includes('pending') || status.includes('review') || status.includes('awaiting verification') ? 'update' : 'expiring';
-      const title = `${doc.fileName} (${eventType === 'expiring' ? 'Expiring' : 'Needs update'})`;
-      events.push({
-        date: this.toIsoDate(dueDate),
-        type: eventType,
-        label: eventType === 'expiring' ? 'Expiring' : 'Update',
-        title,
-        documentId: doc.documentId,
-        fileName: doc.fileName,
-        certified: doc.isCertified
-      });
-    }
-
-    return events;
-  }
-
   formatCalendarDate(value: Date): string {
     return this.toIsoDate(value);
   }
@@ -534,12 +482,6 @@ export class MyDocumentsComponent {
         next: docs => {
           this.documents.set(docs ?? []);
           this.openPendingDetail();
-          console.log('[TEMP DIAGNOSTIC] raw documents received', (docs ?? []).slice(0, 5).map(doc => ({
-            documentId: doc.documentId,
-            fileName: doc.fileName,
-            expiryDate: doc.expiryDate,
-            isCertified: doc.isCertified
-          })));
         },
         error: err => {
           this.documents.set([]);
@@ -571,10 +513,6 @@ export class MyDocumentsComponent {
         const threshold = Number(payload?.warningThresholdDays ?? payload?.WarningThresholdDays);
         if (Number.isFinite(threshold)) {
           this.warningThresholdDays.set(threshold);
-          console.log('[TEMP DIAGNOSTIC] warningThresholdDays set', {
-            value: this.warningThresholdDays(),
-            type: typeof this.warningThresholdDays()
-          });
         }
       }
     });

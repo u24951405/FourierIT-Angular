@@ -16,12 +16,13 @@ import {
 
 // Separate storage keys — never conflict with internal user JWT
 const INSTITUTION_SESSION_KEY = 'institution_session';
+const LAST_INSTITUTION_ID_KEY = 'institution_last_id';
 const LAST_ACCESS_TOKEN_KEY = 'institution_last_access_token';
 
 // Max OTP attempts before session lock
 const MAX_OTP_ATTEMPTS = 3;
 
-// A successful OTP stays valid for 7 days, even across logout/re-entry to the same institution portal.
+// Fallback session length if the server doesn't send one (it normally does, from the Super Admin's session timer).
 const OTP_VALIDITY_DAYS = 7;
 const SESSION_HOURS = OTP_VALIDITY_DAYS * 24;
 
@@ -35,8 +36,8 @@ export class InstitutionAuthService {
 
   /**
    * Current institution session as a signal.
-   * Hydrated from localStorage so a valid OTP-backed session remains available for 3 days,
-   * even after logout/re-entry to the same institution portal.
+   * Hydrated from localStorage so a signed-in institution stays signed in across page reloads
+   * until the session expires or they sign out.
    */
   readonly session = signal<InstitutionSession | null>(this.hydrateSession());
 
@@ -293,8 +294,10 @@ export class InstitutionAuthService {
       authMethod: 'OTP_VERIFIED',
     };
 
-    // Persist the verified portal access for 7 days so logout does not revoke the same OTP-backed session.
+    // Kept until the session expires or the institution signs out.
     localStorage.setItem(INSTITUTION_SESSION_KEY, JSON.stringify(session));
+    // Survives signing out, so the "signed out" page can offer to email a new link.
+    try { localStorage.setItem(LAST_INSTITUTION_ID_KEY, session.institutionId); } catch { /* storage unavailable */ }
     this.session.set(session);
 
     // Remember the access token so the user can return to sign-in and trigger a new OTP.
@@ -316,6 +319,11 @@ export class InstitutionAuthService {
     }
   }
 
+  /** The institution that last signed in on this browser, if any. */
+  getLastInstitutionId(): string | null {
+    try { return localStorage.getItem(LAST_INSTITUTION_ID_KEY); } catch { return null; }
+  }
+
   /**
    * Returns the session token for use in HTTP headers via the interceptor.
    */
@@ -333,61 +341,46 @@ export class InstitutionAuthService {
   // ─── Sign Out ───────────────────────────────────────────────────────────────
 
   /**
-   * Clears ONLY the institution session.
-   * The internal user session (localStorage / docuvault_token) is NOT touched.
+   * Signs the institution out: the session is ended on the server (so a copied token stops working)
+   * and removed from this browser, so the next person on a shared computer can't reopen the portal.
+   * The internal user session (docuvault_token) is NOT touched.
    */
   signOut(): void {
-    const institutionId = this.getInstitutionId();
-
-    if (institutionId) {
-      this.logAuditEvent({
-        userId: institutionId,
-        institutionId,
-        timestamp: new Date().toISOString(),
-        actionType: AuditEventType.LOGOUT,
-      });
-    }
-
-    if (this.session()) {
-      this.rememberLastAccessToken(this.session()!.accessToken);
-    }
-
-    // Keep the validated OTP-backed portal access alive for 7 days so the same institution account
-    // can re-enter the portal without needing a fresh OTP after logout.
-    this.session.set(this.hydrateSession());
-    this.resetAttempts();
-    this.pendingValidation = null;
-    this.pendingAccessToken = null;
-    this.router.navigate(['/institution/dashboard']);
+    this.clearSession();
+    this.router.navigate(['/institution/thank-you']);
   }
 
-  /**
-   * End the current institution portal session and show a thank-you page.
-   * Intended for explicit "End Session" actions from the portal UI.
-   */
+  /** The "End session" buttons: the same as signing out. */
   endSession(): void {
-    const institutionId = this.getInstitutionId();
+    this.signOut();
+  }
 
-    if (institutionId) {
+  private clearSession(): void {
+    const session = this.session();
+
+    if (session) {
       this.logAuditEvent({
-        userId: institutionId,
-        institutionId,
+        userId: session.institutionId,
+        institutionId: session.institutionId,
         timestamp: new Date().toISOString(),
         actionType: AuditEventType.LOGOUT,
       });
+
+      if (session.sessionToken) {
+        // Best effort: the browser copy is removed below either way.
+        this.http.post<void>(`${this.base}/auth/logout`, null, { params: { token: session.sessionToken } })
+          .subscribe({ error: () => undefined });
+      }
+
+      // Lets "Return to sign in" on the thank-you page start again with the same invitation link.
+      this.rememberLastAccessToken(session.accessToken);
     }
 
-    if (this.session()) {
-      this.rememberLastAccessToken(this.session()!.accessToken);
-    }
-
-    // Preserve the validated institution access for the full 7-day window so the same OTP remains usable.
-    this.session.set(this.hydrateSession());
+    localStorage.removeItem(INSTITUTION_SESSION_KEY);
+    this.session.set(null);
     this.resetAttempts();
     this.pendingValidation = null;
     this.pendingAccessToken = null;
-
-    this.router.navigate(['/institution/dashboard']);
   }
 
   // ─── Session Expiry Check ───────────────────────────────────────────────────

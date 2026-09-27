@@ -5,7 +5,7 @@ export const SA_ID_ENTITY_TYPE_ID = 1;
 
 /**
  * Reads the date of birth (YYYY-MM-DD) from a South African ID number, or null when the number isn't a
- * valid ID: 13 digits, a real YYMMDD date and a correct Luhn check digit. Mirrors the API's SouthAfricanIdNumber.
+ * valid ID: 13 digits, a real YYMMDD date and a valid South African check digit. Mirrors the API's validator.
  */
 export function saIdDateOfBirth(idNumber: string | null | undefined, today = new Date()): string | null {
   const digits = String(idNumber ?? '').replace(/\s+/g, '');
@@ -39,14 +39,17 @@ export function saIdNumber(): ValidatorFn {
 }
 
 function hasValidCheckDigit(digits: string): boolean {
+  const weights = [8, 7, 6, 5, 4, 3, 2, 10, 0, 5, 4, 3];
   let sum = 0;
-  for (let i = 0; i < digits.length; i++) {
-    let digit = Number(digits[digits.length - 1 - i]);
-    if (i % 2 === 1) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
+
+  for (let i = 0; i < 12; i++) {
+    sum += Number(digits[i]) * weights[i];
   }
-  return sum % 10 === 0;
+
+  let checkDigit = 11 - (sum % 11);
+  if (checkDigit === 10 || checkDigit === 11) {
+    checkDigit = 0;
+  }
+
+  return checkDigit === Number(digits[12]);
 }

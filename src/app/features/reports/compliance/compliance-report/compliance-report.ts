@@ -2,14 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { ComplianceReportData, ComplianceTransition } from '../../reports.models';
 import { ComplianceAlert, ComplianceHistoryItem, ComplianceService, ComplianceUserSummary } from '../../../../core/services/compliance.service';
 import { AuthService } from '../../../../core/services/auth.service';
+import { ReportOwnerOption } from '../../../../core/services/reports.service';
+import { OwnerPickerComponent } from '../../shared/owner-picker/owner-picker';
 
 @Component({
   selector: 'app-compliance-report',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, OwnerPickerComponent],
   templateUrl: './compliance-report.html',
   styleUrls: ['./compliance-report.scss'],
 })
@@ -18,19 +19,8 @@ export class ComplianceReportComponent implements OnInit {
   private complianceService = inject(ComplianceService);
   private auth = inject(AuthService);
 
-  data: ComplianceReportData = {
-    reportId: 'DV-CMP-000000',
-    dateGenerated: new Date().toISOString(),
-    createdBy: 'Current User',
-    launchDate: 'Pending',
-    presentDate: new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }),
-    compliantDays: 0,
-    totalDays: 0,
-    nonCompliantDays: 0,
-    incidentCount: 0,
-    uptimePercentage: 0,
-    transitions: [],
-  };
+  /** Built from the history each time data arrives; see buildLedger. */
+  ledger: ComplianceLedger = EMPTY_LEDGER;
 
   historyItems: ComplianceHistoryItem[] = [];
   alerts: ComplianceAlert[] = [];
@@ -39,25 +29,25 @@ export class ComplianceReportComponent implements OnInit {
   errorMessage = '';
   scope: 'user' | 'department' = 'user';
 
+  /**
+   * People who don't upload documents (e.g. the Super Admin) have no compliance record of their own,
+   * so they choose which document owner the report is about.
+   */
+  readonly showOwnerPicker = !this.auth.canUploadDocuments();
+  selectedOwner: ReportOwnerOption | null = null;
+
   ngOnInit(): void {
     this.loadComplianceData();
-  }
-
-  // Timeline segments for visual uptime bar
-  get timelineSegments(): { isCompliant: boolean; widthPct: number }[] {
-    const entries = this.historyItems.length ? this.historyItems : [{ status: this.complianceSummary?.overallStatus || 'Unknown', compliancePercentage: this.complianceSummary?.compliancePercentage ?? 0 } as ComplianceHistoryItem];
-    const total = entries.length || 1;
-    const width = 100 / total;
-
-    return entries.map((entry) => ({
-      isCompliant: !String(entry.status || '').toLowerCase().includes('non') && !String(entry.status || '').toLowerCase().includes('review'),
-      widthPct: width,
-    }));
   }
 
   private loadComplianceData(): void {
     this.isLoading = true;
     this.errorMessage = '';
+
+    if (this.showOwnerPicker) {
+      // The owner picker loads the owners and reports the chosen one (see onOwnerChange).
+      return;
+    }
 
     this.auth.getCurrentAccount().subscribe({
       next: (account) => {
@@ -95,6 +85,16 @@ export class ComplianceReportComponent implements OnInit {
     });
   }
 
+  onOwnerChange(owner: ReportOwnerOption): void {
+    this.selectedOwner = owner;
+    this.scope = 'user';
+    this.historyItems = [];
+    this.alerts = [];
+    this.complianceSummary = null;
+    this.isLoading = true;
+    this.loadUserComplianceData(owner.userId);
+  }
+
   private loadDepartmentComplianceData(departmentId: number): void {
     this.complianceService.getDepartmentDashboard(departmentId).subscribe({
       next: (dashboard) => {
@@ -129,7 +129,8 @@ export class ComplianceReportComponent implements OnInit {
 
     this.complianceService.getComplianceHistory(userId).subscribe({
       next: (history) => {
-        this.historyItems = history ?? [];
+        // Oldest first: the first entry is where the record starts, the last is the current state.
+        this.historyItems = [...(history ?? [])].sort((a, b) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime());
         this.updateReportData();
         this.isLoading = false;
       },
@@ -210,27 +211,62 @@ export class ComplianceReportComponent implements OnInit {
   }
 
   private updateReportData(): void {
-    const historyCount = this.historyItems.length;
-    const currentCompliance = this.complianceSummary?.compliancePercentage ?? 0;
-    const overallStatus = String(this.complianceSummary?.overallStatus || 'Unknown');
+    this.ledger = this.buildLedger();
+  }
 
-    this.data = {
-      ...this.data,
-      dateGenerated: new Date().toISOString(),
-      launchDate: this.formatDate(this.historyItems[0]?.changedAt) || 'Pending',
-      presentDate: this.formatDate(this.historyItems[historyCount - 1]?.changedAt) || new Date().toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }),
-      compliantDays: this.historyItems.filter(item => !String(item.status || '').toLowerCase().includes('non') && !String(item.status || '').toLowerCase().includes('review')).length || (overallStatus.toLowerCase().includes('compliant') ? 1 : 0),
-      totalDays: historyCount || 1,
-      nonCompliantDays: this.historyItems.filter(item => String(item.status || '').toLowerCase().includes('non') || String(item.status || '').toLowerCase().includes('review')).length || (overallStatus.toLowerCase().includes('non') ? 1 : 0),
-      incidentCount: this.alerts.length,
-      uptimePercentage: Number.isFinite(currentCompliance) ? currentCompliance : 0,
-      transitions: this.historyItems.slice(0, 8).map((item, index) => ({
-        transitionDate: this.formatDate(item.changedAt),
-        previousState: index === 0 ? 'Pending' : this.historyItems[index - 1].status,
-        newState: item.status,
-        triggeringEvent: item.changeReason || 'Live compliance update',
-        downtime: null,
-      })) as ComplianceTransition[],
+  /**
+   * Each history entry is a status that lasted from when it was recorded until the next change (or until now),
+   * so the percentages and the timeline are shares of time, not counts of records.
+   */
+  private buildLedger(): ComplianceLedger {
+    const now = Date.now();
+    const entries = this.historyItems
+      .map(item => ({ item, at: new Date(item.changedAt).getTime() }))
+      .filter(entry => Number.isFinite(entry.at));
+
+    const periods: LedgerPeriod[] = entries.map((entry, index) => {
+      const end = index + 1 < entries.length ? entries[index + 1].at : now;
+      return {
+        status: entry.item.status,
+        kind: statusKind(entry.item.status),
+        from: entry.at,
+        to: end,
+        durationMs: Math.max(0, end - entry.at),
+      };
+    });
+
+    const totalMs = periods.reduce((sum, p) => sum + p.durationMs, 0);
+    const msOf = (kind: StatusKind) => periods.filter(p => p.kind === kind).reduce((sum, p) => sum + p.durationMs, 0);
+    const share = (ms: number) => (totalMs ? Math.round((ms / totalMs) * 1000) / 10 : 0);
+
+    const changes = entries.map((entry, index) => ({
+      changedAt: entry.item.changedAt,
+      previous: index === 0 ? null : entries[index - 1].item.status,
+      status: entry.item.status,
+      kind: statusKind(entry.item.status),
+      compliancePercentage: entry.item.compliancePercentage,
+      reason: entry.item.changeReason || 'No reason recorded',
+    })).reverse(); // newest first
+
+    const currentStatus = this.complianceSummary?.overallStatus || entries.at(-1)?.item.status || '';
+    return {
+      hasHistory: periods.length > 0,
+      firstRecorded: entries[0] ? this.formatDate(entries[0].item.changedAt) : '',
+      currentStatus,
+      currentKind: statusKind(currentStatus),
+      currentPercentage: Number(this.complianceSummary?.compliancePercentage ?? entries.at(-1)?.item.compliancePercentage ?? 0),
+      compliantShare: share(msOf('compliant')),
+      nonCompliantShare: share(msOf('noncompliant')),
+      otherShare: share(msOf('other')),
+      trackedDays: Math.max(1, Math.round(totalMs / 86_400_000)),
+      statusChanges: Math.max(0, entries.length - 1),
+      openAlerts: this.alerts.length,
+      segments: periods.map(p => ({
+        kind: p.kind,
+        widthPct: totalMs ? Math.max((p.durationMs / totalMs) * 100, 0.6) : 100 / periods.length,
+        title: `${p.status}: ${this.formatDate(new Date(p.from).toISOString())} – ${p.to === now ? 'now' : this.formatDate(new Date(p.to).toISOString())}`,
+      })),
+      changes,
     };
   }
 
@@ -246,10 +282,62 @@ export class ComplianceReportComponent implements OnInit {
   }
 
   viewCertificate(): void {
-    this.router.navigate(['/reports/compliance-certificate']);
+    this.router.navigate(['/reports/compliance-certificate'], {
+      queryParams: this.selectedOwner ? { owner: this.selectedOwner.userId } : {},
+    });
   }
 
   downloadReport(): void {
     window.print();
   }
 }
+
+type StatusKind = 'compliant' | 'noncompliant' | 'other';
+
+/** Compliant only when the status says exactly that; Pending, Partial and Review Required are neither. */
+function statusKind(status: string | null | undefined): StatusKind {
+  const normalized = String(status ?? '').trim().toLowerCase().replace(/[\s_-]+/g, '');
+  if (normalized === 'compliant') return 'compliant';
+  if (normalized.startsWith('non')) return 'noncompliant';
+  return 'other';
+}
+
+interface LedgerPeriod {
+  status: string;
+  kind: StatusKind;
+  from: number;
+  to: number;
+  durationMs: number;
+}
+
+export interface ComplianceLedger {
+  hasHistory: boolean;
+  firstRecorded: string;
+  currentStatus: string;
+  currentKind: StatusKind;
+  currentPercentage: number;
+  compliantShare: number;
+  nonCompliantShare: number;
+  otherShare: number;
+  trackedDays: number;
+  statusChanges: number;
+  openAlerts: number;
+  segments: { kind: StatusKind; widthPct: number; title: string }[];
+  changes: { changedAt: string; previous: string | null; status: string; kind: StatusKind; compliancePercentage: number; reason: string }[];
+}
+
+const EMPTY_LEDGER: ComplianceLedger = {
+  hasHistory: false,
+  firstRecorded: '',
+  currentStatus: '',
+  currentKind: 'other',
+  currentPercentage: 0,
+  compliantShare: 0,
+  nonCompliantShare: 0,
+  otherShare: 0,
+  trackedDays: 0,
+  statusChanges: 0,
+  openAlerts: 0,
+  segments: [],
+  changes: [],
+};

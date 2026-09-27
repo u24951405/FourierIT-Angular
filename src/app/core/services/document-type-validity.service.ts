@@ -14,7 +14,6 @@ export interface DocumentTypeSummaryDto {
   name: string;
   description?: string | null;
   validityMonths: number;
-  neverExpires: boolean;
   validityBasis: DocumentTypeValidityBasis;
   warningDays: number;
   documentCount: number;
@@ -22,7 +21,6 @@ export interface DocumentTypeSummaryDto {
 
 export interface DocumentTypeValidityUpdateRequest {
   validityMonths: number;
-  neverExpires: boolean;
   validityBasis: DocumentTypeValidityBasis;
   warningDays: number;
 }

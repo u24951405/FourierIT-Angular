@@ -37,17 +37,6 @@ export interface ManagedUserDto {
   } | null;
 }
 
-export interface UpdateManagedUserPayload {
-  firstName: string;
-  lastName: string;
-  dateOfBirth: string;
-  phoneNumber: string;
-  jobTitle: string;
-  emailAddress: string;
-  role: string;
-  accountStatus: string;
-}
-
 @Injectable({ providedIn: 'root' })
 export class UserManagementService {
   private http = inject(HttpClient);
@@ -74,8 +63,9 @@ export class UserManagementService {
     );
   }
 
-  updateUser(profileId: number, payload: UpdateManagedUserPayload): Observable<{ message: string }> {
-    return this.http.put<{ message: string }>(`${this.userBase}/profile/${profileId}`, payload);
+  /** Replaces a user's role (Super Admin / Admin only). */
+  changeRole(userId: string, role: string): Observable<{ roles: string[]; message: string }> {
+    return this.http.put<{ roles: string[]; message: string }>(`${this.userBase}/${encodeURIComponent(userId)}/role`, { role });
   }
 
   deleteUser(profileId: number | null, userId: string): Observable<void> {

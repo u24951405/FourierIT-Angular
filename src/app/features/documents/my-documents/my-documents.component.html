@@ -14,11 +14,15 @@
     <div class="calendar-panel__header">
       <div>
         <p class="eyebrow eyebrow--dark">Document timeline</p>
-        <h2>Expiry & update calendar</h2>
+        <h2>Document calendar</h2>
       </div>
-      <div class="calendar-panel__summary">
-        <span class="calendar-chip calendar-chip--expiring">{{ calendarSummary().expiring }} expiring</span>
-        <span class="calendar-chip calendar-chip--update">{{ calendarSummary().update }} updates</span>
+      <div class="calendar-panel__summary" aria-label="This month">
+        <span class="calendar-chip calendar-chip--uploaded">{{ calendarSummary().uploaded }} uploaded</span>
+        <span class="calendar-chip calendar-chip--certified">{{ calendarSummary().certified }} certified</span>
+        <span class="calendar-chip calendar-chip--expiry">{{ calendarSummary().expiries }} expir{{ calendarSummary().expiries === 1 ? 'y' : 'ies' }}</span>
+        @if (calendarSummary().expiring) {
+          <span class="calendar-chip calendar-chip--expiring">{{ calendarSummary().expiring }} expired or expiring soon</span>
+        }
       </div>
     </div>
 
@@ -27,6 +31,11 @@
       <strong>{{ calendarMonth() | date:'MMMM yyyy' }}</strong>
       <button type="button" class="btn btn--outline" (click)="nextMonth()">Next</button>
     </div>
+
+    <p class="calendar-panel__legend">
+      Expiry dates are calculated from each document type's validity period, counted from the certification date
+      (or the upload date where the type is set up that way, or no certification date was captured).
+    </p>
 
     <div class="calendar-grid" role="grid" aria-label="Document calendar">
       <div class="calendar-grid__header">Mon</div>
@@ -42,7 +51,7 @@
           <span class="calendar-day__number">{{ day.getDate() }}</span>
 
           @for (event of calendarEvents().filter(item => item.date === formatCalendarDate(day)); track event.title) {
-            <button type="button" class="calendar-event" [class.calendar-event--expiring]="event.type === 'expiring'" [class.calendar-event--update]="event.type === 'update'" [title]="event.title" (click)="openEventDocument(event)">
+            <button type="button" class="calendar-event" [ngClass]="'calendar-event--' + event.type" [class.calendar-event--expiring]="event.type === 'expiry' && event.expiryState !== 'scheduled'" [class.calendar-event--expired]="event.expiryState === 'expired'" [title]="event.title" (click)="openEventDocument(event)">
               {{ event.label }}: {{ event.fileName }}
             </button>
           }

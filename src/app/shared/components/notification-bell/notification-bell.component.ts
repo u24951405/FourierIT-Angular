@@ -70,10 +70,15 @@ export class NotificationBellComponent implements OnInit {
       });
     }
 
-    if (notification.documentId != null) {
-      this.open.set(false);
-      this.router.navigate(['/my-documents'], { queryParams: { document: notification.documentId } });
-    }
+    const link = notification.link ?? (notification.documentId != null ? '/my-documents' : null);
+    if (!link) return;
+
+    this.open.set(false);
+    // My Documents can open the document the notification is about.
+    const queryParams = link === '/my-documents' && notification.documentId != null
+      ? { document: notification.documentId }
+      : undefined;
+    this.router.navigate([link], { queryParams });
   }
 
   markAllAsRead(): void {
@@ -85,12 +90,21 @@ export class NotificationBellComponent implements OnInit {
     });
   }
 
-  isRejection(notification: AppNotification): boolean {
-    return notification.category === 'DocumentRejected';
-  }
-
-  isApproval(notification: AppNotification): boolean {
-    return notification.category === 'DocumentApproved';
+  /** Colour of the notification's edge: what kind of news it is. */
+  tone(notification: AppNotification): 'success' | 'danger' | 'warning' | 'info' {
+    switch (notification.category) {
+      case 'DocumentApproved':
+        return 'success';
+      case 'DocumentRejected':
+      case 'DocumentExpired':
+      case 'DocumentFlagged':
+        return 'danger';
+      case 'DocumentExpiringSoon':
+      case 'ReviewRequested':
+        return 'warning';
+      default:
+        return 'info';
+    }
   }
 
   private load(): void {

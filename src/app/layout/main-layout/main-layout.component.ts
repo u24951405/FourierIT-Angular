@@ -1,6 +1,7 @@
 import { Component, HostListener, inject } from '@angular/core';
 import { ActivatedRouteSnapshot, Router, RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
+import { HelpContextService } from '../../core/services/help-context.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -11,6 +12,7 @@ import { SidebarComponent } from '../../shared/sidebar/sidebar.component';
 })
 export class MainLayoutComponent {
   private readonly router = inject(Router);
+  private readonly helpContext = inject(HelpContextService);
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -24,7 +26,8 @@ export class MainLayoutComponent {
   }
 
   openHelp(): void {
-    const helpKey = this.findHelpKey(this.router.routerState.snapshot.root);
+    // A page can name a more specific topic than its route (e.g. the open tab).
+    const helpKey = this.helpContext.topic() ?? this.findHelpKey(this.router.routerState.snapshot.root);
     if (helpKey) {
       void this.router.navigate(['/help'], { fragment: helpKey });
       return;

@@ -1,123 +1,90 @@
 <app-report-frame
   [config]="frameConfig"
   title="System Audit Report"
-  subtitle="External Enquiry & Token Lifecycle Logs"
+  subtitle="Institution requests, decisions, downloads and flags from the audit trail"
 >
   <div class="audit-title-block">
-    <p class="audit-title-block__org">FOURIER GROUP — SYSTEM AUDIT REPORT</p>
-    <h2 class="audit-title-block__title">Enquiry Audit Trails</h2>
-    <p class="audit-title-block__subtitle">External institution access sessions, token windows and per-action security classification</p>
-    <div class="audit-title-block__divider">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"></circle>
-      </svg>
-    </div>
+    <p class="audit-title-block__org">AUDIT TRAIL</p>
+    <h2 class="audit-title-block__title">Institution Activity</h2>
+    <p class="audit-title-block__subtitle">
+      Everything recorded about institutions in the period: the requests they made, the decisions on them, downloads,
+      flags and withdrawn access. Flags and withdrawn access are marked for attention.
+    </p>
   </div>
 
-  <!-- Column Headers -->
-  <div class="audit-col-headers">
-    <span>Enquirer User Session</span>
-    <span>Target Document</span>
-    <span>Action Executed</span>
-    <span>Timestamp (SAST)</span>
-    <span>Security Status</span>
-  </div>
+  <form class="audit-filter" (submit)="$event.preventDefault(); load()">
+    <label>From <input type="date" name="from" [(ngModel)]="from" [max]="to"></label>
+    <label>To <input type="date" name="to" [(ngModel)]="to" [min]="from"></label>
+    <button type="submit" [disabled]="loading()">{{ loading() ? 'Loading…' : 'Update' }}</button>
+  </form>
 
-  <!-- Institution Blocks -->
-  <div class="audit-institution" *ngFor="let inst of data.institutions">
-    <div class="audit-institution__header">
-      <div class="audit-institution__header-left">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <span class="audit-institution__label">INSTITUTION</span>
-        <span class="audit-institution__name">{{ inst.institutionName }}</span>
-      </div>
-      <div class="audit-institution__header-right">
-        <span class="audit-institution__window">Window: <strong>{{ inst.tokenWindow }}</strong></span>
-        <span class="audit-window-badge" [class.audit-window-badge--expired]="inst.windowStatus === 'Expired'">
-          {{ inst.windowStatus }}
-        </span>
-      </div>
-    </div>
-
-    <div class="audit-institution__reason">
-      <div class="audit-reason-row">
-        <span class="audit-reason-row__key">Enquiry Request Reason</span>
-        <span class="audit-reason-row__val">{{ inst.enquiryReason }}</span>
-      </div>
-      <div class="audit-reason-row">
-        <span class="audit-reason-row__key">Token ID</span>
-        <span class="audit-reason-row__val audit-reason-row__val--token">{{ inst.tokenId }}</span>
-      </div>
-    </div>
-
-    <!-- Log Rows -->
-    <div class="audit-log-row" *ngFor="let log of inst.logs" [class.audit-log-row--anomaly]="log.securityStatus !== 'Clean'">
-      <div class="audit-log-row__session">
-        <span class="audit-log-row__session-id">{{ log.sessionId }}</span>
-        <span class="audit-log-row__session-role">{{ log.sessionRole }}</span>
-      </div>
-      <span class="audit-log-row__doc">{{ log.targetDocument }}</span>
-      <span class="audit-log-row__action" [class.audit-log-row__action--anomaly]="log.securityStatus !== 'Clean'">
-        {{ log.actionExecuted }}
-      </span>
-      <span class="audit-log-row__ts">{{ log.timestamp }}</span>
-      <span class="audit-status" [ngClass]="statusClass(log.securityStatus)">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path *ngIf="log.securityStatus === 'Clean'" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline *ngIf="log.securityStatus === 'Clean'" points="22 4 12 14.01 9 11.01"></polyline>
-          <path *ngIf="log.securityStatus !== 'Clean'" d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        </svg>
-        {{ log.securityStatus }}
-      </span>
-    </div>
-
-    <!-- Subtotal -->
-    <div class="audit-subtotal">
-      <span>SUBTOTAL — {{ inst.institutionName }}</span>
-      <span>Interactions: {{ inst.totalInteractions }}</span>
-      <span>Anomalies: <strong>{{ inst.anomalies }}</strong></span>
-      <span>Token Window: {{ inst.tokenWindow }}</span>
-      <span>Window Status:
-        <span class="audit-window-badge audit-window-badge--sm" [class.audit-window-badge--expired]="inst.windowStatus === 'Expired'">
-          {{ inst.windowStatus }}
-        </span>
-      </span>
-    </div>
-  </div>
-
-  <!-- Grand Total -->
-  <div class="audit-grand-total">
-    <div class="audit-grand-total__header">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-      </svg>
-      GRAND TOTAL — SYSTEM AUDIT SUMMARY
-    </div>
-    <div class="audit-grand-total__grid">
+  @if (loading() && !report()) {
+    <p class="audit-state">Loading the audit trail…</p>
+  } @else if (error()) {
+    <div class="audit-state audit-state--error" role="alert">{{ error() }}</div>
+  } @else if (report(); as r) {
+    <div class="audit-grand-total__grid audit-summary">
       <div class="audit-grand-stat">
-        <span class="audit-grand-stat__value">{{ data.totalLogs }} external logs</span>
-        <span class="audit-grand-stat__label">System Audit Records Processed</span>
-        <span class="audit-grand-stat__sub">Across all institutions</span>
+        <span class="audit-grand-stat__value">{{ r.totalRequests }}</span>
+        <span class="audit-grand-stat__label">Requests made</span>
       </div>
       <div class="audit-grand-stat">
-        <span class="audit-grand-stat__value">{{ data.totalSessions }} sessions</span>
-        <span class="audit-grand-stat__label">Total Enquiry Sessions</span>
-        <span class="audit-grand-stat__sub">Distinct institution token windows</span>
+        <span class="audit-grand-stat__value">{{ r.totalDownloads }}</span>
+        <span class="audit-grand-stat__label">Documents downloaded</span>
       </div>
-      <div class="audit-grand-stat audit-grand-stat--red">
-        <span class="audit-grand-stat__value">{{ data.totalAnomalies }} events</span>
-        <span class="audit-grand-stat__label">Total Anomalies Detected</span>
-        <span class="audit-grand-stat__sub">Flagged for compliance review</span>
+      <div class="audit-grand-stat">
+        <span class="audit-grand-stat__value">{{ r.totalEvents }}</span>
+        <span class="audit-grand-stat__label">Recorded events</span>
       </div>
-      <div class="audit-grand-stat audit-grand-stat--green">
-        <span class="audit-grand-stat__value">{{ data.cleanInteractions }} logs</span>
-        <span class="audit-grand-stat__label">Clean Interactions</span>
-        <span class="audit-grand-stat__sub">No security flags raised</span>
+      <div class="audit-grand-stat" [class.audit-grand-stat--red]="r.totalNeedingAttention > 0">
+        <span class="audit-grand-stat__value">{{ r.totalNeedingAttention }}</span>
+        <span class="audit-grand-stat__label">Needing attention</span>
       </div>
     </div>
-  </div>
 
+    @if (!r.institutions.length) {
+      <p class="audit-state">No institution activity was recorded in this period.</p>
+    }
+
+    @for (inst of r.institutions; track inst.institutionId) {
+      <section class="audit-institution">
+        <div class="audit-institution__header">
+          <span class="audit-institution__name">{{ inst.institutionName }}</span>
+          <span class="audit-institution__counts">
+            {{ inst.requests }} request{{ inst.requests === 1 ? '' : 's' }}:
+            {{ inst.approved }} approved · {{ inst.denied }} denied · {{ inst.waiting }} waiting · {{ inst.cancelled }} cancelled
+          </span>
+        </div>
+
+        @if (inst.events.length) {
+          <table class="audit-table">
+            <thead>
+              <tr><th>When</th><th>What happened</th><th>Details</th><th>Request</th></tr>
+            </thead>
+            <tbody>
+              @for (e of inst.events; track $index) {
+                <tr [class.audit-row--attention]="e.needsAttention">
+                  <td class="audit-when">{{ e.timestamp | date:'d MMM y, HH:mm' }}</td>
+                  <td>
+                    {{ e.action }}
+                    @if (e.needsAttention) { <span class="audit-flag">Attention</span> }
+                  </td>
+                  <td class="audit-details">{{ e.description }}</td>
+                  <td>{{ e.requestId ? '#' + e.requestId : '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="audit-state audit-state--inline">Requests were made, but no further activity was recorded in this period.</p>
+        }
+
+        <div class="audit-subtotal">
+          <span>{{ inst.events.length }} event{{ inst.events.length === 1 ? '' : 's' }}</span>
+          <span>{{ inst.downloads }} download{{ inst.downloads === 1 ? '' : 's' }}</span>
+          <span>{{ inst.flags }} flag{{ inst.flags === 1 ? '' : 's' }}</span>
+        </div>
+      </section>
+    }
+  }
 </app-report-frame>

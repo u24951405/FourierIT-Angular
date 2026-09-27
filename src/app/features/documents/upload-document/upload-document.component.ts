@@ -16,6 +16,10 @@ import { ToastService } from '../../../core/services/toast.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UploadDocumentComponent implements OnInit {
+  /** Certification dates can't be in the future. */
+  // Local date (not UTC), so the latest date the picker allows is today where the user is.
+  readonly today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
   private auth = inject(AuthService);
   private fb = inject(FormBuilder);
   private docsApi = inject(DocumentsApiService);
@@ -73,6 +77,14 @@ export class UploadDocumentComponent implements OnInit {
 
     if (this.isDocumentTypeUploaded(values.documentTypeId)) {
       const message = 'You have already uploaded this document type. Please choose a different type or update the existing document.';
+      this.error.set(message);
+      this.toast.show(message, 'error');
+      return;
+    }
+
+    // The date picker stops future dates, but a typed-in date gets past it.
+    if (values.certificationDate && values.certificationDate > this.today) {
+      const message = "The certification date can't be in the future.";
       this.error.set(message);
       this.toast.show(message, 'error');
       return;

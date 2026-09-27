@@ -136,11 +136,11 @@ $red: #ef4444;
   &__seg {
     height: 100%;
 
+    min-width: 3px;
+
     &--compliant { background: $green; }
-    &--gap {
-      background: $red;
-      min-width: 3px;
-    }
+    &--noncompliant { background: $red; }
+    &--other { background: $amber; }
   }
 }
 
@@ -164,9 +164,8 @@ $red: #ef4444;
 
     &--green { background: $green; }
     &--red { background: $red; }
+    &--amber { background: $amber; }
   }
-
-  &__item--boundary { color: $text-muted; }
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -291,6 +290,39 @@ $red: #ef4444;
     color: $red;
     border: 1px solid #fecaca;
   }
+
+  &--other {
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+  }
+}
+
+.transition-table-wrap { overflow-x: auto; }
+
+.compliance-alerts {
+  margin: 0;
+  padding: 0.75rem 1.25rem 0.9rem 2.25rem;
+  font-size: 0.8125rem;
+  color: $text-primary;
+
+  li + li { margin-top: 0.35rem; }
+}
+
+// Shown instead of the ledger while loading, or when no compliance check has run yet.
+.compliance-empty {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px dashed $border;
+  border-radius: 8px;
+  text-align: center;
+  color: $text-sub;
+}
+
+@media (max-width: 720px) {
+  .compliance-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .uptime-pct-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .uptime-legend { flex-wrap: wrap; gap: 0.5rem 1rem; }
 }
 
 .downtime-badge {

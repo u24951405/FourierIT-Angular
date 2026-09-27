@@ -6,12 +6,7 @@ import { finalize } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { RoleService } from '../../../core/services/role.service';
-import { ManagedUserDto, UpdateManagedUserPayload, UserManagementService } from '../../../core/services/user-management.service';
-import {
-  birthDateReasonable,
-  formatIsoDateLocal,
-  saMobilePhoneRequired
-} from '../../../core/validators/profile.validators';
+import { ManagedUserDto, UserManagementService } from '../../../core/services/user-management.service';
 
 export interface UserProfile {
   id: number;
@@ -57,7 +52,8 @@ export class UserManagementComponent {
   managedRoleNames = signal<string[] | null>(null);
 
   showModal = signal(false);
-  editId = signal<number | null>(null);
+  /** The user whose role is being changed. */
+  readonly roleUser = signal<UserProfile | null>(null);
   isLoadingUsers = signal(false);
   isLoadingRoles = signal(false);
   isSubmitting = signal(false);
@@ -80,23 +76,9 @@ export class UserManagementComponent {
 
   users = signal<UserProfile[]>([]);
 
-  readonly maxBirthDate = formatIsoDateLocal(new Date());
-  readonly minBirthDate = formatIsoDateLocal((() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 120);
-    return d;
-  })());
-
+  // Only the role can be changed here; people edit their own personal details from their profile.
   form = this.fb.group({
-    firstName: ['', Validators.required],
-    lastName: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    phone: ['', saMobilePhoneRequired()],
-    dateOfBirth: ['', [Validators.required, birthDateReasonable()]],
-    jobTitle: ['', Validators.required],
-    entityTypeName: [{ value: '', disabled: true }],
-    roleId: ['', Validators.required],
-    status: ['Active'],
+    role: ['', Validators.required],
   });
 
   constructor() {
@@ -140,81 +122,50 @@ export class UserManagementComponent {
     window.open(this.verifyNowAmlPepUrl, '_blank', 'noopener,noreferrer');
   }
 
-  openEdit(user: UserProfile): void {
-    if (this.isSuperAdmin(user) || user.profileId === null) {
-      return;
-    }
+  openRoleChange(user: UserProfile): void {
+    if (this.isSuperAdmin(user) || !user.userId) return;
 
-    this.editId.set(user.profileId);
-    this.form.patchValue({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      dateOfBirth: user.dateOfBirth,
-      jobTitle: user.jobTitle,
-      entityTypeName: user.entityTypeName,
-      roleId: user.roleId,
-      status: user.status,
-    });
+    this.roleUser.set(user);
+    this.form.reset({ role: this.rolesOf(user).length === 1 ? this.rolesOf(user)[0] : '' });
     this.showModal.set(true);
   }
 
   closeModal(): void {
+    if (this.isSubmitting()) return;
     this.showModal.set(false);
+    this.roleUser.set(null);
+  }
+
+  /** True when the chosen role is exactly what the user already has, so there is nothing to save. */
+  roleUnchanged(): boolean {
+    const user = this.roleUser();
+    const chosen = this.form.value.role ?? '';
+    const current = user ? this.rolesOf(user) : [];
+    return current.length === 1 && current[0].toLowerCase() === chosen.toLowerCase();
   }
 
   onSubmit(): void {
-    if (this.form.invalid) {
+    const user = this.roleUser();
+    const role = this.form.value.role ?? '';
+    if (!user || !role) {
       this.form.markAllAsTouched();
       this.cdr.markForCheck();
       return;
     }
-
-    const value = this.form.value as {
-      firstName: string | null;
-      lastName: string | null;
-      email: string | null;
-      phone: string | null;
-      dateOfBirth: string | null;
-      jobTitle: string | null;
-      roleId: string | null;
-      status: string | null;
-    };
-
-    if (!this.editId()) {
-      this.toast.show('User creation is only available via registration.', 'error');
-      return;
-    }
-
-    const selectedRoleName = this.roles.find(r => r.id === value.roleId)?.name;
-    if (!selectedRoleName) {
-      this.toast.show('Please select a valid role.', 'error');
-      return;
-    }
-
-    const payload: UpdateManagedUserPayload = {
-      firstName: (value.firstName ?? '').trim(),
-      lastName: (value.lastName ?? '').trim(),
-      dateOfBirth: value.dateOfBirth ?? '',
-      phoneNumber: (value.phone ?? '').trim(),
-      jobTitle: (value.jobTitle ?? '').trim(),
-      emailAddress: (value.email ?? '').trim(),
-      role: selectedRoleName,
-      accountStatus: (value.status ?? 'Active').trim()
-    };
+    if (this.roleUnchanged()) return;
 
     this.isSubmitting.set(true);
-    this.userManagementService.updateUser(this.editId()!, payload)
+    this.userManagementService.changeRole(user.userId, role)
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => {
-          this.toast.show('User updated.', 'success');
+        next: (result) => {
+          this.toast.show(result?.message || `Role changed to ${role}.`, 'success');
           this.showModal.set(false);
+          this.roleUser.set(null);
           this.loadUsers();
         },
         error: (error) => {
-          const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Failed to update user.';
+          const message = error?.error?.error || error?.error?.title || error?.error?.message || 'Could not change the role.';
           this.toast.show(message, 'error');
         }
       });
@@ -318,26 +269,15 @@ export class UserManagementComponent {
     };
   }
 
+  /**
+   * Only the Super Admin (or an Admin) may change roles, matching the API. Checked positively:
+   * hasRole() is true for every role when signed in as the Super Admin, so "not a Department Admin" would hide it from them.
+   */
+  get canChangeRoles(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.hasRole('Admin');
+  }
+
   isSuperAdmin(user: UserProfile): boolean {
     return user.userName.trim().toLowerCase() === 'superadmin';
-  }
-
-  /** Only people who upload documents (Document Owners and Department Admins) have an entity. */
-  editingUserHasEntity(): boolean {
-    const user = this.users().find(item => item.profileId === this.editId());
-    const roles = (user?.roles?.length ? user.roles : [user?.roleName ?? '']).map(role => role.toLowerCase());
-    return roles.includes('document owner') || roles.includes('department admin');
-  }
-
-  maskEntityIdentificationNumber(value: string): string {
-    const normalized = value?.trim() ?? '';
-    if (!normalized) return 'Not specified';
-    if (normalized.length <= 4) return normalized;
-    return `${'*'.repeat(Math.max(4, normalized.length - 4))}${normalized.slice(-4)}`;
-  }
-
-  showOrganizationSection(): boolean {
-    const user = this.users().find(item => item.profileId === this.editId());
-    return !(user?.roles ?? []).some(role => role.trim().toLowerCase() === 'document owner');
   }
 }

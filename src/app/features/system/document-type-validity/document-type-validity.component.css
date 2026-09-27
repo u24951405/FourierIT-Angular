@@ -105,7 +105,6 @@
   font-size: .78rem;
   font-weight: 700;
 }
-.dv-pill--never { background: #e3f6ec; color: #1f7a4d; }
 
 .empty-state { padding: 32px 20px; text-align: center; color: var(--text-mid, #4a6278); }
 

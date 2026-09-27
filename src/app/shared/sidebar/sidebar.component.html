@@ -59,7 +59,7 @@
       </ng-container>
     </ng-container>
 
-    <a *ngIf="auth.hasRole('Compliance Officer') || auth.hasRole('Admin')"
+    <a *ngIf="(auth.hasRole('Compliance Officer') || auth.hasRole('Admin')) && !auth.isComplianceOfficerViewer()"
        class="sidebar__link"
        routerLink="/compliance/review-queue"
        routerLinkActive="sidebar__link--active">
@@ -180,6 +180,22 @@
               <div><dt>Email</dt><dd>{{ a.email }}</dd></div>
               <div *ngIf="!auth.isSuperAdmin()"><dt>Mobile number</dt><dd [class.pm-details__empty]="!displayPhone(a)">{{ displayPhone(a) || 'Not provided' }}</dd></div>
             </dl>
+          </section>
+
+          <section class="profile-modal__section">
+            <h3>Notifications</h3>
+            <label class="pm-switch">
+              <span class="pm-switch__text">
+                <span class="pm-switch__label">Email me notifications</span>
+                <span class="pm-switch__hint">Document requests, review results and expiry reminders are also sent to {{ a.email }}. You'll always see them in the app, and sign-in codes are always emailed.</span>
+              </span>
+              <input type="checkbox"
+                     role="switch"
+                     [checked]="a.emailNotificationsEnabled !== false"
+                     [disabled]="savingEmailPreference()"
+                     (change)="setEmailNotifications($any($event.target).checked)">
+              <span class="pm-switch__track" aria-hidden="true"></span>
+            </label>
           </section>
 
         </div>

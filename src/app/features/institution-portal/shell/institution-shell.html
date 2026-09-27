@@ -1,0 +1,91 @@
+<div class="ip">
+  <header class="ip-top">
+    <div class="ip-top__inner">
+      <a class="ip-brand" routerLink="/institution/dashboard" aria-label="DocuVault institution portal home">
+        <span class="ip-brand__logo" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </span>
+        <span class="ip-brand__name">DocuVault</span>
+        <span class="ip-brand__divider" aria-hidden="true"></span>
+        <span class="ip-brand__label">Institution Portal</span>
+      </a>
+
+      <div class="ip-top__right">
+        <div class="ip-institution">
+          <span class="ip-institution__name">{{ institutionName() }}</span>
+          @if (institutionCode()) {
+            <span class="ip-institution__code">{{ institutionCode() }}</span>
+          }
+        </div>
+
+        <div class="ip-updates">
+          <button type="button" class="ip-icon-btn" (click)="toggleUpdates($event)"
+                  [attr.aria-expanded]="updatesOpen()" aria-haspopup="dialog"
+                  [attr.aria-label]="unseenCount() ? unseenCount() + ' new updates' : 'Updates'">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            @if (unseenCount() > 0) {
+              <span class="ip-icon-btn__badge">{{ unseenCount() }}</span>
+            }
+          </button>
+
+          @if (updatesOpen()) {
+            <section class="ip-updates__panel" role="dialog" aria-label="Updates on your requests">
+              <header class="ip-updates__header">Updates on your requests</header>
+              @if (updatesLoading() && !updates().length) {
+                <p class="ip-updates__state">Loading…</p>
+              } @else if (updatesError()) {
+                <p class="ip-updates__state ip-updates__state--error">{{ updatesError() }}</p>
+              } @else if (!updates().length) {
+                <p class="ip-updates__state">No decisions yet. You'll see approvals and denials here.</p>
+              } @else {
+                <ul class="ip-updates__list">
+                  @for (item of updates(); track item.enquiryRequestId) {
+                    <li class="ip-updates__item" [class.ip-updates__item--denied]="item.status.toLowerCase().includes('denied')">
+                      <span class="ip-updates__status">{{ item.status }} · request #{{ item.enquiryRequestId }}</span>
+                      <span class="ip-updates__message">{{ item.message }}</span>
+                      <span class="ip-updates__meta">{{ item.recipientName }} · {{ item.timestamp | date:'d MMM y, HH:mm' }}</span>
+                    </li>
+                  }
+                </ul>
+                <a class="ip-updates__link" routerLink="/institution/my-requests" (click)="updatesOpen.set(false)">See all requests</a>
+              }
+            </section>
+          }
+        </div>
+
+        <button type="button" class="ip-signout" (click)="signOut()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Sign out</span>
+        </button>
+      </div>
+    </div>
+
+    <nav class="ip-tabs" aria-label="Institution portal">
+      <div class="ip-tabs__inner">
+        @for (tab of tabs; track tab.path) {
+          <a class="ip-tab" [routerLink]="tab.path" routerLinkActive="ip-tab--active" ariaCurrentWhenActive="page">{{ tab.label }}</a>
+        }
+      </div>
+    </nav>
+  </header>
+
+  <main class="ip-main">
+    <router-outlet />
+  </main>
+
+  <footer class="ip-footer">
+    <div class="ip-footer__inner">
+      <span>Every document view and download is logged against the request it belongs to.</span>
+      <span>DocuVault · Fourier Group</span>
+    </div>
+  </footer>
+</div>

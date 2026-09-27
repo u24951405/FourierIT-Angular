@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -34,10 +33,9 @@ export class ReviewQueueComponent implements OnInit {
   private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
-  private route = inject(ActivatedRoute);
 
   readonly pepScanUrl = 'https://www.verifynow.co.za/verifynow?reportType=check-aml-pep';
-  readonly canManage = this.isDevAccess() || this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
+  readonly canManage = this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -71,11 +69,6 @@ export class ReviewQueueComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadReviews();
-  }
-
-  private isDevAccess(): boolean {
-    const dev = this.route.snapshot.queryParamMap.get('dev');
-    return dev === '1' || dev === 'true';
   }
 
   loadReviews(): void {

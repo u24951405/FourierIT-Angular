@@ -118,7 +118,9 @@
   .rd-line-item { grid-template-columns: 1.5rem minmax(0, 1fr) auto; }
   .rd-line-item__remove { grid-column: 2 / -1; justify-self: start; }
 }
-:root {
+/* Component styles are scoped, so :root would never match; the variables live on the host. */
+:host {
+  display: block;
   --dark-navy: #1e2a3a;
   --navy-soft: #31445d;
   --accent-soft: #eef4fb;
@@ -134,83 +136,18 @@
 }
 
 /* Breadcrumb */
-.rd-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.625rem 1.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  background: #fff;
-  border-bottom: 1px solid var(--border);
-}
 
-.rd-breadcrumb svg {
-  color: var(--text-muted);
-}
-
-.rd-breadcrumb__item {
-  cursor: pointer;
-}
-
-.rd-breadcrumb__item:hover {
-  color: var(--text-primary);
-}
-
-.rd-breadcrumb__item--active {
-  color: var(--text-sub);
-  cursor: default;
-}
-
-/* Page shell */
+/* Page shell: the portal layout supplies the outer spacing; the form stays a readable width. */
 .rd-page {
-  max-width: 680px;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 1.75rem 1.5rem 3rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
 /* Header */
-.rd-header {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-}
-
-.rd-header__title {
-  font-size: 1.375rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 0.125rem;
-  letter-spacing: -0.01em;
-}
-
-.rd-header__subtitle {
-  font-size: 0.8125rem;
-  color: var(--text-sub);
-  margin: 0;
-}
-
-.rd-back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-sub);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.rd-back:hover {
-  background: var(--surface);
-  color: var(--text-primary);
-}
 
 /* Stepper */
 .rd-stepper {
@@ -559,7 +496,6 @@
   background: rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.9);
 }
-
 
 .rd-doc-item__checkbox {
   opacity: 0;

@@ -6,7 +6,6 @@ import { ToastService } from '../../../core/services/toast.service';
 import { DocumentTypeSummaryDto, DocumentTypeValidityBasis, DocumentTypeValidityService, DocumentTypeValiditySummaryDto, DocumentTypeValidityUpdateRequest } from '../../../core/services/document-type-validity.service';
 
 interface DocumentTypeValidityFormState {
-  neverExpires: boolean;
   validityMonths: number;
   validityBasis: DocumentTypeValidityBasis;
   warningDays: number;
@@ -40,7 +39,6 @@ export class DocumentTypeValidityComponent implements OnInit {
   search = '';
 
   form: DocumentTypeValidityFormState = {
-    neverExpires: false,
     validityMonths: 3,
     validityBasis: DocumentTypeValidityBasis.CertificationDate,
     warningDays: 0
@@ -66,10 +64,6 @@ export class DocumentTypeValidityComponent implements OnInit {
       type.name.toLowerCase().includes(query) || (type.description ?? '').toLowerCase().includes(query));
   }
 
-  get neverExpireCount(): number {
-    return this.documentTypes().filter(type => type.neverExpires).length;
-  }
-
   basisLabel(basis: DocumentTypeValidityBasis): string {
     return this.basisOptions.find(option => option.value === basis)?.label ?? 'Upload date';
   }
@@ -81,13 +75,11 @@ export class DocumentTypeValidityComponent implements OnInit {
   }
 
   get monthsError(): string | null {
-    if (this.form.neverExpires) return null;
     const months = Number(this.form.validityMonths);
     return !Number.isInteger(months) || months < 1 || months > 120 ? 'Enter a whole number of months from 1 to 120.' : null;
   }
 
   get warningError(): string | null {
-    if (this.form.neverExpires) return null;
     const days = Number(this.form.warningDays);
     if (!Number.isInteger(days) || days < 0) return 'Enter a whole number of days, 0 or more.';
     if (days > this.maxWarningDays) return `The warning must be at most ${this.maxWarningDays} days for this validity period.`;
@@ -96,7 +88,6 @@ export class DocumentTypeValidityComponent implements OnInit {
 
   /** The rule in plain words, updated as the form changes. */
   get ruleSummary(): string {
-    if (this.form.neverExpires) return 'Documents of this type never expire.';
     const months = Number(this.form.validityMonths);
     const days = Number(this.form.warningDays);
     const period = Number.isInteger(months) && months > 0 ? `${months} month${months === 1 ? '' : 's'}` : 'a set time';
@@ -132,7 +123,6 @@ export class DocumentTypeValidityComponent implements OnInit {
   openEdit(type: DocumentTypeSummaryDto): void {
     this.currentType.set(type);
     this.form = {
-      neverExpires: type.neverExpires,
       validityMonths: type.validityMonths > 0 ? type.validityMonths : 3,
       validityBasis: type.validityBasis ?? DocumentTypeValidityBasis.CertificationDate,
       warningDays: type.warningDays ?? 0
@@ -154,9 +144,6 @@ export class DocumentTypeValidityComponent implements OnInit {
   }
 
   getValidityText(type: DocumentTypeSummaryDto): string {
-    if (type.neverExpires) {
-      return 'Never expires';
-    }
 
     const basisText = type.validityBasis === DocumentTypeValidityBasis.CertificationDate
       ? 'from certification date'
@@ -172,8 +159,6 @@ export class DocumentTypeValidityComponent implements OnInit {
   }
 
   validateForm(): string | null {
-    // Months and warning days are hidden (and not used) when the document never expires.
-    if (this.form.neverExpires) return null;
 
     const months = Number(this.form.validityMonths);
     const warningDays = Number(this.form.warningDays);
@@ -186,7 +171,7 @@ export class DocumentTypeValidityComponent implements OnInit {
       return 'Warning days must be between 0 and 365.';
     }
 
-    if (!this.form.neverExpires && warningDays >= months * 30) {
+    if (warningDays >= months * 30) {
       return `Warning days must be less than validityMonths * 30 (${months * 30}).`;
     }
 
@@ -205,7 +190,6 @@ export class DocumentTypeValidityComponent implements OnInit {
       return;
     }
 
-    // Keep the stored months valid even when the rule is "never expires".
     const months = Number(this.form.validityMonths);
     const validityMonths = Number.isInteger(months) && months >= 1 && months <= 120
       ? months
@@ -213,7 +197,6 @@ export class DocumentTypeValidityComponent implements OnInit {
 
     const payload: DocumentTypeValidityUpdateRequest = {
       validityMonths,
-      neverExpires: this.form.neverExpires,
       validityBasis: this.form.validityBasis,
       warningDays: Number.isInteger(Number(this.form.warningDays)) && Number(this.form.warningDays) >= 0 ? Number(this.form.warningDays) : 0
     };

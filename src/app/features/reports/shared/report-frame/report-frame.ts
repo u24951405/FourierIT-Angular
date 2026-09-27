@@ -1,4 +1,4 @@
-import {Component,Input,OnInit,inject} from '@angular/core';
+import {Component,Input,inject} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -22,7 +22,7 @@ export interface ReportFrameConfig {
   templateUrl: './report-frame.html',
   styleUrls: ['./report-frame.scss'],
 })
-export class ReportFrameComponent implements OnInit {
+export class ReportFrameComponent {
   @Input() config!: ReportFrameConfig;
   @Input() title!: string;
   @Input() subtitle?: string;
@@ -32,7 +32,6 @@ export class ReportFrameComponent implements OnInit {
   private router = inject(Router);
   private http = inject(HttpClient);
 
-  formattedDate = '';
 
   get accentGradientStyle(): string {
     const accentColors = this.config?.accentColors ?? [];
@@ -41,8 +40,9 @@ export class ReportFrameComponent implements OnInit {
       : '#10b981';
   }
 
-  ngOnInit(): void {
-    this.formattedDate = this.config?.dateGenerated
+  /** Worked out from the current config, so a report whose details arrive from the API later still shows its real date. */
+  get formattedDate(): string {
+    return this.config?.dateGenerated
       ? new Date(this.config.dateGenerated).toLocaleString('en-ZA', {
           day: 'numeric',
           month: 'long',
@@ -68,7 +68,11 @@ export class ReportFrameComponent implements OnInit {
   }
 
   downloadPdf(): void {
-    if (!this.pdfUrl) return;
+    // Reports without a server-made PDF use the browser's print dialog, which can save as PDF.
+    if (!this.pdfUrl) {
+      this.print();
+      return;
+    }
 
     this.http.get(this.pdfUrl, { responseType: 'blob' }).subscribe({
       next: blob => {

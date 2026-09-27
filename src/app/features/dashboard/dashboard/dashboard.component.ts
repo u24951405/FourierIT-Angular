@@ -46,6 +46,8 @@ interface DashboardStats {
 
 interface StatCard {
   key: string;
+  /** Where clicking the card goes, or null when this role has no page for it. */
+  link: string | null;
   value: string | number;
   label: string;
   sublabel: string;
@@ -412,6 +414,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return [
       {
         key: 'users',
+        link: this.cardLink('users'),
         value: dashboard.totalUsers,
         label: this.dashboardScope === 'department' ? 'Department Members' : 'Total Users',
         sublabel: this.dashboardScope === 'department' ? 'Members in your department' : 'Active users in system',
@@ -421,6 +424,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'compliant',
+        link: this.cardLink('compliant'),
         value: dashboard.compliantUsers,
         label: 'Compliant Users',
         sublabel: 'Full compliance achieved',
@@ -430,6 +434,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'noncompliant',
+        link: this.cardLink('noncompliant'),
         value: dashboard.nonCompliantUsers,
         label: 'Non-Compliant Users',
         sublabel: 'Immediate remediation needed',
@@ -439,6 +444,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'review',
+        link: this.cardLink('review'),
         value: dashboard.reviewRequiredUsers,
         label: 'Review Required',
         sublabel: 'Awaiting compliance review',
@@ -448,6 +454,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'alerts',
+        link: this.cardLink('alerts'),
         value: dashboard.totalOpenAlerts,
         label: 'Open Alerts',
         sublabel: 'Outstanding compliance actions',
@@ -457,6 +464,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       {
         key: 'complianceRate',
+        link: this.cardLink('complianceRate'),
         value: `${dashboard.overallCompliancePercentage?.toFixed(1) ?? 0}%`,
         label: 'Compliance Rate',
         sublabel: 'Across current scope',
@@ -674,13 +682,42 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     return summary as ComplianceUserSummary;
   }
 
-  /** Reports are Super Admin only; for everyone else the dashboard cards are plain, read-only tiles. */
+  /** Reports are Super Admin only. */
   get canOpenReports(): boolean {
     return this.auth.isSuperAdmin();
   }
 
-  navigate(path: string): void {
-    if (path.startsWith('/reports') && !this.canOpenReports) return;
-    this.router.navigateByUrl(path);
+  /** The users list: the Super Admin, Admins and Stakeholders (read-only) can open it. */
+  private get canOpenUsers(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.hasRole('Admin') || this.auth.isStakeholderViewer();
+  }
+
+  /** The review queue: the Super Admin, Admins and Compliance Officers. */
+  private get canOpenReviewQueue(): boolean {
+    return this.auth.isSuperAdmin() || this.auth.hasRole('Admin') || this.auth.hasRole('Compliance Officer');
+  }
+
+  /**
+   * Each card opens the page that explains its number, if this role may open that page.
+   * Cards without a page for this role stay plain tiles instead of looking clickable and doing nothing.
+   */
+  private cardLink(key: string): string | null {
+    const report = this.canOpenReports ? '/reports/compliance' : null;
+    switch (key) {
+      case 'users':
+        return this.canOpenUsers ? '/users/all' : report;
+      case 'review':
+        return this.canOpenReviewQueue ? '/compliance/review-queue' : report;
+      default:
+        return report;
+    }
+  }
+
+  /** Chart cards: document and compliance breakdowns open the compliance report; risk opens the risk rating report. */
+  readonly complianceChartLink = (): string | null => this.canOpenReports ? '/reports/compliance' : null;
+  readonly riskChartLink = (): string | null => this.canOpenReports ? '/reports/client-risk-rating' : null;
+
+  navigate(path: string | null): void {
+    if (path) this.router.navigateByUrl(path);
   }
 }

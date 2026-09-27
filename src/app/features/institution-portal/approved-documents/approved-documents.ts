@@ -1,167 +1,185 @@
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { InstitutionAuthService } from '../auth/institution-auth';
 import { ApprovedInstitutionDocument } from '../../../core/models/institution.models';
+import { PortalPageHeaderComponent } from '../shell/portal-page-header';
 
+interface RequestGroup {
+  requestId: number;
+  requestType: string;
+  recipientName: string;
+  expiresAt?: string;
+  extensionStatus?: string | null;
+  extensionRequestedUntil?: string | null;
+  documents: ApprovedInstitutionDocument[];
+}
+
+/** Documents the institution may open, grouped by the request that granted access. */
 @Component({
   selector: 'app-approved-documents',
   standalone: true,
-  imports: [CommonModule],
+  imports: [DatePipe, RouterLink, PortalPageHeaderComponent],
   templateUrl: './approved-documents.html',
   styleUrl: './approved-documents.css',
 })
-export class ApprovedDocuments implements OnInit {
-  private requestService = inject(DocumentAccessRequestService);
-  readonly router = inject(Router);
-  readonly authService = inject(InstitutionAuthService);
+export class ApprovedDocuments implements OnInit, OnDestroy {
+  private readonly requestService = inject(DocumentAccessRequestService);
+  private readonly authService = inject(InstitutionAuthService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly loading = signal(false);
-  readonly message = signal<string | null>(null);
-  readonly approvedDocuments = signal<ApprovedInstitutionDocument[]>([]);
-  readonly groupedDocuments = computed(() => {
-    const groups = new Map<string, { requestId: number; requestType: string; recipientName: string; documents: ApprovedInstitutionDocument[] }>();
-    for (const document of this.approvedDocuments()) {
-      const groupKey = `${document.requestId}::${document.recipientName}`;
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, {
-          requestId: document.requestId,
-          requestType: document.requestType,
-          recipientName: document.recipientName,
-          documents: [],
-        });
-      }
-      groups.get(groupKey)?.documents.push(document);
+  readonly error = signal<string | null>(null);
+  readonly notice = signal<string | null>(null);
+  readonly documents = signal<ApprovedInstitutionDocument[]>([]);
+  readonly downloadingId = signal<number | null>(null);
+  readonly flaggingId = signal<number | null>(null);
+  readonly submittingFlag = signal(false);
+  readonly flagReason = signal('');
+  /** The document open in the viewer (a temporary in-memory link, never saved to disk). */
+  readonly viewer = signal<{ name: string; url: string; kind: 'pdf' | 'image' } | null>(null);
+  readonly viewingId = signal<number | null>(null);
+
+  readonly groups = computed<RequestGroup[]>(() => {
+    const groups = new Map<number, RequestGroup>();
+    for (const document of this.documents()) {
+      const group = groups.get(document.requestId) ?? {
+        requestId: document.requestId,
+        requestType: document.requestType,
+        recipientName: document.recipientName,
+        expiresAt: document.expiresAt,
+        extensionStatus: document.extensionStatus,
+        extensionRequestedUntil: document.extensionRequestedUntil,
+        documents: [],
+      };
+      group.documents.push(document);
+      groups.set(document.requestId, group);
     }
-    return Array.from(groups.values());
+    return [...groups.values()];
   });
 
-  documentTypeSummaries(documents: ApprovedInstitutionDocument[]): { name: string; count: number }[] {
-    const counts = new Map<string, number>();
-    for (const document of documents) {
-      counts.set(document.documentTypeName, (counts.get(document.documentTypeName) ?? 0) + 1);
-    }
-    return Array.from(counts, ([name, count]) => ({ name, count }));
-  }
-  readonly selectedDocumentId = signal<number | null>(null);
-  readonly flagReason = signal('');
-  readonly showingFlagForm = signal(false);
-
   ngOnInit(): void {
-    this.loadApprovedDocuments();
+    this.loadDocuments();
   }
 
-  private getSessionToken(): string | null {
-    return this.authService.getSessionToken();
+  ngOnDestroy(): void {
+    this.closeViewer();
   }
 
-  loadApprovedDocuments(): void {
-    const token = this.getSessionToken();
+  /** The viewer's frame needs the in-memory link marked as trusted (it was created by this page). */
+  safeUrl(url: string): SafeResourceUrl {
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  loadDocuments(): void {
+    const token = this.authService.getSessionToken();
     if (!token) {
-      this.message.set('Please sign in to the institution portal to view approved documents.');
+      this.error.set('Your session has ended. Please sign in again.');
       return;
     }
 
     this.loading.set(true);
-    this.message.set(null);
-
-    this.requestService
-      .getApprovedInstitutionDocuments(token)
+    this.error.set(null);
+    this.requestService.getApprovedInstitutionDocuments(token)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (documents) => {
-          this.approvedDocuments.set(documents ?? []);
-          if (!documents?.length) {
-            this.message.set('No approved documents were found for your institution session.');
-          }
-        },
-        error: (err) => {
-          this.message.set(err?.error?.error ?? err?.error?.message ?? 'Could not load approved documents.');
-        },
+        next: documents => this.documents.set(documents ?? []),
+        error: err => this.error.set(err?.error?.error ?? err?.error?.message ?? 'Could not load your approved documents.'),
       });
   }
 
-  selectDocument(documentId: number): void {
-    this.selectedDocumentId.set(documentId);
-    this.message.set(null);
-    this.showingFlagForm.set(false);
-    this.flagReason.set('');
+  /** True when access ends within a day, so the institution knows to download soon. */
+  endsSoon(expiresAt?: string): boolean {
+    return !!expiresAt && new Date(expiresAt).getTime() - Date.now() < 24 * 60 * 60 * 1000;
   }
 
-  downloadDocument(): void {
-    const token = this.getSessionToken();
-    const documentId = this.selectedDocumentId();
+  download(document: ApprovedInstitutionDocument): void {
+    const token = this.authService.getSessionToken();
     if (!token) {
-      this.message.set('Please sign in to download documents.');
-      return;
-    }
-    if (!documentId) {
-      this.message.set('Select an approved document before downloading.');
+      this.error.set('Your session has ended. Please sign in again.');
       return;
     }
 
-    this.loading.set(true);
-    this.message.set(null);
-
-    this.requestService
-      .downloadInstitutionDocument(documentId, token)
-      .pipe(finalize(() => this.loading.set(false)))
+    this.downloadingId.set(document.documentId);
+    this.notice.set(null);
+    this.error.set(null);
+    this.requestService.downloadInstitutionDocument(document.documentId, token)
+      .pipe(finalize(() => this.downloadingId.set(null)))
       .subscribe({
-        next: (blob) => {
+        next: blob => {
           const url = URL.createObjectURL(blob);
-          const anchor = document.createElement('a');
+          const anchor = window.document.createElement('a');
           anchor.href = url;
-          anchor.download = `approved-document-${documentId}`;
+          // Keep the original name (and extension) so the file opens in the right program.
+          anchor.download = document.documentName || `document-${document.documentId}`;
           anchor.click();
           URL.revokeObjectURL(url);
-          this.message.set('Document download started.');
         },
-        error: (err) => {
-          this.message.set(err?.error?.error ?? err?.error?.message ?? 'Could not download the approved document.');
-        },
+        error: err => this.error.set(err?.error?.error ?? err?.error?.detail ?? 'Could not download this document. Your access may have ended.'),
       });
   }
 
-  startFlagging(): void {
-    this.showingFlagForm.set(true);
-    this.message.set(null);
+  /** PDFs and images open in the page; other files can only be downloaded. */
+  canView(document: ApprovedInstitutionDocument): boolean {
+    return /\.(pdf|png|jpe?g|gif|webp)$/i.test(document.documentName ?? '');
   }
 
-  flagDocument(): void {
-    const token = this.getSessionToken();
-    const documentId = this.selectedDocumentId();
-    const reason = this.flagReason().trim();
-
+  view(document: ApprovedInstitutionDocument): void {
+    const token = this.authService.getSessionToken();
     if (!token) {
-      this.message.set('Please sign in to flag documents.');
-      return;
-    }
-    if (!documentId) {
-      this.message.set('Select an approved document before flagging.');
-      return;
-    }
-    if (!reason) {
-      this.message.set('Please provide a reason for flagging the document.');
+      this.error.set('Your session has ended. Please sign in again.');
       return;
     }
 
-    this.loading.set(true);
-    this.message.set(null);
+    this.viewingId.set(document.documentId);
+    this.error.set(null);
+    this.requestService.viewInstitutionDocument(document.documentId, token)
+      .pipe(finalize(() => this.viewingId.set(null)))
+      .subscribe({
+        next: blob => {
+          this.closeViewer();
+          const kind = blob.type === 'application/pdf' ? 'pdf' : 'image';
+          this.viewer.set({ name: document.documentName, url: URL.createObjectURL(blob), kind });
+        },
+        error: err => this.error.set(err?.error?.error ?? err?.error?.detail ?? 'Could not open this document. Your access may have ended.'),
+      });
+  }
 
-    this.requestService
-      .flagApprovedDocument(documentId, token, { reason })
-      .pipe(finalize(() => this.loading.set(false)))
+  closeViewer(): void {
+    const open = this.viewer();
+    if (open) URL.revokeObjectURL(open.url);
+    this.viewer.set(null);
+  }
+
+  startFlag(document: ApprovedInstitutionDocument): void {
+    this.flaggingId.set(this.flaggingId() === document.documentId ? null : document.documentId);
+    this.flagReason.set('');
+    this.notice.set(null);
+  }
+
+  submitFlag(document: ApprovedInstitutionDocument): void {
+    const token = this.authService.getSessionToken();
+    const reason = this.flagReason().trim();
+    if (!token) {
+      this.error.set('Your session has ended. Please sign in again.');
+      return;
+    }
+    if (!reason) return;
+
+    this.submittingFlag.set(true);
+    this.error.set(null);
+    this.requestService.flagApprovedDocument(document.documentId, token, { reason })
+      .pipe(finalize(() => this.submittingFlag.set(false)))
       .subscribe({
         next: () => {
-          this.message.set('Document flagged successfully. The review team has received your reason.');
-          this.showingFlagForm.set(false);
+          this.flaggingId.set(null);
           this.flagReason.set('');
+          this.notice.set(`"${document.documentName}" was flagged. The owner has been told why.`);
         },
-        error: (err) => {
-          this.message.set(err?.error?.error ?? err?.error?.message ?? 'Could not flag the approved document.');
-        },
+        error: err => this.error.set(err?.error?.error ?? err?.error?.detail ?? 'Could not flag this document.'),
       });
   }
 }

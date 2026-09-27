@@ -37,6 +37,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
   openGroup = signal<string | null>(null);
   profileOpen = signal(false);
   accountDetails = signal<CurrentAccount | null>(null);
+  readonly savingEmailPreference = signal(false);
   loadingAccount = signal(false);
   accountError = signal<string | null>(null);
   editingProfile = signal(false);
@@ -158,6 +159,16 @@ export class SidebarComponent implements OnInit, OnDestroy {
       ];
     }
 
+    // Compliance Officers review documents and watch compliance; everything else is out of their scope.
+    if (this.auth.isComplianceOfficerViewer()) {
+      return [
+        { label: 'Dashboard', icon: 'grid', route: '/dashboard/system' },
+        { label: 'Review Queue', icon: 'file', route: '/compliance/review-queue' },
+        { label: 'All Documents', icon: 'folder', route: '/documents/all' },
+        { label: 'Help', icon: 'file', route: '/help' }
+      ];
+    }
+
     if (this.auth.isDocumentOwnerOnly()) {
       return [
         { label: 'Dashboard', icon: 'file', route: '/dashboard/owner' },
@@ -273,6 +284,24 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   /** Closes the popup entirely, discarding any unsaved edits. Ignored while a save is in flight. */
+  /** Saves the email preference straight away; the switch goes back if saving fails. */
+  setEmailNotifications(enabled: boolean): void {
+    const account = this.accountDetails();
+    if (!account) return;
+
+    this.accountDetails.set({ ...account, emailNotificationsEnabled: enabled });
+    this.savingEmailPreference.set(true);
+    this.auth.setEmailNotifications(enabled)
+      .pipe(finalize(() => this.savingEmailPreference.set(false)))
+      .subscribe({
+        next: () => this.toast.show(enabled ? 'Notification emails turned on.' : 'Notification emails turned off.', 'success'),
+        error: () => {
+          this.accountDetails.update(current => current ? { ...current, emailNotificationsEnabled: !enabled } : current);
+          this.toast.show('Could not save your notification preference. Please try again.', 'error');
+        }
+      });
+  }
+
   closeProfile(): void {
     if (this.savingProfile()) return;
     if (this.editingProfile()) this.cancelEditProfile();

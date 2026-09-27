@@ -17,6 +17,7 @@ describe('Dashboard', () => {
       institutionId: '7',
       institutionName: 'Test Institution',
       institutionCode: 'TEST',
+      email: 'c*****t@bank.test',
       sessionToken: 'session-token',
       accessToken: 'access-token',
       expiresAt: new Date(Date.now() + 3600000).toISOString(),
@@ -45,9 +46,8 @@ describe('Dashboard', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should sign out through the institution auth service', () => {
-    component.signOut();
-
-    expect(institutionAuthService.signOut).toHaveBeenCalled();
+  // Signing out now lives in the portal layout (top bar); the dashboard explains a missing session instead.
+  it('should explain that the session has ended when there is no session token', () => {
+    expect(component.error()).toContain('session has ended');
   });
 });

@@ -57,9 +57,25 @@
   color: #b45309;
 }
 
-.calendar-chip--update {
+.calendar-chip--uploaded {
   background: #eff6ff;
   color: #1d4ed8;
+}
+
+.calendar-chip--certified {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.calendar-chip--expiry {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.calendar-panel__legend {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-light);
 }
 
 .calendar-panel__controls {
@@ -126,19 +142,29 @@
   text-align: left;
 }
 
-.calendar-event--expiring {
+.calendar-event--uploaded {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.calendar-event--certified {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.calendar-event--expiry {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.calendar-event--expiry.calendar-event--expiring {
   background: #fff7ed;
   color: #b45309;
 }
 
-.calendar-event:not(.calendar-event--expiring):not(.calendar-event--update) {
-  background: #f3f4f6;
-  color: var(--text-light);
-}
-
-.calendar-event--update {
-  background: #eff6ff;
-  color: #1d4ed8;
+.calendar-event--expiry.calendar-event--expired {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .eyebrow--dark {

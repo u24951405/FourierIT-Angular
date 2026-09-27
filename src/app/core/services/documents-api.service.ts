@@ -14,6 +14,8 @@ export interface DocumentListItem {
   uploadedDate: string;
   lastModifiedDate: string | null;
   expiryDate: string;
+  /** Date the copy was certified (latest certification); null when none was captured. */
+  certificationDate?: string | null;
   documentTypeId: number;
   documentTypeName: string;
   reviewStatus?: DocumentReviewStatus;
@@ -212,7 +214,7 @@ export class DocumentsApiService {
     return this.http.get<DocumentFlagItem[]>(`${this.base}/flags`);
   }
 
-  resolveDocumentFlag(documentId: number, flagId: number): Observable<void> {
-    return this.http.post<void>(`${this.base}/${documentId}/flags/${flagId}/resolve`, null);
+  resolveDocumentFlag(documentId: number, flagId: number, note?: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/${documentId}/flags/${flagId}/resolve`, { note: note?.trim() || null });
   }
 }

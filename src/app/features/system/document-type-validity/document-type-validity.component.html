@@ -21,7 +21,7 @@
         <input type="search" placeholder="Search document types" [(ngModel)]="search">
       </label>
       <span class="dv-count" *ngIf="!loading() && documentTypes().length">
-        {{ documentTypes().length }} types · {{ neverExpireCount }} never expire
+        {{ documentTypes().length }} type{{ documentTypes().length === 1 ? '' : 's' }}
       </span>
     </div>
   </div>
@@ -48,18 +48,12 @@
               <span class="dv-type-desc" *ngIf="type.description">{{ type.description }}</span>
             </td>
             <td data-label="Validity">
-              <ng-container *ngIf="type.neverExpires; else expiring">
-                <span class="dv-pill dv-pill--never">Never expires</span>
-              </ng-container>
-              <ng-template #expiring>
-                <span class="dv-pill">{{ type.validityMonths }} month{{ type.validityMonths === 1 ? '' : 's' }}</span>
-                <span class="dv-sub">from {{ basisLabel(type.validityBasis).toLowerCase() }}</span>
-              </ng-template>
+              <span class="dv-pill">{{ type.validityMonths }} month{{ type.validityMonths === 1 ? '' : 's' }}</span>
+              <span class="dv-sub">from {{ basisLabel(type.validityBasis).toLowerCase() }}</span>
             </td>
             <td data-label="Expiry warning">
-              <span *ngIf="type.neverExpires" class="dv-muted">Not needed</span>
-              <span *ngIf="!type.neverExpires && type.warningDays > 0">{{ type.warningDays }} day{{ type.warningDays === 1 ? '' : 's' }} before</span>
-              <span *ngIf="!type.neverExpires && !type.warningDays" class="dv-muted">No warning</span>
+              <span *ngIf="type.warningDays > 0">{{ type.warningDays }} day{{ type.warningDays === 1 ? '' : 's' }} before</span>
+              <span *ngIf="!type.warningDays" class="dv-muted">No warning</span>
             </td>
             <td data-label="Documents" class="dv-num">{{ type.documentCount }}</td>
             <td class="dv-actions">
@@ -100,27 +94,10 @@
       </header>
 
       <div class="dv-dialog__body">
-        <!-- 1. Expires? -->
-        <fieldset class="dv-step">
-          <legend><span class="dv-step__num">1</span> Does this document expire?</legend>
-          <div class="dv-choices dv-choices--two">
-            <label class="dv-choice" [class.dv-choice--selected]="!form.neverExpires">
-              <input type="radio" name="dv-expires" [value]="false" [(ngModel)]="form.neverExpires">
-              <span class="dv-choice__title">Expires</span>
-              <span class="dv-choice__desc">Valid for a set number of months, then must be replaced.</span>
-            </label>
-            <label class="dv-choice" [class.dv-choice--selected]="form.neverExpires">
-              <input type="radio" name="dv-expires" [value]="true" [(ngModel)]="form.neverExpires">
-              <span class="dv-choice__title">Never expires</span>
-              <span class="dv-choice__desc">Stays valid permanently, e.g. a birth certificate.</span>
-            </label>
-          </div>
-        </fieldset>
-
-        <ng-container *ngIf="!form.neverExpires">
-          <!-- 2. How long -->
+        <!-- Every document expires: it is valid for a number of months from its certification or upload date. -->
+          <!-- 1. How long -->
           <fieldset class="dv-step">
-            <legend><span class="dv-step__num">2</span> How long is it valid?</legend>
+            <legend><span class="dv-step__num">1</span> How long is it valid?</legend>
             <div class="dv-field" [class.dv-field--invalid]="monthsError">
               <label for="validityMonths">Valid for</label>
               <div class="dv-input">
@@ -145,7 +122,7 @@
 
           <!-- 3. Warning -->
           <fieldset class="dv-step">
-            <legend><span class="dv-step__num">3</span> Expiry warning</legend>
+            <legend><span class="dv-step__num">2</span> Expiry warning</legend>
             <div class="dv-field" [class.dv-field--invalid]="warningError">
               <label for="warningDays">Warn owners</label>
               <div class="dv-input">
@@ -160,7 +137,6 @@
               <p class="dv-field__error" *ngIf="warningError">{{ warningError }}</p>
             </div>
           </fieldset>
-        </ng-container>
 
         <div class="dv-summary" aria-live="polite">
           <span class="dv-summary__label">Rule summary</span>
@@ -211,7 +187,7 @@
           </div>
           <div class="dv-stat">
             <span class="dv-stat__value">{{ previewSummary()?.missingSourceDate ?? 0 }}</span>
-            <span class="dv-stat__label">No source date</span>
+            <span class="dv-stat__label">No certification date</span>
           </div>
         </div>
 
@@ -220,7 +196,8 @@
           straight away and their owners will need to upload a replacement.
         </p>
         <p class="dv-notice" *ngIf="(previewSummary()?.missingSourceDate ?? 0) > 0">
-          Documents with no {{ basisLabel(form.validityBasis).toLowerCase() }} can't be dated, so they will not expire.
+          {{ previewSummary()?.missingSourceDate }} document{{ previewSummary()?.missingSourceDate === 1 ? ' has' : 's have' }} no certification date,
+          so {{ previewSummary()?.missingSourceDate === 1 ? 'its' : 'their' }} validity is counted from the upload date instead.
         </p>
         <p class="dv-notice" *ngIf="(previewSummary()?.affectedDocuments ?? 0) === 0">
           No existing documents use this type, so only future uploads are affected.

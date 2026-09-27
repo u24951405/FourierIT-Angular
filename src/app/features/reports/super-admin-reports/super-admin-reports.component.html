@@ -93,6 +93,7 @@
               <option value="Pending">Pending</option>
               <option value="Department_Pending">Department Pending</option>
               <option value="Denied">Denied</option>
+              <option value="Revoked">Revoked</option>
             </select>
           </label>
 
@@ -116,7 +117,7 @@
       <ng-container *ngIf="!loading && !error">
         <section class="report-panel" *ngIf="activeTab === 'owner'">
       <div class="panel-header">
-        <h2>View Client Risk Rating Report</h2>
+        <h2>Document Owner Compliance Report</h2>
         <div class="inline-actions">
           <label>
             Sort By
@@ -269,7 +270,7 @@
 
     <section class="report-panel" *ngIf="activeTab === 'department'">
       <div class="panel-header">
-        <h2>View Compliance Certificate</h2>
+        <h2>Department Compliance Report</h2>
         <div class="inline-actions">
           <label>
             Sort By
@@ -417,7 +418,7 @@
 
     <section class="report-panel" *ngIf="activeTab === 'cb-department'">
       <div class="panel-header">
-        <h2>View Compliance History Report</h2>
+        <h2>Compliance by Department Report</h2>
         <button type="button" class="btn btn-primary" (click)="exportControlBreakDepartmentPdf()">Download PDF</button>
       </div>
 
@@ -546,10 +547,12 @@
         <button type="button" class="btn btn-primary" (click)="exportAccessHistoryPdf()">Download PDF</button>
       </div>
 
+      <p class="panel-note">Requests that were approved, so the institution was given access. Pending and denied requests are in the Institution Document Request Report.</p>
       <div class="totals-strip">
-        <span>Total Access Entries: {{ accessHistoryTotals().total }}</span>
+        <span>Access grants: {{ accessHistoryTotals().total }}</span>
         <span>Active: {{ accessHistoryTotals().active }}</span>
         <span>Expired: {{ accessHistoryTotals().expired }}</span>
+        <span>Revoked: {{ accessHistoryTotals().revoked }}</span>
       </div>
 
       <div class="table-wrap">
@@ -559,10 +562,10 @@
               <th>Institution</th>
               <th>Recipient</th>
               <th>Recipient Type</th>
-              <th>Access Granted Date</th>
+              <th>Access Granted</th>
               <th>Access Expiry</th>
               <th>Access Status</th>
-              <th>Documents Accessed</th>
+              <th>Documents Downloaded</th>
             </tr>
           </thead>
           <tbody>
@@ -572,8 +575,8 @@
               <td>{{ row.recipientType }}</td>
               <td>{{ formatDateTime(row.accessGrantedDate) }}</td>
               <td>{{ formatDateTime(row.accessExpiry) }}</td>
-              <td>{{ row.accessStatus }}</td>
-              <td>{{ row.documentsAccessed.join(', ') || '-' }}</td>
+              <td><span class="status-badge" [class]="statusBadgeClass(row.accessStatus)">{{ row.accessStatus }}</span></td>
+              <td>{{ row.documentsAccessed.join(', ') || 'None yet' }}</td>
             </tr>
             <tr *ngIf="accessHistoryRows.length === 0">
               <td colspan="7" class="empty">
@@ -590,7 +593,7 @@
 
     <section class="report-panel" *ngIf="activeTab === 'expiring'">
       <div class="panel-header">
-        <h2>Operational Report</h2>
+        <h2>Near-Expiry Documents Report</h2>
         <button type="button" class="btn btn-primary" (click)="exportExpiringDocumentsPdf()">Download PDF</button>
       </div>
 

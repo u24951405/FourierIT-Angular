@@ -1,10 +1,11 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { SystemSetting, SystemSettingsService } from '../../../core/services/system-settings.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { HelpContextService } from '../../../core/services/help-context.service';
 import { DocumentTypeValidityComponent } from '../document-type-validity/document-type-validity.component';
 
 type SettingsTab = 'security' | 'documents';
@@ -19,12 +20,18 @@ const CATEGORY_DESCRIPTIONS: Readonly<Record<string, string>> = {
   'Verification codes': 'One-time codes emailed to confirm someone is who they say they are.',
   'Sessions': 'How long people stay signed in before they must sign in again.',
   'Links': 'Emailed links that open the institution portal, a document request or a password reset.',
-  'Security limits': 'Protection against guessing codes and flooding inboxes with emails.'
+  'Security limits': 'Protection against guessing codes and flooding inboxes with emails.',
+  'Reminders': 'Follow-ups on institution requests: reminding owners, warning institutions before access ends, and how much extra time they can ask for.'
 };
 
 const TAB_URLS: Readonly<Record<SettingsTab, string>> = {
   security: '/system-settings',
   documents: '/system-settings/document-types'
+};
+
+const TAB_HELP: Readonly<Record<SettingsTab, string>> = {
+  security: 'timer-settings',
+  documents: 'document-validity'
 };
 
 @Component({
@@ -34,10 +41,11 @@ const TAB_URLS: Readonly<Record<SettingsTab, string>> = {
   templateUrl: './system-settings.component.html',
   styleUrl: './system-settings.component.css'
 })
-export class SystemSettingsComponent implements OnInit {
+export class SystemSettingsComponent implements OnInit, OnDestroy {
   private readonly settingsService = inject(SystemSettingsService);
   private readonly toast = inject(ToastService);
   private readonly location = inject(Location);
+  private readonly help = inject(HelpContextService);
 
   readonly activeTab = signal<SettingsTab>(
     inject(ActivatedRoute).snapshot.data['tab'] === 'documents' ? 'documents' : 'security'
@@ -64,11 +72,18 @@ export class SystemSettingsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.help.set(TAB_HELP[this.activeTab()]);
     this.load();
+  }
+
+  ngOnDestroy(): void {
+    this.help.set(null);
   }
 
   selectTab(tab: SettingsTab): void {
     this.activeTab.set(tab);
+    // The tab changes only the address bar, not the route, so tell the Help button which topic is showing.
+    this.help.set(TAB_HELP[tab]);
     // Keep the address in step with the tab so either section can be bookmarked or linked to.
     this.location.replaceState(TAB_URLS[tab]);
   }

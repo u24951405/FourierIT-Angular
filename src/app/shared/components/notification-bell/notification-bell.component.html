@@ -34,8 +34,7 @@
             <button type="button"
                     class="item"
                     [class.item--unread]="!item.isRead"
-                    [class.item--rejected]="isRejection(item)"
-                    [class.item--approved]="isApproval(item)"
+                    [ngClass]="'item--' + tone(item)"
                     (click)="select(item)">
               <span class="item__subject">{{ item.subject }}</span>
               <span class="item__message">{{ item.message }}</span>

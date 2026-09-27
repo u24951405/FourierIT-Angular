@@ -1,86 +1,102 @@
-<div class="approved-documents-page">
-  <header class="approved-documents-header">
-    <div class="approved-documents-header__top">
-      <h1>Approved Documents</h1>
-      <p>Access the files currently available within your institution's approved document-type scopes.</p>
-      <button class="btn btn--outline approved-documents-back" type="button" (click)="router.navigate(['/institution/dashboard'])">
-        ← Back to dashboard
-      </button>
-    </div>
-  </header>
+<app-portal-page-header title="Approved documents"
+  subtitle="Documents you were given access to. View them here without saving a copy, or download them. Access ends automatically at the time shown.">
+  <button type="button" class="btn btn--outline" (click)="loadDocuments()" [disabled]="loading()">Refresh</button>
+</app-portal-page-header>
 
-  <div class="approved-documents-form">
-    <div class="approved-documents-controls">
-      <button class="btn btn--primary" type="button" (click)="loadApprovedDocuments()" [disabled]="loading()">
-        {{ loading() ? 'Loading…' : 'Refresh approved documents' }}
-      </button>
-      <span class="approved-documents-status">Showing {{ groupedDocuments().length }} recipient group{{ groupedDocuments().length === 1 ? '' : 's' }}</span>
-    </div>
+@if (notice()) {
+  <div class="banner banner--success" role="status">{{ notice() }}</div>
+}
+@if (error()) {
+  <div class="banner banner--error" role="alert">{{ error() }}</div>
+}
 
-    <div *ngIf="groupedDocuments().length" class="approved-documents-list">
-      <h2>Approved access by recipient</h2>
-      <div *ngFor="let group of groupedDocuments()" class="approved-documents-group">
-        <div class="approved-documents-group__header">
+@if (loading() && !documents().length) {
+  <p class="state">Loading your documents…</p>
+} @else if (!error() && !groups().length) {
+  <div class="empty">
+    <p>No documents are available right now. Documents appear here once a request is approved.</p>
+    <a class="btn btn--outline" routerLink="/institution/my-requests">See my requests</a>
+  </div>
+} @else {
+  <div class="groups">
+    @for (group of groups(); track group.requestId) {
+      <section class="group" [attr.aria-label]="'Request ' + group.requestId">
+        <header class="group__header">
           <div>
-            <strong>{{ group.recipientName }}</strong>
-            <span class="approved-documents-group__type">{{ group.requestType === 'Department' ? 'Department recipient' : 'Individual recipient' }}</span>
+            <h2 class="group__title">Request #{{ group.requestId }}</h2>
+            <p class="group__meta">From {{ group.recipientName }} ({{ group.requestType === 'Department' ? 'department' : 'person' }}) · {{ group.documents.length }} document{{ group.documents.length === 1 ? '' : 's' }}</p>
           </div>
-          <span class="approved-documents-group__count">{{ group.documents.length }} available file{{ group.documents.length === 1 ? '' : 's' }}</span>
-        </div>
-        <p class="approved-documents-group__scope">Access is approved for all available files in these document types.</p>
-        <ul class="approved-documents-types">
-          <li *ngFor="let type of documentTypeSummaries(group.documents)">
-            <strong>{{ type.name }}</strong>: {{ type.count }} available file{{ type.count === 1 ? '' : 's' }}
-          </li>
-        </ul>
-        <p class="approved-documents-group__scope">Files below are the documents currently available within the approved type-wide scope.</p>
-        <ul>
-          <li *ngFor="let document of group.documents" class="approved-documents-item">
-            <label>
-              <input
-                type="radio"
-                name="approvedDocument"
-                [checked]="selectedDocumentId() === document.documentId"
-                (change)="selectDocument(document.documentId)"
-              />
-              <span class="approved-documents-item__meta">
-                <strong>{{ document.documentName }}</strong>
-                <span>{{ document.documentTypeName }}</span>
+          <div class="group__access">
+            @if (group.expiresAt) {
+              <span class="expiry" [class.expiry--soon]="endsSoon(group.expiresAt)">
+                Access ends {{ group.expiresAt | date:'d MMM y, HH:mm' }}
               </span>
-              <span class="approved-documents-item__timestamp">
-                Approved {{ document.approvedAt | date:'mediumDate' }}
-              </span>
-            </label>
-          </li>
+            }
+            @if (group.extensionStatus === 'Pending') {
+              <span class="group__extension">More time asked for (until {{ group.extensionRequestedUntil | date:'d MMM y' }})</span>
+            } @else {
+              <a class="group__extension-link" routerLink="/institution/my-requests" [queryParams]="{ status: 'approved' }">Need more time?</a>
+            }
+          </div>
+        </header>
+
+        <ul class="docs">
+          @for (document of group.documents; track document.documentId) {
+            <li class="doc">
+              <div class="doc__row">
+                <div class="doc__info">
+                  <span class="doc__name">{{ document.documentName }}</span>
+                  <span class="doc__meta">{{ document.documentTypeName }} · approved {{ document.approvedAt | date:'d MMM y' }}</span>
+                </div>
+                <div class="doc__actions">
+                  @if (canView(document)) {
+                    <button type="button" class="btn btn--outline" (click)="view(document)" [disabled]="viewingId() === document.documentId">
+                      {{ viewingId() === document.documentId ? 'Opening…' : 'View' }}
+                    </button>
+                  }
+                  <button type="button" class="btn btn--primary" (click)="download(document)" [disabled]="downloadingId() === document.documentId">
+                    {{ downloadingId() === document.documentId ? 'Downloading…' : 'Download' }}
+                  </button>
+                  <button type="button" class="btn btn--outline" (click)="startFlag(document)" [attr.aria-expanded]="flaggingId() === document.documentId">
+                    Flag a problem
+                  </button>
+                </div>
+              </div>
+
+              @if (flaggingId() === document.documentId) {
+                <form class="flag" (submit)="$event.preventDefault(); submitFlag(document)">
+                  <label class="flag__label" [attr.for]="'flag-' + document.documentId">What is wrong with this document?</label>
+                  <textarea [id]="'flag-' + document.documentId" rows="3"
+                            [value]="flagReason()" (input)="flagReason.set($any($event.target).value)"
+                            placeholder="For example: the copy is not certified, or the page is unreadable."></textarea>
+                  <div class="flag__actions">
+                    <button type="button" class="btn btn--outline" (click)="flaggingId.set(null)">Cancel</button>
+                    <button type="submit" class="btn btn--danger" [disabled]="submittingFlag() || !flagReason().trim()">
+                      {{ submittingFlag() ? 'Sending…' : 'Send flag' }}
+                    </button>
+                  </div>
+                </form>
+              }
+            </li>
+          }
         </ul>
-      </div>
+      </section>
+    }
+  </div>
+}
 
-      <div class="approved-documents-actions">
-        <button class="btn btn-download" type="button" (click)="downloadDocument()" [disabled]="loading() || !selectedDocumentId()">
-          {{ loading() ? 'Downloading…' : 'Download document' }}
-        </button>
-        <button class="btn btn-flag" type="button" (click)="startFlagging()" [disabled]="loading() || !selectedDocumentId()">
-          Flag document as not up to standard
-        </button>
-      </div>
-
-      <div *ngIf="showingFlagForm()" class="approved-documents-flag-form">
-        <label for="flag-reason">Why is this document not up to standard?</label>
-        <textarea
-          id="flag-reason"
-          rows="4"
-          [value]="flagReason()"
-          (input)="flagReason.set($any($event.target).value)"
-          placeholder="Provide a reason for the review team"
-        ></textarea>
-        <button class="btn btn-flag-submit" type="button" (click)="flagDocument()" [disabled]="loading()">
-          {{ loading() ? 'Submitting…' : 'Submit flag' }}
-        </button>
-      </div>
-    </div>
-
-    <div *ngIf="!groupedDocuments().length && message()" class="approved-documents-message">
-      {{ message() }}
+@if (viewer(); as open) {
+  <div class="viewer" role="dialog" aria-modal="true" [attr.aria-label]="'Viewing ' + open.name" (click)="closeViewer()">
+    <div class="viewer__panel" (click)="$event.stopPropagation()">
+      <header class="viewer__header">
+        <span class="viewer__name">{{ open.name }}</span>
+        <button type="button" class="btn btn--outline" (click)="closeViewer()">Close</button>
+      </header>
+      @if (open.kind === 'pdf') {
+        <iframe class="viewer__frame" [src]="safeUrl(open.url)" [title]="open.name"></iframe>
+      } @else {
+        <div class="viewer__image"><img [src]="safeUrl(open.url)" [alt]="open.name"></div>
+      }
     </div>
   </div>
-</div>
+}

@@ -1,106 +1,140 @@
-@use 'sass:color';
-
-$dark-navy: #1e2a3a;
 $border: #e5e7eb;
-$surface: #f3f4f6;
+$surface: #f8fafc;
 $text-primary: #111827;
 $text-sub: #6b7280;
 $text-muted: #9ca3af;
-$green: #10b981;
-$amber: #f59e0b;
-$red: #ef4444;
 
-// ── Title Block ───────────────────────────────────────────────────────────────
+// ── Owner header ──────────────────────────────────────────────────────────────
 
-.act-title-block {
-  text-align: center;
-  padding: 1.75rem 0 0.75rem;
+.act-owner {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin: 1.5rem 0 1rem;
 
-  &__org { font-size: 0.6875rem; letter-spacing: 0.14em; color: $text-muted; margin: 0; }
-  &__title { font-size: 1.75rem; font-weight: 700; color: $text-primary; margin: 0; line-height: 1.2; }
-  &__divider { display: flex; justify-content: center; margin: 0.125rem 0 0.25rem; }
+  &__eyebrow {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: $text-muted;
+  }
+
+  &__name {
+    margin: 0.15rem 0 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $text-primary;
+    line-height: 1.2;
+  }
 }
 
-.act-identity-badge {
+.act-compliance {
   display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 1rem;
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 20px;
-
-  &__title {
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: color.adjust($green, $lightness: -5%);
-    display: block;
-  }
-
-  &__sub {
-    font-size: 0.6875rem;
-    color: $text-sub;
-    display: block;
-  }
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
-// ── Overview Grid ─────────────────────────────────────────────────────────────
+// ── At a glance ───────────────────────────────────────────────────────────────
+
+.act-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.act-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid $border;
+  border-radius: 10px;
+  background: $surface;
+
+  &__value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $text-primary;
+    line-height: 1.1;
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    color: $text-sub;
+  }
+
+  &--good .act-kpi__value { color: #047857; }
+  &--warn .act-kpi__value { color: #b45309; }
+}
+
+// ── Overview cards ────────────────────────────────────────────────────────────
 
 .act-overview-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-top: 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
 }
 
-.chart-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+.act-card {
+  border: 1px solid $border;
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
 
-  &__subtitle {
+  &__title {
+    margin: 0;
     font-size: 0.9375rem;
     font-weight: 600;
     color: $text-primary;
-    margin: 0 0 0.25rem;
   }
 
   &__desc {
-    text-align: center;
-    margin: 0 0 0.5rem;
+    margin: 0.25rem 0 0.75rem;
+    font-size: 0.75rem;
+    color: $text-sub;
+  }
+
+  &__body {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
   }
 }
 
 .act-doughnut-wrap {
-  max-width: 150px;
-  margin: 1rem auto;
+  flex: 0 0 130px;
+  width: 130px;
+
+  // A doughnut of zeros draws nothing; don't leave a blank gap beside the legend.
+  &--empty { display: none; }
 }
 
 .act-legend {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  width: min(250px, 100%);
-  margin: 0 auto;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .act-legend-item {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 10px 1fr auto;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.75rem;
-  width: 100%;
-  min-height: 1.4rem;
+  font-size: 0.8125rem;
 
   &--total {
-    margin-top: 0.25rem;
-    padding-top: 0.375rem;
+    margin-top: 0.2rem;
+    padding-top: 0.4rem;
     border-top: 1px solid $border;
     font-weight: 600;
   }
@@ -110,46 +144,46 @@ $red: #ef4444;
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  flex-shrink: 0;
-  justify-self: start;
 }
 
 .act-legend-label {
   color: $text-sub;
-  justify-self: start;
-  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .act-legend-count {
   font-weight: 600;
   color: $text-primary;
-  justify-self: end;
-  text-align: right;
 }
 
 // ── Tables ────────────────────────────────────────────────────────────────────
 
+.act-section-note {
+  margin: -0.25rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: $text-sub;
+}
+
 .act-table-card {
   border: 1px solid $border;
-  border-radius: 8px;
-  overflow: hidden;
-  margin-top: 0.75rem;
+  border-radius: 10px;
+  overflow-x: auto;
 }
 
 .act-table {
   width: 100%;
+  min-width: 520px;
   border-collapse: collapse;
   font-size: 0.8125rem;
 
-  thead tr {
+  th {
+    padding: 0.65rem 1rem;
     background: $surface;
     border-bottom: 1px solid $border;
-  }
-
-  th {
-    padding: 0.7rem 1rem;
     text-align: left;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 700;
     color: $text-sub;
     letter-spacing: 0.08em;
@@ -157,182 +191,120 @@ $red: #ef4444;
     white-space: nowrap;
   }
 
-  tbody tr {
-    border-bottom: 1px solid $border;
-    &:last-child { border-bottom: none; }
-    &:hover { background: #fafafa; }
-  }
-
   td {
-    padding: 0.8rem 1rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid $border;
     color: $text-primary;
     vertical-align: middle;
   }
 
+  tbody tr:last-child td { border-bottom: none; }
+
   &__doc-name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #2563eb;
     font-weight: 500;
+    word-break: break-word;
   }
 
-  &__date { color: $text-muted; white-space: nowrap; font-size: 0.75rem; }
-  &__reason { color: $text-sub; max-width: 300px; font-size: 0.75rem; }
-  &__shared { color: #2563eb; font-size: 0.75rem; }
+  &__date {
+    color: $text-sub;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__reason { color: $text-sub; }
 }
 
-.act-subtotal-row {
-  background: #edf2f4;
+// One row per document type, above that type's documents.
+.act-group-row td {
+  background: #f1f5f9;
+  padding: 0.55rem 1rem;
+}
+
+.act-group-row__dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.act-group-row__name {
   font-weight: 700;
   color: $text-primary;
 }
 
-.act-subtotal-row--compact {
+.act-group-row__meta {
+  margin-left: 0.75rem;
   font-size: 0.75rem;
-}
-
-.act-subtotal-cell {
-  display: grid;
-  grid-template-columns: 1.5fr auto auto auto;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  width: 100%;
-}
-
-.act-subtotal-label {
-  font-weight: 700;
-  color: $text-primary;
-}
-
-.act-subtotal-value {
   color: $text-sub;
-  font-weight: 600;
 }
 
-.act-subtotal-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.2rem 0.55rem;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-}
+.act-group-row__attention { color: #b45309; }
 
-.act-subtotal-badge--verified {
-  background: #d9f7e8;
-  color: #0f7a52;
-}
-
-.act-subtotal-badge--expiring {
-  background: #fef3c7;
-  color: #b45309;
-}
-
-.act-grand-total-row {
+.act-total-row td {
   background: #1e2a3a;
   color: #fff;
-}
-
-.act-grand-total-cell {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.7rem 1rem;
-  font-size: 0.8rem;
-  color: #fff;
-}
-
-.act-grand-total-label {
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.act-grand-total-value {
-  color: rgba(255,255,255,0.9);
   font-weight: 600;
+  border-bottom: none;
 }
-
-.act-grand-total-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-}
-
-.act-grand-total-badge--active {
-  background: #d9f7e8;
-  color: #0f7a52;
-}
-
-// ── Category Tag ──────────────────────────────────────────────────────────────
-
-.act-category-tag {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: $text-primary;
-  white-space: nowrap;
-}
-
-// ── Inventory Status ──────────────────────────────────────────────────────────
-
-.inv-status {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-
-  &--verified   { background: #f0fdf4; color: $green; }
-  &--expiring   { background: #fffbeb; color: $amber; }
-  &--pending    { background: #fef9c3; color: color.adjust($amber, $lightness: -15%); }
-  &--expired    { background: #fef2f2; color: $red; }
-}
-
-// ── Accessor ──────────────────────────────────────────────────────────────────
 
 .act-accessor {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.1rem;
 
-  &__name { font-weight: 500; color: $text-primary; font-size: 0.8125rem; }
-  &__role { font-size: 0.6875rem; color: $text-muted; }
+  &__name { font-weight: 500; color: $text-primary; }
+  &__role { font-size: 0.75rem; color: $text-muted; }
 }
 
-// ── Organisation ──────────────────────────────────────────────────────────────
+.act-org__name { font-weight: 500; }
 
-.act-org {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.8125rem;
-  color: $text-primary;
+// ── Status pills ──────────────────────────────────────────────────────────────
 
-  &__name { font-weight: 500; }
-}
-
-// ── Client Status ─────────────────────────────────────────────────────────────
-
-.client-status {
+.act-pill {
   display: inline-flex;
-  padding: 0.2rem 0.625rem;
-  border-radius: 4px;
-  font-size: 0.6875rem;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
   font-weight: 600;
+  white-space: nowrap;
+}
 
-  &--active  { background: #f0fdf4; color: $green; }
-  &--pending { background: #fffbeb; color: $amber; }
-  &--expired { background: #fef2f2; color: $red; }
+.act-pill--good    { background: #ecfdf5; color: #047857; }
+.act-pill--warn    { background: #fffbeb; color: #b45309; }
+.act-pill--bad     { background: #fef2f2; color: #b91c1c; }
+.act-pill--neutral { background: #f3f4f6; color: #4b5563; }
+
+// Shown when a section has nothing in it, so an empty table doesn't look broken.
+.act-empty {
+  padding: 1.1rem 1rem;
+  text-align: center;
+  color: $text-sub;
+  font-style: italic;
+
+  &--inline {
+    margin: 0;
+    padding: 0;
+    text-align: left;
+  }
+}
+
+// ── Narrow screens ────────────────────────────────────────────────────────────
+
+@media (max-width: 900px) {
+  .act-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .act-overview-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .act-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .act-card__body { flex-direction: column; align-items: stretch; }
+  .act-doughnut-wrap { align-self: center; }
+}
+
+@media print {
+  .act-table-card { overflow: visible; }
+  .act-table { min-width: 0; }
 }

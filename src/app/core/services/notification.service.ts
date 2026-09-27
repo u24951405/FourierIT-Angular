@@ -9,6 +9,8 @@ export interface AppNotification {
   message: string;
   category: string | null;
   documentId: number | null;
+  /** The app page this notification opens, e.g. "/documents/requests". */
+  link: string | null;
   createdAt: string;
   isRead: boolean;
 }

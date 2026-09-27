@@ -80,7 +80,8 @@
           </div>
           <div class="field">
             <label>Certification Date</label>
-            <input type="date" formControlName="certificationDate">
+            <input type="date" formControlName="certificationDate" [max]="today">
+            <small class="field-hint">Most documents are valid from the date the copy was certified, so this date is usually required.</small>
           </div>
         </div>
 

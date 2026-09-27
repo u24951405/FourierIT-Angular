@@ -67,33 +67,38 @@ export const routes: Routes = [
     loadComponent: () => import('./features/institution-portal/auth/thank-you/thank-you.component').then(m => m.ThankYouComponent)
   },
   {
-    path: 'institution/dashboard',
-    data: { helpKey: 'institution-requests' },
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
-  },
-  {
-    path: 'institution/request-documents',
-    data: { helpKey: 'institution-requests' },
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
-  },
-  {
-    path: 'institution/my-requests',
-    data: { helpKey: 'institution-requests' },
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
-  },
-  {
-    path: 'institution/approved-documents',
-    data: { helpKey: 'institution-requests' },
-    canActivate: [institutionAuthGuard],
-    loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
-  },
-  {
     path: 'institution',
     redirectTo: 'institution/auth/access',
     pathMatch: 'full'
+  },
+  // Signed-in institution pages share one layout (top bar, tabs, footer); the URLs stay /institution/<page>.
+  {
+    path: 'institution',
+    canActivate: [institutionAuthGuard],
+    canActivateChild: [institutionAuthGuard],
+    loadComponent: () => import('./features/institution-portal/shell/institution-shell').then(m => m.InstitutionShellComponent),
+    children: [
+      {
+        path: 'dashboard',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/dashboard/dashboard').then(m => m.Dashboard)
+      },
+      {
+        path: 'request-documents',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/request-documents/request-documents').then(m => m.RequestDocuments)
+      },
+      {
+        path: 'my-requests',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/my-requests/my-requests').then(m => m.MyRequests)
+      },
+      {
+        path: 'approved-documents',
+        data: { helpKey: 'institution-requests' },
+        loadComponent: () => import('./features/institution-portal/approved-documents/approved-documents').then(m => m.ApprovedDocuments)
+      },
+    ]
   },
   {
     path: '',

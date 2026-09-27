@@ -121,8 +121,10 @@
   &:hover { background: var(--input-bg); }
 
   &--unread { background: #f1f6fb; }
-  &--rejected { border-left-color: var(--error); }
-  &--approved { border-left-color: var(--success); }
+  &--danger { border-left-color: var(--error); }
+  &--success { border-left-color: var(--success); }
+  &--warning { border-left-color: #d97706; }
+  &--info { border-left-color: #2563eb; }
 }
 
 .item__subject {

@@ -1,171 +1,110 @@
 <app-report-frame
   [config]="frameConfig"
-  title="Client Risk Rating Matrix"
-  subtitle="Executive Summary — Composite Risk Scoring by Entity Profile"
+  title="Client Risk Rating"
+  subtitle="Every document owner grouped by risk level, with the reasons behind it"
 >
-
-  <!-- ── Title Block ─────────────────────────────────────────────────────────── -->
   <div class="crr-title-block">
-    <p class="crr-title-block__org">EXECUTIVE SUMMARY</p>
-    <h2 class="crr-title-block__title">Client Risk Rating Matrix</h2>
-    <p class="crr-title-block__subtitle">Composite risk scoring incorporating base score, PEP exposure, and geographic jurisdiction weighting</p>
-    <div class="crr-title-block__divider">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
-        <circle cx="12" cy="12" r="10"></circle>
-      </svg>
-    </div>
+    <p class="crr-title-block__org">RISK OVERVIEW</p>
+    <h2 class="crr-title-block__title">Client Risk Rating</h2>
+    <p class="crr-title-block__subtitle">
+      Levels come from each owner's latest compliance check. Points are added for expired documents (30),
+      missing documents (25), a politically exposed person (25), uncertified copies (20) and enhanced due diligence (15).
+    </p>
   </div>
 
-  <!-- ── Summary Stats ──────────────────────────────────────────────────────── -->
-  <div class="crr-summary-stats">
-    <div class="crr-summary-stat crr-summary-stat--neutral">
-      <span class="crr-summary-stat__value">{{ data.totalProfiles }}</span>
-      <span class="crr-summary-stat__label">Total Entity Profiles</span>
+  @if (loading()) {
+    <p class="crr-state">Loading the risk rating…</p>
+  } @else if (error()) {
+    <div class="crr-state crr-state--error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" class="crr-retry" (click)="load()">Try again</button>
     </div>
-    <div class="crr-summary-stat crr-summary-stat--red">
-      <span class="crr-summary-stat__value">{{ highCount }}</span>
-      <span class="crr-summary-stat__label">High Risk Profiles</span>
-    </div>
-    <div class="crr-summary-stat crr-summary-stat--amber">
-      <span class="crr-summary-stat__value">{{ mediumCount }}</span>
-      <span class="crr-summary-stat__label">Medium Risk Profiles</span>
-    </div>
-    <div class="crr-summary-stat crr-summary-stat--green">
-      <span class="crr-summary-stat__value">{{ lowCount }}</span>
-      <span class="crr-summary-stat__label">Low Risk Profiles</span>
-    </div>
-  </div>
-
-  <!-- Scoring Scale -->
-  <div class="crr-scale">
-    <div class="crr-scale__item">
-      <span class="crr-scale__dot crr-scale__dot--green"></span>
-      Low ≤ 35
-    </div>
-    <div class="crr-scale__item">
-      <span class="crr-scale__dot crr-scale__dot--amber"></span>
-      Medium 36-75
-    </div>
-    <div class="crr-scale__item">
-      <span class="crr-scale__dot crr-scale__dot--red"></span>
-      High > 75
-    </div>
-    <span class="crr-scale__avg">Portfolio Avg Composite Score: {{ data.portfolioAvgScore }}</span>
-  </div>
-
-  <!-- Column Headers -->
-  <div class="crr-col-headers">
-    <span>Client Reference Profile</span>
-    <span>Base Score</span>
-    <span>PEP Multiplier</span>
-    <span>Geographic Score</span>
-    <span>Final Composite Risk Weight</span>
-  </div>
-
-  <!-- ── Risk Strata ─────────────────────────────────────────────────────────── -->
-  <div class="crr-strata" *ngFor="let strata of data.strata">
-
-    <!-- Strata Header -->
-    <div class="crr-strata__header" [style.background]="strataColor(strata.level)">
-      <div class="crr-strata__header-left">
-        <!-- Triangle icon for HIGH -->
-        <svg *ngIf="strata.level === RiskLevel.HIGH" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-        </svg>
-        <!-- Trend icon for MEDIUM -->
-        <svg *ngIf="strata.level === RiskLevel.MEDIUM" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-        </svg>
-        <!-- Check icon for LOW -->
-        <svg *ngIf="strata.level === RiskLevel.LOW" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-        RISK STRATA ASSESSMENT — {{ strataLabel(strata.level) }} ({{ strataRange(strata.level) }})
+  } @else if (report(); as r) {
+    <div class="crr-summary-stats">
+      <div class="crr-summary-stat crr-summary-stat--neutral">
+        <span class="crr-summary-stat__value">{{ r.totalProfiles }}</span>
+        <span class="crr-summary-stat__label">Document owners</span>
       </div>
-      <span class="crr-strata__count">{{ strata.profiles.length }} profiles</span>
+      <div class="crr-summary-stat crr-summary-stat--red">
+        <span class="crr-summary-stat__value">{{ countFor('Critical') + countFor('High') }}</span>
+        <span class="crr-summary-stat__label">Critical or high risk</span>
+      </div>
+      <div class="crr-summary-stat crr-summary-stat--amber">
+        <span class="crr-summary-stat__value">{{ countFor('Medium') }}</span>
+        <span class="crr-summary-stat__label">Medium risk</span>
+      </div>
+      <div class="crr-summary-stat crr-summary-stat--green">
+        <span class="crr-summary-stat__value">{{ countFor('Low') }}</span>
+        <span class="crr-summary-stat__label">Low risk</span>
+      </div>
     </div>
 
-    <!-- Profile Rows -->
-    <div class="crr-profile-row" *ngFor="let profile of strata.profiles">
-      <div class="crr-profile-row__info">
-        <span class="crr-profile-row__name">{{ profile.name }}</span>
-        <span class="crr-profile-row__meta">{{ profile.referenceId }} · {{ profile.entityType }}</span>
-        <span class="crr-profile-row__jurisdiction">{{ profile.jurisdiction }}</span>
-      </div>
-
-      <!-- Base Score Bar -->
-      <div class="crr-score-col">
-        <div class="crr-bar crr-bar--amber">
-          <div class="crr-bar__fill" [style.width]="scoreBarWidth(profile.baseScore, 100)"></div>
+    <div class="crr-scale">
+      @for (item of scale; track item.level) {
+        <div class="crr-scale__item">
+          <span class="crr-scale__dot" [style.background]="levelColor(item.level)"></span>
+          {{ item.level }}: {{ item.rule }}
         </div>
-        <span class="crr-score-num">{{ profile.baseScore }}</span>
-      </div>
+      }
+      <span class="crr-scale__avg">Average risk score: {{ r.averageRiskScore }} · {{ r.pepCount }} PEP{{ r.pepCount === 1 ? '' : 's' }}</span>
+    </div>
 
-      <!-- PEP Multiplier -->
-      <div class="crr-pep-col">
-        <span class="crr-pep-value">×{{ profile.pepMultiplier.toFixed(2) }}</span>
-        <span class="crr-pep-badge" *ngIf="profile.isPep">PEP</span>
-      </div>
+    @if (!r.totalProfiles) {
+      <p class="crr-state">There are no document owners yet, so there is nothing to rate.</p>
+    }
 
-      <!-- Geographic Score Bar -->
-      <div class="crr-score-col">
-        <div class="crr-bar crr-bar--green">
-          <div class="crr-bar__fill" [style.width]="scoreBarWidth(profile.geographicScore, 50)"></div>
+    @for (stratum of r.strata; track stratum.level) {
+      <section class="crr-strata">
+        <div class="crr-strata__header" [style.background]="levelColor(stratum.level)">
+          <span>{{ stratum.level === 'Not assessed' ? 'NOT ASSESSED YET' : stratum.level.toUpperCase() + ' RISK' }}</span>
+          <span class="crr-strata__count">{{ stratum.profiles.length }} owner{{ stratum.profiles.length === 1 ? '' : 's' }}</span>
         </div>
-        <span class="crr-score-num">{{ profile.geographicScore }}</span>
-      </div>
 
-      <!-- Final Score Bar -->
-      <div class="crr-score-col">
-        <div class="crr-bar" [class.crr-bar--red]="profile.riskLevel === RiskLevel.HIGH" [class.crr-bar--amber]="profile.riskLevel === RiskLevel.MEDIUM" [class.crr-bar--green]="profile.riskLevel === RiskLevel.LOW">
-          <div class="crr-bar__fill" [style.width]="scoreBarWidth(profile.finalCompositeScore, 150)"></div>
-        </div>
-        <span class="crr-score-num crr-score-num--bold">{{ profile.finalCompositeScore }}</span>
-      </div>
-    </div>
-
-    <!-- Strata Footer -->
-    <div class="crr-strata__footer" [style.borderColor]="strataColor(strata.level)" [style.color]="strataColor(strata.level)">
-      <span>Total {{ strataLabel(strata.level) }} Client Profiles: <strong>{{ strata.profiles.length }}</strong></span>
-      <div class="crr-strata__footer-right">
-        <span>Avg Composite Score: <strong>{{ strata.averageScore }}</strong></span>
-        <span>PEP Elevated: <strong>{{ strata.pepElevatedCount }}</strong></span>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── Grand Total ─────────────────────────────────────────────────────────── -->
-  <div class="crr-grand-total">
-    <div class="crr-grand-total__header">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="10"></circle>
-      </svg>
-      GRAND TOTAL — RISK ASSESSMENT SUMMARY
-    </div>
-    <div class="crr-grand-total__rows">
-      <div class="crr-grand-row">
-        <span class="crr-grand-row__label">Total Assessed Corporate Entity Profiles</span>
-        <span class="crr-grand-row__val crr-grand-row__val--bold">{{ data.totalProfiles }} entity profiles</span>
-      </div>
-      <div class="crr-grand-row">
-        <span class="crr-grand-row__label">Total High-Risk Client Profiles <span class="crr-grand-row__hint">(score > 75)</span></span>
-        <span class="crr-grand-row__val crr-grand-row__val--red">{{ highCount }}</span>
-      </div>
-      <div class="crr-grand-row">
-        <span class="crr-grand-row__label">Total Medium-Risk Client Profiles <span class="crr-grand-row__hint">(score 36-75)</span></span>
-        <span class="crr-grand-row__val crr-grand-row__val--amber">{{ mediumCount }}</span>
-      </div>
-      <div class="crr-grand-row">
-        <span class="crr-grand-row__label">Total Low-Risk Client Profiles <span class="crr-grand-row__hint">(score ≤ 35)</span></span>
-        <span class="crr-grand-row__val crr-grand-row__val--green">{{ lowCount }}</span>
-      </div>
-      <div class="crr-grand-row crr-grand-row--border-top">
-        <span class="crr-grand-row__label">Portfolio Average Composite Risk Weight</span>
-        <span class="crr-grand-row__val crr-grand-row__val--bold">{{ data.portfolioAvgScore }}</span>
-      </div>
-    </div>
-  </div>
-
+        <table class="crr-table">
+          <thead>
+            <tr>
+              <th>Owner</th>
+              <th>Risk score</th>
+              <th>Compliance</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of stratum.profiles; track p.userId) {
+              <tr>
+                <td>
+                  <span class="crr-name">{{ p.name }}</span>
+                  <span class="crr-meta">{{ p.entityType }}@if (p.isPep) { <span class="crr-pep">PEP</span> }</span>
+                </td>
+                <td>
+                  @if (p.riskScore !== null) {
+                    <div class="crr-bar"><div class="crr-bar__fill" [style.width.%]="p.riskScore" [style.background]="levelColor(stratum.level)"></div></div>
+                    <span class="crr-num">{{ p.riskScore }}</span>
+                  } @else {
+                    <span class="crr-muted">—</span>
+                  }
+                </td>
+                <td>
+                  <span class="crr-num">{{ p.compliancePercentage !== null ? p.compliancePercentage + '%' : '—' }}</span>
+                  <span class="crr-meta">{{ p.overallStatus }}</span>
+                </td>
+                <td>
+                  @if (p.factors.length) {
+                    <ul class="crr-factors">
+                      @for (f of p.factors; track f) { <li>{{ f }}</li> }
+                    </ul>
+                  } @else if (stratum.level === 'Not assessed') {
+                    <span class="crr-muted">No compliance check has run yet.</span>
+                  } @else {
+                    <span class="crr-muted">No risk factors.</span>
+                  }
+                  @if (p.lastChecked) { <span class="crr-meta">Checked {{ p.lastChecked | date:'d MMM y' }}</span> }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  }
 </app-report-frame>
