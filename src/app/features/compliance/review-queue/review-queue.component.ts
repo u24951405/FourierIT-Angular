@@ -22,6 +22,9 @@ interface ReviewQueueItem {
   checkedAt?: string;
   manualReviewReason?: string | null;
   nonComplianceReason?: string | null;
+  institutionName?: string | null;
+  isReplacement?: boolean;
+  originalFlagReason?: string | null;
   /** How long it has been waiting for a decision. */
   waitingDays?: number;
   /** The earliest needed-by date of an institution request waiting on this document. */

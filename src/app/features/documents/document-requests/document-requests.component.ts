@@ -58,6 +58,38 @@ export class DocumentRequestsComponent implements OnInit {
   readonly userRoles = signal<string[]>([]);
   readonly departmentId = signal<number | null>(null);
   readonly expandedRequestId = signal<number | null>(null);
+  readonly selectedInstitutionId = signal<number | null>(null);
+  readonly selectedInstitutionName = signal<string | null>(null);
+  readonly requestDetails = signal<Record<number, RequestDocumentsResponse>>({});
+  readonly loadingDetails = signal(false);
+  readonly preview = signal<{ name: string; url: string } | null>(null);
+
+  readonly institutionGroups = computed(() => {
+    const groups = new Map<number, { institutionId: number; institutionName: string; requests: CombinedRequest[] }>();
+    for (const request of this.requests()) {
+      const group = groups.get(request.institutionId) ?? {
+        institutionId: request.institutionId,
+        institutionName: request.institutionName,
+        requests: [],
+      };
+      group.requests.push(request);
+      groups.set(request.institutionId, group);
+    }
+    return [...groups.values()].map(group => {
+      const details = group.requests.flatMap(request => this.requestDetails()[request.enquiryRequestId]?.documents ?? []);
+      const requestedCount = group.requests.reduce((count, request) => count + request.documents.length, 0);
+      const uploadedCount = details.filter(document => document.status !== 'Missing').length;
+      return { ...group, requestedCount, uploadedCount, missingCount: Math.max(requestedCount - uploadedCount, 0) };
+    });
+  });
+
+  readonly selectedDocuments = computed<RequestDocumentStatus[]>(() => {
+    const institutionId = this.selectedInstitutionId();
+    if (institutionId == null) return [];
+    return this.requests()
+      .filter(request => request.institutionId === institutionId)
+      .flatMap(request => this.requestDetails()[request.enquiryRequestId]?.documents ?? []);
+  });
   /** Institutions asking for more time on access this person approved. */
   readonly extensions = signal<PendingAccessExtension[]>([]);
   readonly decidingExtensionId = signal<number | null>(null);

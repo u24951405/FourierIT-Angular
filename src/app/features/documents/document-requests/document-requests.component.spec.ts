@@ -20,6 +20,7 @@ describe('DocumentRequestsComponent', () => {
       'getPendingDepartmentRequests',
       'approveRequest',
       'denyRequest',
+      'getPendingExtensions',
     ]);
     mockToastService = jasmine.createSpyObj('ToastService', ['show']);
     mockAuthService = jasmine.createSpyObj('AuthService', ['getUserRoles', 'getToken', 'isSuperAdmin', 'hasRole']);
@@ -27,6 +28,7 @@ describe('DocumentRequestsComponent', () => {
 
     mockRequestService.getPendingRequests.and.returnValue(of([]));
     mockRequestService.getPendingDepartmentRequests.and.returnValue(of([]));
+    mockRequestService.getPendingExtensions.and.returnValue(of([]));
     mockAuthService.getUserRoles.and.returnValue(['Document Owner']);
     mockAuthService.getToken.and.returnValue('test-token');
     mockAuthService.isSuperAdmin.and.returnValue(false);
