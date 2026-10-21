@@ -19,103 +19,75 @@
     <p>No pending document access requests. Institutions will submit requests here.</p>
   </div>
 
-  <!-- Requests List -->
+  <!-- Institutions List -->
   <div *ngIf="!loading() && requests().length > 0" class="document-requests-list">
-    <div class="request-card" *ngFor="let request of requests()" [class.request-card--department]="request.requestType === 'department'">
+    <div class="request-card" *ngFor="let group of institutionGroups()">
       
       <!-- Request Header -->
       <div class="request-card__header">
         <div class="request-card__info">
-          <div class="request-card__type-badge" [class.badge--owner]="request.requestType === 'owner'" [class.badge--department]="request.requestType === 'department'">
-            {{ getRequestTypeLabel(request) }}
-          </div>
-          <h3 class="request-card__title">{{ request.institutionName }}</h3>
-          <p class="request-card__subtitle">Request ID #{{ request.enquiryRequestId }}</p>
+          <div class="request-card__type-badge badge--institution">Institution</div>
+          <h3 class="request-card__title">{{ group.institutionName }}</h3>
+          <p class="request-card__subtitle">{{ group.requests.length }} request{{ group.requests.length === 1 ? '' : 's' }}</p>
         </div>
-        <div class="request-card__status-bar">
-          <span class="request-card__status" [class.status--pending]="request.status === 'Pending' || request.status === 'Department_Pending'">
-            {{ request.status }}
-          </span>
-          <span class="request-card__date">{{ request.requestDate | date:'short' }}</span>
-        </div>
+        <button class="btn btn-secondary" type="button" (click)="selectInstitution(group)">View requested documents</button>
       </div>
 
       <!-- Request Body -->
       <div class="request-card__body">
-        <!-- Sender Information -->
         <div class="request-card__section">
-          <span class="request-card__label">Submitted By</span>
-          <p class="request-card__value">{{ getSenderLabel(request) }}</p>
+          <span class="request-card__label">Summary</span>
+          <p class="request-card__value">{{ group.requestedCount }} requested · {{ group.uploadedCount }} uploaded · {{ group.missingCount }} missing</p>
         </div>
-
-        <!-- Recipient Information -->
         <div class="request-card__section">
-          <span class="request-card__label">Requested For</span>
-          <p class="request-card__value">{{ getRecipientLabel(request) }}</p>
+          <span class="request-card__label">Requests</span>
+          <p class="request-card__value">#{{ group.requests[0].enquiryRequestId }} and {{ group.requests.length - 1 }} other{{ group.requests.length === 2 ? '' : 's' }}</p>
         </div>
-
-        <!-- Purpose -->
         <div class="request-card__section">
-          <span class="request-card__label">Purpose</span>
-          <p class="request-card__value">{{ request.purposeNote || 'Not provided' }}</p>
-        </div>
-
-        <!-- Requested Documents -->
-        <div class="request-card__section">
-          <span class="request-card__label">Requested Documents</span>
-          <p class="request-card__value">Approval grants access to all of this owner's documents in the requested types.</p>
-          <div class="request-card__documents">
-            <div class="document-item" *ngFor="let doc of request.documents">
-              <span class="document-item__name">{{ doc.documentTypeName }}</span>
-              <span *ngIf="doc.isMandatory" class="document-item__badge document-item__badge--mandatory">Mandatory</span>
-            </div>
-          </div>
+          <span class="request-card__label">Latest purpose</span>
+          <p class="request-card__value">{{ group.requests[0].purposeNote || 'Not provided' }}</p>
         </div>
       </div>
-
-      <div class="request-card__meta">
-        <button class="btn btn-secondary" type="button" (click)="toggleRequestDetails(request)">
-          {{ isRequestExpanded(request) ? 'Hide details' : 'View details' }}
-        </button>
-      </div>
-
-      <div *ngIf="isRequestExpanded(request)" class="request-card__details">
-        <div class="request-card__section">
-          <span class="request-card__label">Request Summary</span>
-          <p class="request-card__value">{{ request.purposeNote || 'No purpose note provided.' }}</p>
-        </div>
-        <div class="request-card__section">
-          <span class="request-card__label">Request Target</span>
-          <p class="request-card__value">{{ getRecipientLabel(request) }}</p>
-        </div>
-        <div class="request-card__section">
-          <span class="request-card__label">Submitted On</span>
-          <p class="request-card__value">{{ request.requestDate | date:'medium' }}</p>
-        </div>
-      </div>
-
-      <!-- Actions (only the recipient decides; the Super Admin views) -->
-      <p *ngIf="isViewOnly" class="request-card__view-only">
-        View only — the {{ request.requestType === 'department' ? 'department' : 'person' }} this request is addressed to decides whether to share.
-      </p>
-      <div class="request-card__actions" *ngIf="!isViewOnly">
-        <button 
-          class="btn btn-approve" 
-          type="button" 
-          (click)="approveRequest(request)"
-          [disabled]="loading()">
-          <span class="btn__icon">✓</span>
-          Approve
-        </button>
-        <button 
-          class="btn btn-deny" 
-          type="button" 
-          (click)="denyRequest(request)"
-          [disabled]="loading()">
-          <span class="btn__icon">✕</span>
-          Deny
-        </button>
+      <div class="request-card__actions">
+        <span *ngIf="isViewOnly" class="request-card__view-only">View only</span>
+        <ng-container *ngIf="!isViewOnly">
+          <button class="btn btn-approve" type="button" *ngFor="let request of group.requests" (click)="approveRequest(request)" [disabled]="loading()">Approve #{{ request.enquiryRequestId }}</button>
+          <button class="btn btn-deny" type="button" *ngFor="let request of group.requests" (click)="denyRequest(request)" [disabled]="loading()">Deny #{{ request.enquiryRequestId }}</button>
+        </ng-container>
       </div>
     </div>
+  </div>
+
+  <div *ngIf="selectedInstitutionId() !== null" class="document-modal-backdrop" (click)="closeInstitution()">
+    <section class="document-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="document-modal__header">
+        <div>
+          <span class="request-card__label">Requested by</span>
+          <h2>{{ selectedInstitutionName() }}</h2>
+        </div>
+        <button class="btn btn-secondary" type="button" (click)="closeInstitution()">Close</button>
+      </header>
+      <p *ngIf="loadingDetails()">Loading requested documents…</p>
+      <p *ngIf="!loadingDetails() && selectedDocuments().length === 0">No documents requested by this institution.</p>
+      <div *ngFor="let document of selectedDocuments()" class="document-modal__row">
+        <div>
+          <strong>{{ document.documentTypeName }}</strong>
+          <p>{{ document.documentName || 'Not yet uploaded' }}</p>
+          <small *ngIf="document.flagReason">Flag reason: {{ document.flagReason }}</small>
+          <small *ngIf="document.status === 'Rejected' && document.rejectionReason">Rejection reason: {{ document.rejectionReason }}</small>
+        </div>
+        <div class="document-modal__actions">
+          <span class="request-card__status">{{ statusLabel(document.status) }}</span>
+          <button *ngIf="document.documentId" class="btn btn-secondary" type="button" (click)="openDocument(document)">View</button>
+          <button *ngIf="document.status === 'Missing' || document.status === 'Flagged' || document.status === 'Rejected' || document.status === 'Replacement Under Review'" class="btn btn-approve" type="button" (click)="uploadDocument(document)">
+            {{ document.documentId ? 'Upload replacement' : 'Upload Document' }}
+          </button>
+        </div>
+      </div>
+      <div *ngIf="preview()" class="document-preview">
+        <div class="document-preview__header"><strong>{{ preview()?.name }}</strong><button class="btn btn-secondary" type="button" (click)="closePreview()">Close preview</button></div>
+        <iframe [src]="preview()?.url" title="Document preview"></iframe>
+      </div>
+    </section>
   </div>
 </div>

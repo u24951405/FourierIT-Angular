@@ -3,6 +3,7 @@ import { DocumentRequestsComponent } from './document-requests.component';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { DocumentsApiService } from '../../../core/services/documents-api.service';
 import { of } from 'rxjs';
 
 describe('DocumentRequestsComponent', () => {
@@ -11,6 +12,7 @@ describe('DocumentRequestsComponent', () => {
   let mockRequestService: jasmine.SpyObj<DocumentAccessRequestService>;
   let mockToastService: jasmine.SpyObj<ToastService>;
   let mockAuthService: jasmine.SpyObj<AuthService>;
+  let mockDocumentsApiService: jasmine.SpyObj<DocumentsApiService>;
 
   beforeEach(async () => {
     mockRequestService = jasmine.createSpyObj('DocumentAccessRequestService', [
@@ -21,6 +23,7 @@ describe('DocumentRequestsComponent', () => {
     ]);
     mockToastService = jasmine.createSpyObj('ToastService', ['show']);
     mockAuthService = jasmine.createSpyObj('AuthService', ['getUserRoles', 'getToken', 'isSuperAdmin', 'hasRole']);
+    mockDocumentsApiService = jasmine.createSpyObj('DocumentsApiService', ['previewDocument']);
 
     mockRequestService.getPendingRequests.and.returnValue(of([]));
     mockRequestService.getPendingDepartmentRequests.and.returnValue(of([]));
@@ -35,6 +38,7 @@ describe('DocumentRequestsComponent', () => {
         { provide: DocumentAccessRequestService, useValue: mockRequestService },
         { provide: ToastService, useValue: mockToastService },
         { provide: AuthService, useValue: mockAuthService },
+        { provide: DocumentsApiService, useValue: mockDocumentsApiService },
       ],
     }).compileComponents();
 

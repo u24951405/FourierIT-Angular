@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { DocumentsApiService, DocumentTypeOption, RequiredDocumentsStatusResponse } from '../../../core/services/documents-api.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -25,6 +25,7 @@ export class UploadDocumentComponent implements OnInit {
   private docsApi = inject(DocumentsApiService);
   private toast = inject(ToastService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   readonly loading = signal(false);
   readonly submitting = signal(false);
@@ -33,6 +34,7 @@ export class UploadDocumentComponent implements OnInit {
   readonly documentTypes = signal<DocumentTypeOption[]>([]);
   readonly selectedFile = signal<File | null>(null);
   readonly uploadedDocumentTypeIds = signal<Set<number>>(new Set());
+  readonly replacementDocumentId = signal<number | null>(null);
 
   readonly form = this.fb.group({
     documentTypeId: [null as number | null, Validators.required],
@@ -54,6 +56,15 @@ export class UploadDocumentComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDocumentContext();
+    const params = this.route.snapshot.queryParamMap;
+    const documentTypeId = Number(params.get('documentTypeId'));
+    const documentId = Number(params.get('documentId'));
+    if (Number.isInteger(documentTypeId) && documentTypeId > 0) {
+      this.form.patchValue({ documentTypeId });
+    }
+    if (Number.isInteger(documentId) && documentId > 0) {
+      this.replacementDocumentId.set(documentId);
+    }
   }
 
   get canSubmit(): boolean {
@@ -75,7 +86,7 @@ export class UploadDocumentComponent implements OnInit {
     const values = this.form.getRawValue();
     if (!file || values.documentTypeId == null) return;
 
-    if (this.isDocumentTypeUploaded(values.documentTypeId)) {
+    if (this.isDocumentTypeUploaded(values.documentTypeId) && !this.replacementDocumentId()) {
       const message = 'You have already uploaded this document type. Please choose a different type or update the existing document.';
       this.error.set(message);
       this.toast.show(message, 'error');
@@ -93,13 +104,17 @@ export class UploadDocumentComponent implements OnInit {
     this.submitting.set(true);
     this.error.set(null);
 
-    this.docsApi.uploadDocument({
+    const payload = {
       file,
       documentTypeId: values.documentTypeId,
       isCertified: !!values.isCertified,
       commissionerName: (values.commissionerName ?? '').trim() || undefined,
       certificationDate: values.certificationDate || null
-    })
+    };
+    const request = this.replacementDocumentId()
+      ? this.docsApi.updateDocument(this.replacementDocumentId()!, payload)
+      : this.docsApi.uploadDocument(payload);
+    request
       .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
