@@ -1,9 +1,11 @@
 import { routes } from './app.routes';
 
+// The internal app and the institution portal each have a layout route, so look through all of them.
+const layoutChildren = routes.flatMap((route) => route.children ?? []);
+
 describe('app routes', () => {
   it('registers the reports module under /reports', () => {
-    const layoutRoute = routes.find((route) => route.children);
-    const reportsRoute = (layoutRoute?.children ?? []).find((child) => child.path === 'reports');
+    const reportsRoute = layoutChildren.find((child) => child.path === 'reports');
 
     expect(reportsRoute).toBeDefined();
   });
@@ -13,16 +15,14 @@ describe('app routes', () => {
   });
 
   it('registers the help route', () => {
-    const layoutRoute = routes.find((route) => route.children);
-    const helpRoute = (layoutRoute?.children ?? []).find((child) => child.path === 'help');
+    const helpRoute = layoutChildren.find((child) => child.path === 'help');
 
     expect(helpRoute).toBeDefined();
   });
 
   it('registers the reports subroutes', () => {
-    const layoutRoute = routes.find((route) => route.children);
-    const reportsRoute = (layoutRoute?.children ?? []).find((child) => child.path === 'reports');
+    const reportsRoute = layoutChildren.find((child) => child.path === 'reports');
 
-    expect(reportsRoute).toBeDefined();
+    expect(reportsRoute?.loadChildren).toBeDefined();
   });
 });
