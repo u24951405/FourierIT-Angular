@@ -75,10 +75,4 @@ export class LoginComponent implements AfterViewInit {
         }
       });
   }
-
-  openInstitutionPortal(): void {
-    this.router.navigate(['/institution/auth/access'], {
-      queryParams: { token: 'demo-institution-token' }
-    });
-  }
 }

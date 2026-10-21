@@ -47,7 +47,7 @@ export class TokenEntryComponent implements OnInit {
   }
 
   private validateToken(token: string): void {
-    if (token === 'demo-institution-token') {
+    if (this.authService.isDemoToken(token)) {
       this.authService.initializeDemoAccess();
       this.animateSteps(() => {
         this.router.navigate(['/institution/auth/verify'], { queryParams: { demo: '1' } });
