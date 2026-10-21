@@ -38,6 +38,19 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+*.log
+build-8gb.log
+build-after-fix.log
+build.log
+ng-dev-after-fix-2.log
+ng-dev-after-fix.log
+ng-dev-after-share-removal.log
+ng-dev-no-parallel.log
+ng-dev.log
+ng-prod-after-cleanup.log
+ng-prod-final.log
+ng-prod-no-parallel.log
+server.log
 
 # System files
 .DS_Store

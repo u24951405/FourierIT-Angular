@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Backup, BackupResponse, CreateBackupRequest, RestoreResponse } from '../models/backup';
+import { Backup, BackupResponse, CreateBackupRequest, RestoreResponse, BackupJob } from '../models/backup';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -15,8 +15,14 @@ export class BackupService {
     return this.http.get<Backup[]>(`${this.apiUrl}/history`);
   }
 
-  createBackup(request: CreateBackupRequest): Observable<BackupResponse> {
-    return this.http.post<BackupResponse>(`${this.apiUrl}/create`, request);
+  /** Starts a backup in the background; follow it with getBackupStatus(). */
+  createBackup(request: CreateBackupRequest): Observable<BackupJob> {
+    return this.http.post<BackupJob>(`${this.apiUrl}/create`, request);
+  }
+
+  /** The running backup, or the last one to finish (null if none since the API started). */
+  getBackupStatus(): Observable<BackupJob | null> {
+    return this.http.get<BackupJob | null>(`${this.apiUrl}/status`);
   }
 
   restoreBackup(id: number): Observable<RestoreResponse> {

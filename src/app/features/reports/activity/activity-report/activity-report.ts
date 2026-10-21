@@ -154,17 +154,8 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
       options: {
         responsive: true,
         cutout: '68%',
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: {
-              boxWidth: 12,
-              padding: 16,
-              usePointStyle: true,
-            },
-          },
-        },
+        // The report prints its own legend (with counts) beside each chart.
+        plugins: { legend: { display: false } },
       },
     });
     this.charts.push(chart);
@@ -190,17 +181,8 @@ export class ActivityReportComponent implements OnInit, AfterViewInit, OnDestroy
       options: {
         responsive: true,
         cutout: '68%',
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: {
-              boxWidth: 12,
-              padding: 16,
-              usePointStyle: true,
-            },
-          },
-        },
+        // The report prints its own legend (with counts) beside each chart.
+        plugins: { legend: { display: false } },
       },
     });
     this.charts.push(chart);

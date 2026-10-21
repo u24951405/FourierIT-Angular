@@ -1,6 +1,7 @@
 import { afterNextRender, Component, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { AuditLogService } from '../../../core/services/audit-log';
 import { AuditLog } from '../../../core/models/audit-log';
 import { ManagedUserDto, UserManagementService } from '../../../core/services/user-management.service';
@@ -16,6 +17,7 @@ export class AuditLogComponent {
   private auditLogService = inject(AuditLogService);
   private userManagementService = inject(UserManagementService);
   private userNames = new Map<string, string>();
+  private hasInitialized = false;
 
   auditLogs: AuditLog[] = [];
   filteredLogs: AuditLog[] = [];
@@ -42,6 +44,11 @@ export class AuditLogComponent {
 
   constructor() {
     afterNextRender(() => {
+      if (this.hasInitialized) {
+        return;
+      }
+
+      this.hasInitialized = true;
       this.loadUserNames();
       this.loadAuditLogs();
     });
@@ -85,24 +92,26 @@ export class AuditLogComponent {
       query: this.searchQuery?.trim() || undefined
     };
 
-    this.auditLogService.getAuditLogs(filters).subscribe({
-      next: (res) => {
-        this.auditLogs = res.items.sort((a, b) => new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime());
-        this._totalRecords = res.totalCount;
-        this.populateFilterDropdowns();
-        this.filteredLogs = [...this.auditLogs];
-        this.sortLogs();
+    this.auditLogService.getAuditLogs(filters)
+      .pipe(finalize(() => {
         this.isLoading = false;
-        // announce to screen readers (aria-live) implicitly via banner in template
-        // Prefetch next page for smoother navigation
-        this.prefetchNextPage();
-      },
-      error: (err) => {
-        console.error('Failed to load audit logs', err);
-        this.errorMessage = 'Could not load audit logs at this time.';
-        this.isLoading = false;
-      }
-    });
+      }))
+      .subscribe({
+        next: (res) => {
+          this.auditLogs = res.items.sort((a, b) => new Date(a.timeStamp).getTime() - new Date(b.timeStamp).getTime());
+          this._totalRecords = res.totalCount;
+          this.populateFilterDropdowns();
+          this.filteredLogs = [...this.auditLogs];
+          this.sortLogs();
+          // announce to screen readers (aria-live) implicitly via banner in template
+          // Prefetch next page for smoother navigation
+          this.prefetchNextPage();
+        },
+        error: (err) => {
+          console.error('Failed to load audit logs', err);
+          this.errorMessage = 'Could not load audit logs at this time.';
+        }
+      });
   }
 
   applyFilters(): void {

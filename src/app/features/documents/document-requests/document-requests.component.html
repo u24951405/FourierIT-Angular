@@ -4,6 +4,31 @@
     <p>Review incoming requests and see who submitted them and who they are for.</p>
   </header>
 
+  <!-- Requests for more time on access already approved -->
+  <section *ngIf="extensions().length" class="extensions" aria-label="Requests for more time">
+    <h2 class="extensions__title">Asking for more time</h2>
+    <p class="extensions__intro">These institutions want to keep access to documents you already shared. Approve to extend their access, or decline to let it end as planned.</p>
+    <article class="extension" *ngFor="let extension of extensions()">
+      <div class="extension__info">
+        <h3 class="extension__name">{{ extension.institutionName }} <span class="extension__id">· request #{{ extension.enquiryRequestId }}</span></h3>
+        <p class="extension__dates">
+          Access ends {{ extension.currentAccessEndsAt | date:'d MMM y, HH:mm' }} · wants it until
+          <strong>{{ extension.extensionRequestedUntil | date:'d MMM y, HH:mm' }}</strong>
+        </p>
+        <p class="extension__reason"><span>Their reason:</span> {{ extension.extensionReason }}</p>
+      </div>
+      <div class="extension__decision">
+        <label class="extension__label" [for]="'extension-note-' + extension.enquiryRequestId">Note to the institution (optional)</label>
+        <input [id]="'extension-note-' + extension.enquiryRequestId" type="text" maxlength="500"
+               [value]="extensionNote(extension.enquiryRequestId)" (input)="setExtensionNote(extension.enquiryRequestId, $any($event.target).value)">
+        <div class="request-card__actions">
+          <button class="btn btn-approve" type="button" (click)="decideExtension(extension, true)" [disabled]="decidingExtensionId() === extension.enquiryRequestId">Give more time</button>
+          <button class="btn btn-deny" type="button" (click)="decideExtension(extension, false)" [disabled]="decidingExtensionId() === extension.enquiryRequestId">Decline</button>
+        </div>
+      </div>
+    </article>
+  </section>
+
   <!-- Loading State -->
   <div *ngIf="loading()" class="document-requests-loading">
     <p>Loading document access requests…</p>

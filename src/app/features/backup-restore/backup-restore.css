@@ -454,3 +454,18 @@
   .modal-footer { flex-direction: column-reverse; }
   .modal-footer .btn { width: 100%; }
 }
+
+/* A backup running in the background */
+.banner--progress {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  align-items: center;
+}
+
+.spinner--small {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+  flex-shrink: 0;
+}
