@@ -212,14 +212,6 @@ export interface InstitutionRequestChecklistResponse {
   }>;
 }
 
-/** A department member a department request can be assigned to. */
-export interface AssignableOwner {
-  userId: string;
-  displayName: string;
-  uploadedTypes: number;
-  requestedTypes: number;
-}
-
 export interface RouteRequestToOwnerPayload {
   targetUserId: string;
   adminNote?: string;

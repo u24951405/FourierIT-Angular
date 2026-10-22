@@ -8,7 +8,6 @@ import { AuthService } from '../../../core/services/auth.service';
 import { DocumentsApiService } from '../../../core/services/documents-api.service';
 import { Router } from '@angular/router';
 import {
-  AssignableOwner,
   PendingAccessExtension,
   PendingDocumentAccessRequest,
   PendingDepartmentAccessRequest,
@@ -106,13 +105,6 @@ export class DocumentRequestsComponent implements OnInit {
   readonly extensions = signal<PendingAccessExtension[]>([]);
   readonly decidingExtensionId = signal<number | null>(null);
   readonly extensionNotes = signal<Record<number, string>>({});
-
-  /** A department request is answered by assigning it to a member, who then approves or denies it. */
-  readonly assigningRequestId = signal<number | null>(null);
-  readonly owners = signal<AssignableOwner[]>([]);
-  readonly loadingOwners = signal(false);
-  readonly selectedOwnerId = signal('');
-  readonly assignNote = signal('');
 
   ngOnInit(): void {
     this.loadUserInfo();
@@ -315,49 +307,6 @@ export class DocumentRequestsComponent implements OnInit {
           this.error.set(errorMessage);
           this.toast.show(errorMessage, 'error');
         },
-      });
-  }
-
-  openAssign(request: CombinedRequest): void {
-    this.assigningRequestId.set(request.enquiryRequestId);
-    this.owners.set([]);
-    this.selectedOwnerId.set('');
-    this.assignNote.set('');
-    this.loadingOwners.set(true);
-    this.requestService
-      .getAssignableOwners(request.enquiryRequestId)
-      .pipe(finalize(() => this.loadingOwners.set(false)))
-      .subscribe({
-        next: owners => this.owners.set(owners ?? []),
-        error: err => this.toast.show(err?.error?.error ?? err?.error?.message ?? 'Could not load the department members.', 'error'),
-      });
-  }
-
-  cancelAssign(): void {
-    this.assigningRequestId.set(null);
-  }
-
-  assignRequest(request: CombinedRequest): void {
-    const owner = this.owners().find(o => o.userId === this.selectedOwnerId());
-    if (!owner) {
-      this.toast.show('Choose who should handle this request.', 'error');
-      return;
-    }
-
-    this.loading.set(true);
-    this.requestService
-      .routeRequestToOwner(request.enquiryRequestId, {
-        targetUserId: owner.userId,
-        adminNote: this.assignNote().trim() || undefined,
-      })
-      .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({
-        next: () => {
-          this.toast.show(`Assigned to ${owner.displayName}. They'll approve or deny it.`, 'success');
-          this.assigningRequestId.set(null);
-          this.loadAllRequests();
-        },
-        error: err => this.toast.show(err?.error?.error ?? err?.error?.message ?? 'Could not assign the request.', 'error'),
       });
   }
 

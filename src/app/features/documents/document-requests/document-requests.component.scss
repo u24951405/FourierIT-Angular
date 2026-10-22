@@ -252,21 +252,6 @@ $shadow: 0 1px 2px rgba(15, 31, 48, 0.04), 0 4px 16px rgba(15, 31, 48, 0.05);
 
 .dr-actions { display: flex; gap: 0.5rem; }
 
-.dr-assign {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  max-width: 28rem;
-  margin-top: 0.4rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-
-  .dr-muted { margin: 0; }
-  .dr-actions { margin-top: 0.35rem; }
-}
-
 // ─── Buttons ────────────────────────────────────────────────────────────────
 
 .dr-btn {
