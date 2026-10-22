@@ -29,11 +29,11 @@
 }
 
 .wizard-card {
-  background: #fff;
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(26, 46, 69, 0.06);
+  box-shadow: 0 8px 24px rgba(15, 31, 48, 0.06);
 }
 
 .wizard-steps {
@@ -50,7 +50,7 @@
   padding: 0.7rem 0.9rem;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--input-bg);
   color: var(--text-mid);
   cursor: pointer;
   text-align: left;
@@ -63,7 +63,7 @@
 }
 
 .wizard-step--complete {
-  border-color: #7cc6a5;
+  border-color: #2e9c6a;
   background: rgba(47, 167, 104, 0.08);
   color: var(--navy);
 }
@@ -76,7 +76,7 @@
   height: 26px;
   border-radius: 50%;
   background: var(--navy);
-  color: #fff;
+  color: var(--white);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -100,9 +100,9 @@
 
 .panel-intro {
   padding: 1.1rem 1.15rem;
-  border: 1px solid #dce7f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: linear-gradient(135deg, #f7fbfd, #eef6fa);
+  background: linear-gradient(135deg, var(--white), var(--input-bg));
 }
 
 .panel-intro__eyebrow {
@@ -129,8 +129,8 @@
 }
 
 .panel-intro--review {
-  border-color: #b8dcca;
-  background: linear-gradient(135deg, #f3fbf6, #edf8f1);
+  border-color: #2e9c6a;
+  background: linear-gradient(135deg, var(--white), #e6f9f0);
 }
 
 .form-section-title {
@@ -199,10 +199,10 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
-  border: 1px solid #b8dcca;
+  border: 1px solid #2e9c6a;
   border-radius: 10px;
-  background: #f4fbf6;
-  color: #185c39;
+  background: var(--input-bg);
+  color: #2e9c6a;
 }
 
 .review-summary__icon {
@@ -212,14 +212,14 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #2f9b62;
-  color: #fff;
+  background: #2e9c6a;
+  color: var(--white);
   font-weight: 800;
 }
 
 .review-summary p {
   margin: 0.2rem 0 0;
-  color: #4d765e;
+  color: var(--text-mid);
   font-size: 0.82rem;
 }
 
@@ -227,8 +227,8 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
-  background: #fff;
-  box-shadow: 0 5px 14px rgba(26, 46, 69, 0.04);
+  background: var(--white);
+  box-shadow: 0 5px 14px rgba(15, 31, 48, 0.04);
   position: relative;
 }
 
@@ -256,7 +256,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #e7f1f8;
+  background: var(--input-bg);
   color: var(--blue);
   font-size: 0.72rem;
   font-weight: 800;
@@ -268,7 +268,7 @@
   gap: 1rem;
   padding: 0.3rem 0;
   color: var(--text-mid);
-  border-bottom: 1px solid #edf2f6;
+  border-bottom: 1px solid var(--border);
 }
 
 .review-row:last-of-type {
@@ -296,7 +296,7 @@
   padding: 0.9rem 1rem;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--input-bg);
 }
 
 .checkbox-row--review span {
@@ -485,7 +485,7 @@
   background: linear-gradient(
     90deg,
     var(--input-bg) 0%,
-    #eef3f8 50%,
+    var(--input-bg) 50%,
     var(--input-bg) 100%
   );
   background-size: 200% 100%;
@@ -529,7 +529,7 @@
   &:hover {
     border-color: rgba(46, 109, 164, 0.45);
     background: var(--white);
-    box-shadow: 0 2px 8px rgba(26, 46, 69, 0.06);
+    box-shadow: 0 2px 8px rgba(15, 31, 48, 0.06);
   }
 
   &:focus-within {
@@ -540,7 +540,7 @@
 
   &--selected {
     border-color: var(--blue);
-    background: linear-gradient(135deg, rgba(26, 46, 69, 0.04), rgba(46, 109, 164, 0.06));
+    background: linear-gradient(135deg, rgba(15, 31, 48, 0.04), rgba(46, 109, 164, 0.06));
     box-shadow: 0 2px 10px rgba(46, 109, 164, 0.12);
 
     .role-option__box {
@@ -640,7 +640,7 @@
 
     &.field__hint--valid,
     &[class*="field__hint--valid"] {
-      color: var(--success, #198754);
+      color: var(--success, #2e9c6a);
       background: rgba(25,135,84,0.06);
     }
 
@@ -660,12 +660,12 @@
 /* Overall success indicator */
 .field__hint--valid[aria-live],
 .field__hint--valid[role] {
-  color: var(--success, #198754);
+  color: var(--success, #2e9c6a);
 }
 
 /* Date of birth read from a South African ID number: shown but not editable. */
 .input--locked {
-  background: var(--input-bg, #f7f9fb);
-  color: var(--text-mid, #4a6278);
+  background: var(--input-bg);
+  color: var(--text-mid);
   cursor: default;
 }

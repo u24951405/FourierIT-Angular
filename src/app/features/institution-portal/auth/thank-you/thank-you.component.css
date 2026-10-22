@@ -4,25 +4,25 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e8e8e4;
+  background: var(--bg);
   padding: 1.5rem;
 }
 
 .portal-card {
   width: 100%;
   max-width: 400px;
-  background: #fff;
+  background: var(--white);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 40px rgba(15, 31, 48, 0.12);
 }
 
 .portal-card__header {
   display: flex;
   align-items: center;
   padding: 1rem 1.25rem;
-  background: #1e2a3a;
-  color: #fff;
+  background: var(--navy);
+  color: var(--white);
 }
 
 .portal-card__brand { display: flex; align-items: center; gap: 0.625rem; }
@@ -53,9 +53,9 @@
   padding: 0.875rem;
   text-align: center;
   font-size: 0.6875rem;
-  color: #9ca3af;
-  background: #f9fafb;
-  border-top: 1px solid #f3f4f6;
+  color: var(--text-light);
+  background: var(--input-bg);
+  border-top: 1px solid var(--border);
 }
 
 .done-icon {
@@ -65,13 +65,13 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #ecfdf5;
-  color: #047857;
+  background: #e6f9f0;
+  color: #2e9c6a;
 }
 
-.done-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #1e2a3a; }
-.done-desc { margin: 0; font-size: 0.8125rem; line-height: 1.55; color: #6b7280; }
-.done-hint { margin: 0; padding: 0.6rem 0.75rem; border-radius: 8px; background: #f3f4f6; font-size: 0.78rem; color: #374151; }
+.done-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--text); }
+.done-desc { margin: 0; font-size: 0.8125rem; line-height: 1.55; color: var(--text-mid); }
+.done-hint { margin: 0; padding: 0.6rem 0.75rem; border-radius: 8px; background: var(--input-bg); font-size: 0.78rem; color: var(--text); }
 
 .done-actions {
   display: flex;
@@ -91,8 +91,8 @@
   transition: background 0.15s;
 }
 
-.done-btn--primary { border: none; background: #4b5a6e; color: #fff; }
-.done-btn--primary:hover { background: #1e2a3a; }
-.done-btn--outline { border: 1px solid #d1d5db; background: #fff; color: #1e2a3a; }
-.done-btn--outline:hover { background: #f9fafb; }
-.done-btn:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.done-btn--primary { border: none; background: var(--blue-muted); color: var(--white); }
+.done-btn--primary:hover { background: var(--navy); }
+.done-btn--outline { border: 1px solid var(--border); background: var(--white); color: var(--text); }
+.done-btn--outline:hover { background: var(--input-bg); }
+.done-btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }

@@ -13,7 +13,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
-  color: #f6f8fc;
+  color: var(--white);
   cursor: pointer;
   transition: background 0.15s ease;
 
@@ -120,11 +120,11 @@
 
   &:hover { background: var(--input-bg); }
 
-  &--unread { background: #f1f6fb; }
+  &--unread { background: var(--input-bg); }
   &--danger { border-left-color: var(--error); }
   &--success { border-left-color: var(--success); }
-  &--warning { border-left-color: #d97706; }
-  &--info { border-left-color: #2563eb; }
+  &--warning { border-left-color: #b78f00; }
+  &--info { border-left-color: var(--blue); }
 }
 
 .item__subject {

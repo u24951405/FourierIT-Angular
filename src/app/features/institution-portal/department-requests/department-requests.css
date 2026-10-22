@@ -10,8 +10,8 @@
 .department-requests-error,
 .department-requests-empty {
   padding: 1rem;
-  background: #fff8f0;
-  border: 1px solid #ffe2c1;
+  background: #fff7d6;
+  border: 1px solid #f2e3a3;
   border-radius: 0.75rem;
 }
 
@@ -21,8 +21,8 @@
 }
 
 .department-request-card {
-  background: #ffffff;
-  border: 1px solid #e8eaed;
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1.25rem;
 }
@@ -37,27 +37,27 @@
 
 .department-request-card__label {
   font-size: 0.85rem;
-  color: #6d6d7a;
+  color: var(--text-mid);
   display: block;
 }
 
 .department-request-card__status {
-  background: #eef6ff;
-  color: #1664d9;
+  background: var(--input-bg);
+  color: var(--blue);
   font-weight: 600;
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;
 }
 
-.department-request-card__status--pending{ background:#fff4e6; color:#b45b00 }
-.department-request-card__status--department_pending{ background:#fff4e6; color:#b45b00 }
-.department-request-card__status--approved{ background:#e8f7ef; color:#0a7a3a }
-.department-request-card__status--denied{ background:#fff0f2; color:#a41d3b }
+.department-request-card__status--pending{ background:#fff7d6; color:#b78f00 }
+.department-request-card__status--department_pending{ background:#fff7d6; color:#b78f00 }
+.department-request-card__status--approved{ background:#e6f9f0; color:#2e9c6a }
+.department-request-card__status--denied{ background:#fdf2f2; color:#c0392b }
 
 .department-request-card__body p {
   margin: 0.45rem 0;
-  color: #323238;
+  color: var(--text);
 }
 
 .department-request-card__documents {
@@ -91,17 +91,17 @@
   display: grid;
   gap: 0.4rem;
   font-size: 0.92rem;
-  color: #4a4b57;
+  color: var(--text-mid);
 }
 
 .department-request-card__inputs input,
 .department-request-card__inputs textarea {
   width: 100%;
-  border: 1px solid #d7d7de;
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
   font-size: 0.95rem;
-  color: #24243d;
+  color: var(--text);
 }
 
 .department-request-card__inputs textarea {
@@ -114,11 +114,11 @@
   padding: 0.85rem 1.2rem;
   border: none;
   border-radius: 999px;
-  background: #1664d9;
-  color: #fff;
+  background: var(--blue);
+  color: var(--white);
   cursor: pointer;
   font-weight: 600;
 }
 
-.btn-approve{ background:#0a7a3a; color:#fff; border:none; padding:0.7rem 1rem; border-radius:999px }
-.btn-deny{ background:#a41d3b; color:#fff; border:none; padding:0.7rem 1rem; border-radius:999px }
+.btn-approve{ background:#2e9c6a; color:var(--white); border:none; padding:0.7rem 1rem; border-radius:999px }
+.btn-deny{ background:var(--error); color:var(--white); border:none; padding:0.7rem 1rem; border-radius:999px }

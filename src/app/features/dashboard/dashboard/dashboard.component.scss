@@ -17,12 +17,12 @@
   font-size: 2rem;
   font-weight: 800;
   line-height: 1.05;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .dash-header__subtitle {
   margin: 8px 0 0;
-  color: #64748b;
+  color: var(--text-mid);
   font-size: 0.98rem;
 }
 
@@ -37,8 +37,8 @@
   gap: 10px;
   padding: 10px 16px;
   border-radius: 999px;
-  background: #ecfdf5;
-  color: #166534;
+  background: #e6f9f0;
+  color: #2e9c6a;
   font-size: 0.88rem;
   font-weight: 700;
   border: 1px solid rgba(22, 101, 52, 0.15);
@@ -48,7 +48,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #16a34a;
+  background: #2e9c6a;
   box-shadow: 0 0 0 5px rgba(16, 185, 129, 0.16);
 }
 
@@ -63,8 +63,8 @@
   gap: 18px;
   align-items: flex-start;
   padding: 24px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: 24px;
   min-height: 150px;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
@@ -76,8 +76,8 @@
 
 .stat-card--clickable:hover {
   transform: translateY(-2px);
-  border-color: #c7d2fe;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  border-color: var(--border);
+  box-shadow: 0 24px 60px rgba(15, 31, 48, 0.08);
 }
 
 .stat-card__icon {
@@ -87,7 +87,7 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #374151;
+  color: var(--text);
 }
 
 .stat-card__icon svg {
@@ -105,7 +105,7 @@
   font-size: 1.95rem;
   font-weight: 800;
   line-height: 1;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .stat-card__label {
@@ -113,12 +113,12 @@
   margin-bottom: 8px;
   font-size: 0.98rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text);
 }
 
 .stat-card__sub {
   display: block;
-  color: #64748b;
+  color: var(--text-mid);
   font-size: 0.92rem;
   line-height: 1.5;
 }
@@ -132,16 +132,16 @@
 }
 
 .stat-card--loading {
-  color: #64748b;
+  color: var(--text-mid);
 }
 
 .stat-card--error {
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .dash-chart-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: 28px;
   padding: 24px;
   display: flex;
@@ -160,19 +160,19 @@
 
 .dash-chart-card--clickable:hover {
   transform: translateY(-1px);
-  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.07);
+  box-shadow: 0 22px 50px rgba(15, 31, 48, 0.07);
 }
 
 .dash-chart-card__title {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .dash-chart-card__subtitle {
   margin: 0;
-  color: #64748b;
+  color: var(--text-mid);
   font-size: 0.95rem;
 }
 
@@ -214,7 +214,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border);
 }
 
 .dash-legend-dot {
@@ -224,32 +224,32 @@
 }
 
 .dash-legend-label {
-  color: #334155;
+  color: var(--text);
   font-weight: 600;
   font-size: 0.92rem;
 }
 
 .dash-legend-val {
   margin-left: auto;
-  color: #0f172a;
+  color: var(--text);
   font-weight: 700;
   font-size: 0.92rem;
 }
 
 .dash-legend-pct {
-  color: #64748b;
+  color: var(--text-mid);
   font-size: 0.85rem;
   margin-left: 8px;
 }
 
 .compliance-state {
   padding: 18px 0;
-  color: #475569;
+  color: var(--text-mid);
   font-size: 0.96rem;
 }
 
 .compliance-state--error {
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .compliance-overview {
@@ -260,8 +260,8 @@
 
 .compliance-summary-card,
 .compliance-list-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 22px;
   padding: 22px;
 }
@@ -279,15 +279,15 @@
   align-items: center;
   padding: 8px 14px;
   border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
+  background: #e6f9f0;
+  color: #2e9c6a;
   font-size: 0.85rem;
   font-weight: 700;
 }
 
 .compliance-pill--muted {
-  background: #e2e8f0;
-  color: #334155;
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .compliance-grid {
@@ -298,20 +298,20 @@
 
 .compliance-label {
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--text-mid);
   margin-bottom: 8px;
 }
 
 .compliance-value {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .compliance-list-card__title {
   margin: 0 0 16px;
   font-size: 1rem;
-  color: #0f172a;
+  color: var(--text);
   font-weight: 700;
 }
 
@@ -328,7 +328,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
 }
 
 .compliance-list li:last-child {
@@ -336,12 +336,12 @@
 }
 
 .compliance-list__name {
-  color: #0f172a;
+  color: var(--text);
   font-weight: 700;
 }
 
 .compliance-list__meta {
-  color: #64748b;
+  color: var(--text-mid);
   font-size: 0.92rem;
   text-align: right;
 }

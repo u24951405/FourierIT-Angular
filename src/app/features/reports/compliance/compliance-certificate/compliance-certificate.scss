@@ -1,17 +1,17 @@
-$dark-navy: #1e2a3a;
-$border: #e5e7eb;
-$surface: #f3f4f6;
-$text-primary: #111827;
-$text-sub: #6b7280;
-$text-muted: #9ca3af;
-$green: #10b981;
+$dark-navy: var(--navy);
+$border: var(--border);
+$surface: var(--input-bg);
+$text-primary: var(--text);
+$text-sub: var(--text-mid);
+$text-muted: var(--text-light);
+$green: #2e9c6a;
 
 .cert-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 2rem;
-  background: #fff;
+  background: var(--white);
   border-bottom: 1px solid $border;
 
   &__left { display: flex; align-items: center; gap: 0.875rem; }
@@ -23,7 +23,7 @@ $green: #10b981;
 .cert-back-btn {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 32px;
-  background: #fff; border: 1px solid $border; border-radius: 6px;
+  background: var(--white); border: 1px solid $border; border-radius: 6px;
   color: $text-sub; cursor: pointer;
   &:hover { background: $surface; }
 }
@@ -32,12 +32,12 @@ $green: #10b981;
   display: inline-flex; align-items: center; gap: 0.4rem;
   padding: 0.5rem 1rem; border-radius: 6px;
   font-size: 0.8125rem; font-weight: 500; cursor: pointer;
-  &--outline { background: #fff; border: 1px solid $border; color: $text-primary; &:hover { background: $surface; } }
-  &--primary { background: $dark-navy; border: none; color: #fff; &:hover { background: #2d3f55; } }
+  &--outline { background: var(--white); border: 1px solid $border; color: $text-primary; &:hover { background: $surface; } }
+  &--primary { background: $dark-navy; border: none; color: var(--white); &:hover { background: var(--navy); } }
 }
 
 .cert-wrapper {
-  background: #d9d9d5;
+  background: var(--bg);
   min-height: calc(100vh - 65px);
   display: flex;
   justify-content: center;
@@ -57,7 +57,7 @@ $green: #10b981;
   background: $dark-navy;
   border-radius: 8px 8px 0 0;
   padding: 1.25rem 1.5rem 0;
-  color: #fff;
+  color: var(--white);
 
   &__brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
 
@@ -115,7 +115,7 @@ $green: #10b981;
 // ── Certificate Body ──────────────────────────────────────────────────────────
 
 .cert-body {
-  background: #fff;
+  background: var(--white);
   padding: 2rem 2rem;
   display: flex;
   flex-direction: column;
@@ -191,12 +191,12 @@ $green: #10b981;
 
     &:last-child { margin-bottom: 0; }
 
-    strong { color: #2563eb; }
+    strong { color: var(--blue); }
   }
 
   &__legal {
     font-style: italic;
-    color: #2563eb !important;
+    color: var(--blue) !important;
   }
 }
 
@@ -259,7 +259,7 @@ $green: #10b981;
 // ── Footer ────────────────────────────────────────────────────────────────────
 
 .cert-footer {
-  background: #111827;
+  background: var(--navy);
   border-radius: 0 0 8px 8px;
   padding: 0.5rem 1.25rem;
   display: flex;
@@ -276,20 +276,20 @@ $green: #10b981;
 
 // ── Live data states ──
 .cert-state { max-width: 760px; margin: 1rem auto; font-size: 0.875rem; color: $text-sub; }
-.cert-state--error { color: #b91c1c; }
+.cert-state--error { color: var(--error); }
 
 // A statement for an owner who is not compliant: red instead of the green certificate styling.
 .cert-document--not-compliant {
-  .cert-score { border-color: #ef4444; }
-  .cert-score__value, .cert-score__status { color: #ef4444; }
+  .cert-score { border-color: var(--error); }
+  .cert-score__value, .cert-score__status { color: var(--error); }
 }
-.cert-header__verified--no { color: #ef4444; }
+.cert-header__verified--no { color: var(--error); }
 
 .cert-issues {
   margin: 0.5rem 0 1rem;
   padding-left: 1.2rem;
   font-size: 0.8125rem;
-  color: #991b1b;
+  color: #c0392b;
 
   li { margin: 0.2rem 0; }
 }
@@ -310,7 +310,7 @@ $green: #10b981;
     color: $text-sub;
   }
 
-  td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #f3f4f6; color: $text-primary; }
+  td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); color: $text-primary; }
 
   &__file { display: block; font-size: 0.7rem; color: $text-muted; }
 }

@@ -1,8 +1,8 @@
-$border: #e5e7eb;
-$surface: #f8fafc;
-$text-primary: #111827;
-$text-sub: #6b7280;
-$text-muted: #9ca3af;
+$border: var(--border);
+$surface: var(--input-bg);
+$text-primary: var(--text);
+$text-sub: var(--text-mid);
+$text-muted: var(--text-light);
 
 // ── Owner header ──────────────────────────────────────────────────────────────
 
@@ -71,8 +71,8 @@ $text-muted: #9ca3af;
     color: $text-sub;
   }
 
-  &--good .act-kpi__value { color: #047857; }
-  &--warn .act-kpi__value { color: #b45309; }
+  &--good .act-kpi__value { color: #2e9c6a; }
+  &--warn .act-kpi__value { color: #b78f00; }
 }
 
 // ── Overview cards ────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ $text-muted: #9ca3af;
 
 // One row per document type, above that type's documents.
 .act-group-row td {
-  background: #f1f5f9;
+  background: var(--input-bg);
   padding: 0.55rem 1rem;
 }
 
@@ -240,11 +240,11 @@ $text-muted: #9ca3af;
   color: $text-sub;
 }
 
-.act-group-row__attention { color: #b45309; }
+.act-group-row__attention { color: #b78f00; }
 
 .act-total-row td {
-  background: #1e2a3a;
-  color: #fff;
+  background: var(--navy);
+  color: var(--white);
   font-weight: 600;
   border-bottom: none;
 }
@@ -272,10 +272,10 @@ $text-muted: #9ca3af;
   white-space: nowrap;
 }
 
-.act-pill--good    { background: #ecfdf5; color: #047857; }
-.act-pill--warn    { background: #fffbeb; color: #b45309; }
-.act-pill--bad     { background: #fef2f2; color: #b91c1c; }
-.act-pill--neutral { background: #f3f4f6; color: #4b5563; }
+.act-pill--good    { background: #e6f9f0; color: #2e9c6a; }
+.act-pill--warn    { background: #fff7d6; color: #b78f00; }
+.act-pill--bad     { background: #fdf2f2; color: var(--error); }
+.act-pill--neutral { background: var(--input-bg); color: var(--text-mid); }
 
 // Shown when a section has nothing in it, so an empty table doesn't look broken.
 .act-empty {

@@ -10,16 +10,16 @@
   gap: 1rem;
   padding: 1.4rem 1.5rem;
   border-radius: 18px;
-  background: linear-gradient(135deg, #13263d, #1e4770 58%, #2f6ea1);
-  color: #fff;
-  box-shadow: 0 16px 44px rgba(18, 38, 61, 0.18);
+  background: linear-gradient(135deg, var(--navy), var(--navy) 58%, var(--blue));
+  color: var(--white);
+  box-shadow: 0 16px 44px rgba(15, 31, 48, 0.18);
 }
 
 .calendar-panel {
-  background: #fff;
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: 18px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(15, 31, 48, 0.06);
   padding: 1rem 1.1rem;
 }
 
@@ -53,23 +53,23 @@
 }
 
 .calendar-chip--expiring {
-  background: #fff7ed;
-  color: #b45309;
+  background: #fff7d6;
+  color: #b78f00;
 }
 
 .calendar-chip--uploaded {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--input-bg);
+  color: var(--blue);
 }
 
 .calendar-chip--certified {
-  background: #ecfdf5;
-  color: #047857;
+  background: #e6f9f0;
+  color: #2e9c6a;
 }
 
 .calendar-chip--expiry {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .calendar-panel__legend {
@@ -107,7 +107,7 @@
   min-height: 110px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #fafbfd;
+  background: var(--white);
   padding: 0.45rem;
   display: flex;
   flex-direction: column;
@@ -143,28 +143,28 @@
 }
 
 .calendar-event--uploaded {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--input-bg);
+  color: var(--blue);
 }
 
 .calendar-event--certified {
-  background: #ecfdf5;
-  color: #047857;
+  background: #e6f9f0;
+  color: #2e9c6a;
 }
 
 .calendar-event--expiry {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .calendar-event--expiry.calendar-event--expiring {
-  background: #fff7ed;
-  color: #b45309;
+  background: #fff7d6;
+  color: #b78f00;
 }
 
 .calendar-event--expiry.calendar-event--expired {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: #fdf2f2;
+  color: var(--error);
 }
 
 .eyebrow--dark {
@@ -198,10 +198,10 @@
 .documents-page__stats article,
 .document-card,
 .documents-page__state {
-  background: #fff;
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(15, 31, 48, 0.06);
 }
 
 .documents-grid {
@@ -243,7 +243,7 @@
   padding: 0.8rem 0.95rem;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--white);
 }
 
 .search-box input {
@@ -258,9 +258,9 @@
 }
 
 .documents-page__state--error {
-  color: #b42318;
-  background: #fff6f6;
-  border-color: #f4c7c3;
+  color: var(--error);
+  background: #fdf2f2;
+  border-color: #f5c6c6;
 }
 
 .documents-grid {
@@ -320,7 +320,7 @@
 .document-detail-grid div {
   padding: 0.8rem 0.9rem;
   border-radius: 12px;
-  background: #f8fbff;
+  background: var(--input-bg);
 }
 
 .document-detail-grid dt {
@@ -344,8 +344,8 @@
   padding: 0.9rem 1rem;
   border-radius: 16px;
   border: 1px solid var(--border);
-  background: #fff;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+  background: var(--white);
+  box-shadow: 0 20px 50px rgba(15, 31, 48, 0.18);
 }
 
 .preview-modal__header {
@@ -362,7 +362,7 @@
   width: 100%;
   min-height: 360px;
   border: 0;
-  background: #f8fafc;
+  background: var(--input-bg);
   border-radius: 12px;
 }
 
@@ -371,13 +371,13 @@
   max-height: 56vh;
   object-fit: contain;
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--input-bg);
 }
 
 .preview-modal__unsupported {
   padding: 1rem;
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--input-bg);
   color: var(--text-mid);
   line-height: 1.5;
 }
@@ -388,7 +388,7 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(15, 23, 42, 0.46);
+  background: rgba(15, 31, 48, 0.46);
   z-index: 50;
 }
 
@@ -399,8 +399,8 @@
   padding: 1rem 1.1rem;
   border-radius: 18px;
   border: 1px solid var(--border);
-  background: #fff;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  background: var(--white);
+  box-shadow: 0 24px 60px rgba(15, 31, 48, 0.22);
 }
 
 .modal__header,
@@ -465,14 +465,14 @@ select {
   gap: 16px;
   padding: 0.95rem 1rem;
   border-radius: 16px;
-  background: #f8fafc;
+  background: var(--input-bg);
   align-items: center;
 }
 
 .documents-table__row.documents-table__head {
   background: transparent;
   font-weight: 700;
-  color: #334155;
+  color: var(--text);
 }
 
 .documents-table__row span {
@@ -482,12 +482,12 @@ select {
 }
 
 .documents-table__row:not(.documents-table__head) {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--border);
 }
 
 .documents-table__row:not(.documents-table__head) span {
-  color: #0f172a;
+  color: var(--text);
 }
 
 @media (max-width: 900px) {
@@ -518,19 +518,19 @@ select {
   gap: 1rem;
   padding: 1rem 1.1rem;
   align-items: center;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: 18px;
 }
 
 .documents-table__head {
   font-weight: 700;
-  color: #0f172a;
-  background: #f8fafc;
+  color: var(--text);
+  background: var(--input-bg);
 }
 
 .documents-table__row span {
-  color: #475569;
+  color: var(--text-mid);
   font-size: 0.95rem;
 }
 
@@ -553,13 +553,13 @@ select {
 }
 
 .documents-sidebar {
-  background: #fff;
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: 8px;
   height: fit-content;
   position: sticky;
   top: 1rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 4px rgba(15, 31, 48, 0.06);
   overflow: hidden;
 }
 
@@ -584,8 +584,8 @@ select {
   margin: 0.8rem 0 0;
   padding: 0.55rem 0.7rem;
   border-radius: 8px;
-  background: #fdf0f0;
-  color: #9b2c2c;
+  background: #fdf2f2;
+  color: #c0392b;
   font-size: 0.85rem;
   line-height: 1.4;
 }
@@ -603,15 +603,15 @@ select {
   span { font-weight: 600; }
 
   &--rejected {
-    background: #fdf0f0;
+    background: #fdf2f2;
     border-color: var(--error);
-    color: #7f1d1d;
+    color: #c0392b;
   }
 
   &--approved {
-    background: #eefaf4;
+    background: var(--input-bg);
     border-color: var(--success);
-    color: #14532d;
+    color: #2e9c6a;
   }
 }
 
@@ -619,7 +619,7 @@ select {
   padding: 0.85rem 1rem;
   border: 1px dashed var(--error);
   border-radius: 10px;
-  background: #fffafa;
+  background: #fdf2f2;
 }
 
 // The owner's note on how they dealt with an institution's flag.

@@ -3,7 +3,7 @@
   font-family: var(--font, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   color: var(--text);
   min-height: 100vh;
-  background-color: var(--bg, #f8fafc);
+  background-color: var(--bg);
 }
 
 .page-header {
@@ -24,7 +24,7 @@
   font-size: 12px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #334155;
+  color: var(--text);
 }
 
 .page-header h1 {
@@ -35,7 +35,7 @@
 
 .subtitle {
   margin: 8px 0 0;
-  color: #475569;
+  color: var(--text-mid);
   max-width: 640px;
 }
 
@@ -50,7 +50,7 @@
   background: var(--white);
   border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 8px 20px rgba(11, 22, 40, 0.04);
+  box-shadow: 0 8px 20px rgba(15, 31, 48, 0.04);
   border: 1px solid var(--border);
 }
 
@@ -73,7 +73,7 @@
 
 .filter-card label {
   font-size: 12px;
-  color: #475569;
+  color: var(--text-mid);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -94,7 +94,7 @@
 .form-input:focus,
 .form-select:focus {
   outline: none;
-  border-color: #1e40af;
+  border-color: var(--blue);
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
 }
 
@@ -114,7 +114,7 @@
 .summary-item span {
   display: block;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-mid);
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -122,7 +122,7 @@
 
 .summary-item strong {
   font-size: 24px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .table-card {
@@ -137,7 +137,7 @@
 }
 
 .banner--error {
-  background-color: #fef2f2;
+  background-color: #fdf2f2;
   color: var(--error);
   border: 1px solid rgba(240, 100, 100, 0.12);
 }
@@ -153,7 +153,7 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid rgba(0,0,0,0.08);
+  border: 2px solid rgba(15, 31, 48, 0.08);
   border-top-color: var(--navy);
   animation: spin 900ms linear infinite;
   display: inline-block;
@@ -194,7 +194,7 @@
 .data-table th,
 .data-table td {
   padding: 16px 18px;
-  background: #ffffff;
+  background: var(--white);
 }
 
 .data-table thead th {
@@ -211,12 +211,12 @@
 
 .data-table tbody tr {
   border-radius: 16px;
-  box-shadow: 0 6px 14px rgba(11, 22, 40, 0.03);
+  box-shadow: 0 6px 14px rgba(15, 31, 48, 0.03);
 }
 
 .data-table td {
   font-size: 14px;
-  color: #1e293b;
+  color: var(--text);
   vertical-align: top;
   border: none;
 }
@@ -250,7 +250,7 @@
 
 .empty-state {
   text-align: center;
-  color: #64748b;
+  color: var(--text-mid);
   padding: 28px 0;
   font-size: 15px;
 }
@@ -310,7 +310,7 @@
 .skeleton-row td { background: transparent; }
 .skeleton-line {
   height: 14px;
-  background: linear-gradient(90deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.06) 50%, rgba(0,0,0,0.04) 100%);
+  background: linear-gradient(90deg, rgba(15, 31, 48, 0.04) 0%, rgba(15, 31, 48, 0.06) 50%, rgba(15, 31, 48, 0.04) 100%);
   border-radius: 8px;
   opacity: 0.8;
 }

@@ -10,7 +10,7 @@
 }
 
 .table-card {
-  background: #fff;
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
@@ -39,7 +39,7 @@
   padding: 0 0.8rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--white, #fff);
+  background: var(--white);
   color: var(--text-mid);
   font: inherit;
   font-size: 13px;
@@ -53,11 +53,11 @@
   &--active {
     background: var(--navy);
     border-color: var(--navy);
-    color: #fff;
+    color: var(--white);
 
-    &:hover { color: #fff; }
+    &:hover { color: var(--white); }
 
-    .role-chip__count { background: rgba(255, 255, 255, 0.2); color: #fff; }
+    .role-chip__count { background: rgba(255, 255, 255, 0.2); color: var(--white); }
   }
 }
 
@@ -101,11 +101,11 @@ th, td {
 .action-buttons { display: flex; gap: 0.4rem; }
 .btn--pep-scan {
   white-space: nowrap;
-  background: #0f766e;
-  color: #fff;
-  border: 1px solid #0f766e;
+  background: var(--navy);
+  color: var(--white);
+  border: 1px solid var(--navy);
 }
-.btn--pep-scan:hover { background: #115e59; }
+.btn--pep-scan:hover { background: var(--navy); }
 .empty-state { padding: 1rem; color: var(--text-light); }
 
 .modal-overlay {
@@ -123,10 +123,10 @@ th, td {
   max-height: 92vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: var(--white);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 16px 40px rgba(15, 31, 48, 0.2);
 }
 
 .modal__header {
@@ -152,12 +152,12 @@ th, td {
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fbfcfd;
+  background: var(--white);
 }
 
 .edit-section--admin {
-  border-color: #b7d8d1;
-  background: #f4fbf9;
+  border-color: var(--border);
+  background: var(--input-bg);
 }
 
 .edit-section__heading {
@@ -192,9 +192,9 @@ th, td {
 }
 
 .edit-section__badge--admin {
-  border-color: #8fc7bb;
-  color: #176b5e;
-  background: #e4f5f1;
+  border-color: #2e9c6a;
+  color: var(--text);
+  background: #e6f9f0;
 }
 
 .field--wide {
@@ -202,9 +202,9 @@ th, td {
 }
 
 .field--readonly input {
-  color: #526170;
-  background: #f1f4f6;
-  border-color: #d9e0e5;
+  color: var(--text-mid);
+  background: var(--input-bg);
+  border-color: var(--border);
   cursor: default;
 }
 
@@ -252,14 +252,14 @@ th, td {
   margin: 0 0 18px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: var(--input-bg, #f5f7fa);
+  background: var(--input-bg);
 
-  dt { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--text-mid, #64748b); }
-  dd { margin: 0; font-size: 14px; color: var(--text, #0f172a); }
+  dt { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--text-mid); }
+  dd { margin: 0; font-size: 14px; color: var(--text); }
 }
 
 .role-note {
   margin: 16px 0 0;
   font-size: 12.5px;
-  color: var(--text-mid, #64748b);
+  color: var(--text-mid);
 }

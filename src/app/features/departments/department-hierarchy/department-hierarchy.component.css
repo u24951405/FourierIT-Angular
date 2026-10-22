@@ -4,7 +4,7 @@
 
 .hierarchy-page {
   padding: 24px;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .hierarchy-header {
@@ -21,7 +21,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #2563eb;
+  color: var(--blue);
 }
 
 .hierarchy-header h1 {
@@ -34,10 +34,10 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
   padding: 20px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--white);
+  border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 6px 18px rgba(15, 31, 48, 0.04);
 }
 
 .field {
@@ -54,11 +54,11 @@
 .field select {
   width: 100%;
   min-height: 42px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0 12px;
   font: inherit;
-  background: #f8fafc;
+  background: var(--input-bg);
 }
 
 .form-actions {
@@ -77,18 +77,18 @@
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: var(--blue);
   color: white;
 }
 
 .btn-secondary {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: var(--input-bg);
+  color: var(--text);
 }
 
 .btn-danger {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fdf2f2;
+  color: #c0392b;
 }
 
 .btn-small {
@@ -104,19 +104,19 @@
 }
 
 .alert-error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: #fdf2f2;
+  color: #c0392b;
 }
 
 .alert-success {
-  background: #dcfce7;
-  color: #166534;
+  background: #e6f9f0;
+  color: #2e9c6a;
 }
 
 .tree-panel {
   margin-top: 20px;
   background: white;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 18px;
 }
@@ -138,9 +138,9 @@
   justify-content: space-between;
   gap: 16px;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--input-bg);
 }
 
 .tree-node__label-wrap {
@@ -154,7 +154,7 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--blue);
 }
 
 .tree-node__actions {
@@ -167,7 +167,7 @@
   list-style: none;
   margin: 10px 0 0 24px;
   padding-left: 18px;
-  border-left: 2px solid #dbeafe;
+  border-left: 2px solid var(--border);
 }
 
 @media (max-width: 720px) {

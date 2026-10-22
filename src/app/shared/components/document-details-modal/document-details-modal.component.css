@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(15, 31, 48, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,9 +13,9 @@
 }
 
 .modal-content {
-  background: #ffffff;
+  background: var(--white);
   border-radius: 10px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 10px 40px rgba(15, 31, 48, 0.12);
   max-width: 500px;
   width: 100%;
   max-height: 90vh;
@@ -26,7 +26,7 @@
 
 .modal-header {
   padding: 24px 24px 20px;
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -37,14 +37,14 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #0a0e27;
+  color: var(--text);
 }
 
 .close-btn {
   background: none;
   border: none;
   font-size: 28px;
-  color: #a8adb8;
+  color: var(--text-light);
   cursor: pointer;
   padding: 0;
   line-height: 1;
@@ -52,7 +52,7 @@
 }
 
 .close-btn:hover {
-  color: #0a0e27;
+  color: var(--text);
 }
 
 .modal-body {
@@ -63,7 +63,7 @@
 
 .modal-footer {
   padding: 16px 24px;
-  border-top: 1px solid #f0f1f3;
+  border-top: 1px solid var(--border);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -76,14 +76,14 @@
   justify-content: center;
   gap: 12px;
   padding: 60px 24px;
-  color: #7a8596;
+  color: var(--text-mid);
   font-size: 14px;
 }
 
 .modal-error {
   padding: 60px 24px;
   text-align: center;
-  color: #ef4444;
+  color: var(--error);
   font-size: 14px;
 }
 
@@ -95,7 +95,7 @@
   margin: 0 0 16px 0;
   font-size: 13px;
   font-weight: 600;
-  color: #0a0e27;
+  color: var(--text);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -105,7 +105,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f1f3;
+  border-bottom: 1px solid var(--border);
 }
 
 .info-row:last-child {
@@ -115,12 +115,12 @@
 .info-row label {
   font-size: 12px;
   font-weight: 500;
-  color: #7a8596;
+  color: var(--text-mid);
 }
 
 .info-row .value {
   font-size: 12px;
-  color: #0a0e27;
+  color: var(--text);
   font-weight: 400;
   text-align: right;
   max-width: 50%;
@@ -138,26 +138,26 @@
 }
 
 .badge-approved {
-  background: #d1fae5;
-  color: #065f46;
+  background: #e6f9f0;
+  color: #2e9c6a;
 }
 
 .badge-pending {
-  background: #fef08a;
-  color: #854d0e;
+  background: #b78f00;
+  color: #b78f00;
 }
 
 .badge-rejected {
-  background: #fee2e2;
-  color: #7f1d1d;
+  background: #fdf2f2;
+  color: #c0392b;
 }
 
 .no-requests {
   padding: 16px;
   text-align: center;
-  background: #f7f8fa;
+  background: var(--input-bg);
   border-radius: 6px;
-  color: #7a8596;
+  color: var(--text-mid);
   font-size: 12px;
 }
 
@@ -166,7 +166,7 @@
 }
 
 .requests-list {
-  background: #f7f8fa;
+  background: var(--input-bg);
   border-radius: 6px;
   padding: 12px 0;
 }
@@ -176,8 +176,8 @@
   margin: 0;
   font-size: 12px;
   font-weight: 500;
-  color: #0a0e27;
-  border-bottom: 1px solid #e8e9eb;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
 }
 
 .request-item {
@@ -185,7 +185,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 16px;
-  border-bottom: 1px solid #e8e9eb;
+  border-bottom: 1px solid var(--border);
   font-size: 12px;
 }
 
@@ -195,18 +195,18 @@
 
 .requester-name {
   font-weight: 500;
-  color: #0a0e27;
+  color: var(--text);
 }
 
 .request-date {
-  color: #7a8596;
+  color: var(--text-mid);
   font-size: 11px;
 }
 
 .btn-secondary {
-  background: #ffffff;
-  color: #0a0e27;
-  border: 1px solid #e8e9eb;
+  background: var(--white);
+  color: var(--text);
+  border: 1px solid var(--border);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 12px;
@@ -216,16 +216,16 @@
 }
 
 .btn-secondary:hover {
-  background: #f7f8fa;
-  border-color: #d1d5db;
+  background: var(--input-bg);
+  border-color: var(--border);
 }
 
 .spinner {
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 2px solid #e5e7eb;
-  border-top-color: #3b82f6;
+  border: 2px solid var(--border);
+  border-top-color: var(--blue);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }

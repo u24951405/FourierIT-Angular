@@ -1,9 +1,9 @@
-$dark-navy: #1e2a3a;
-$border: #e5e7eb;
-$surface: #f3f4f6;
-$text-primary: #111827;
-$text-sub: #6b7280;
-$text-muted: #9ca3af;
+$dark-navy: var(--navy);
+$border: var(--border);
+$surface: var(--input-bg);
+$text-primary: var(--text);
+$text-sub: var(--text-mid);
+$text-muted: var(--text-light);
 
 /* ── Page Header ─────────────────────────────────────────────────────────────── */
 
@@ -14,7 +14,7 @@ $text-muted: #9ca3af;
   gap: 1rem;
   flex-wrap: wrap;
   padding: 1.25rem 2rem;
-  background: #fff;
+  background: var(--white);
   border-bottom: 1px solid $border;
 
   &__left {
@@ -49,7 +49,7 @@ $text-muted: #9ca3af;
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: #fff;
+  background: var(--white);
   border: 1px solid $border;
   border-radius: 6px;
   color: $text-sub;
@@ -74,7 +74,7 @@ $text-muted: #9ca3af;
   transition: background 0.15s;
 
   &--outline {
-    background: #fff;
+    background: var(--white);
     border: 1px solid $border;
     color: $text-primary;
 
@@ -84,16 +84,16 @@ $text-muted: #9ca3af;
   &--primary {
     background: $dark-navy;
     border: none;
-    color: #fff;
+    color: var(--white);
 
-    &:hover { background: #2d3f55; }
+    &:hover { background: var(--navy); }
   }
 }
 
 // ── Document Wrapper ─────────────────────────────────────────────────────────
 
 .rf-document-wrapper {
-  background: #d9d9d5;
+  background: var(--bg);
   padding: 2.5rem 1.5rem;
   min-height: calc(100vh - 65px);
   display: flex;
@@ -117,7 +117,7 @@ $text-muted: #9ca3af;
   background: $dark-navy;
   border-radius: 8px 8px 0 0;
   padding: 1.25rem 1.5rem 0;
-  color: #fff;
+  color: var(--white);
   position: relative;
 
   &__brand {
@@ -205,7 +205,7 @@ $text-muted: #9ca3af;
 /* ── Document Body ───────────────────────────────────────────────────────────── */
 
 .rf-doc-body {
-  background: #fff;
+  background: var(--white);
   padding: 1.15rem 2rem 1.35rem;
   overflow-x: auto;
 }
@@ -255,7 +255,7 @@ $text-muted: #9ca3af;
 /* DocumentFooter */
 
 .rf-doc-footer {
-  background: #111827;
+  background: var(--navy);
   border-radius: 0 0 8px 8px;
   padding: 0.625rem 1.5rem;
   display: flex;
@@ -330,21 +330,21 @@ $text-muted: #9ca3af;
       font-size: 0.6875rem;
       font-weight: 700;
       letter-spacing: 0.1em;
-      color: #6b7280;
+      color: var(--text-mid);
       white-space: nowrap;
     }
 
     &__line {
       flex: 1;
       height: 1px;
-      background: #e5e7eb;
+      background: var(--bg);
     }
   }
 
   /* ── Chart Card ─────────────────────────────────────────────────────────────── */
 
   .chart-card {
-    background: #fff;
+    background: var(--white);
     border: 1px solid $border;
     border-radius: 8px;
     padding: 0.8rem 1rem 0.9rem;
