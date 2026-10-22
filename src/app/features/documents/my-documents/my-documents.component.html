@@ -148,10 +148,6 @@
               <dt>Size</dt>
               <dd>{{ doc.fileSizeBytes | number }} bytes</dd>
             </div>
-            <div>
-              <dt>Encrypted</dt>
-              <dd>{{ doc.isEncrypted ? doc.encryptionAlgorithm || 'Yes' : 'No' }}</dd>
-            </div>
           </dl>
           @if (doc.reviewStatus === 'Rejected') {
             <p class="document-card__review">
@@ -234,7 +230,6 @@
           <dl class="document-detail-grid">
             <div><dt>Status</dt><dd>{{ detailDocument()?.currentStatus }}</dd></div>
             <div><dt>Certified</dt><dd>{{ detailDocument()?.isCertified ? 'Yes' : 'No' }}</dd></div>
-            <div><dt>Encrypted</dt><dd>{{ detailDocument()?.isEncrypted ? detailDocument()?.encryptionAlgorithm || 'Yes' : 'No' }}</dd></div>
             <div><dt>Size</dt><dd>{{ detailDocument()?.fileSizeBytes | number }} bytes</dd></div>
             <div><dt>Uploaded</dt><dd>{{ detailDocument()?.uploadedDate | date:'medium' }}</dd></div>
             <div><dt>Last modified</dt><dd>{{ detailDocument()?.lastModifiedDate ? (detailDocument()?.lastModifiedDate | date:'medium') : 'Never' }}</dd></div>
