@@ -63,7 +63,6 @@ export interface InstitutionDocumentRequestPayload {
   targetUserId?: string | null;
   purposeNote?: string;
   submissionDeadline?: string | null;
-  referenceNumber?: string;
   requestedDocuments: DocumentRequestedType[];
 }
 

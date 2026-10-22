@@ -74,7 +74,6 @@ export class DocumentAccessRequestService {
     purposeNote: string;
     requestedDocuments: DocumentRequestedType[];
     submissionDeadline?: string | null;
-    referenceNumber?: string;
   }): Observable<{ enquiryRequestId: number; status: string; requestedDocumentTypeIds: number[] }> {
     return this.http.put<{ enquiryRequestId: number; status: string; requestedDocumentTypeIds: number[] }>(
       `${this.base}/institution-access/requests/${requestId}`,

@@ -285,21 +285,6 @@
         />
       </div>
 
-      <!-- Reference Number -->
-      <div class="rd-field">
-        <label class="rd-field__label" for="refnum">
-          Reference Number <span class="rd-field__required">*</span>
-        </label>
-        <input
-          id="refnum"
-          type="text"
-          class="rd-field__input"
-          placeholder="e.g. AUDIT-2026-0042"
-          [value]="wizard.referenceNumber"
-          (input)="onRefChange($any($event.target).value)"
-        />
-      </div>
-
       <!-- Justification -->
       <div class="rd-field">
         <label class="rd-field__label" for="justification">
@@ -368,11 +353,11 @@
       review your request and notify you of the outcome.
     </p>
 
-    <div class="rd-request-id" *ngIf="wizard.submittedRequestId">
-      <span class="rd-request-id__label">Your Request ID</span>
+    <div class="rd-request-id" *ngIf="wizard.referenceNumber || wizard.submittedRequestId">
+      <span class="rd-request-id__label">{{ wizard.referenceNumber ? 'Your Reference Number' : 'Your Request ID' }}</span>
       <div class="rd-request-id__value">
-        <strong>{{ wizard.submittedRequestId }}</strong>
-        <button class="rd-request-id__copy" type="button" (click)="copyRequestId()" aria-label="Copy request ID">
+        <strong>{{ wizard.referenceNumber || wizard.submittedRequestId }}</strong>
+        <button class="rd-request-id__copy" type="button" (click)="copyRequestId()" aria-label="Copy reference number">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -414,7 +399,7 @@
       </div>
       <div class="rd-summary__row">
         <span class="rd-summary__key">Reference Number</span>
-        <span class="rd-summary__val">{{ wizard.referenceNumber }}</span>
+        <span class="rd-summary__val">{{ wizard.referenceNumber || 'Generated when you submit' }}</span>
       </div>
       <div class="rd-summary__row">
         <span class="rd-summary__key">Status</span>
