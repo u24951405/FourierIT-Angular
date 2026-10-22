@@ -1,8 +1,7 @@
 import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { finalize } from 'rxjs';
-import { forkJoin } from 'rxjs';
+import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -165,26 +164,22 @@ export class DocumentRequestsComponent implements OnInit {
     const isDocumentOwner = this.auth.hasRole('Document Owner') || isSuperAdmin;
     const isDepartmentAdmin = this.auth.hasRole('Department Admin') || isSuperAdmin;
 
-    const requests = [];
+    // Each list loads on its own: if one is refused or fails, the other still shows instead of the whole page failing.
+    const failures: string[] = [];
+    const orEmpty = <T>(source: Observable<T[]>, name: string): Observable<T[]> =>
+      source.pipe(catchError(err => {
+        failures.push(err?.error?.error ?? err?.error?.message ?? `Could not load ${name}.`);
+        return of([] as T[]);
+      }));
+
+    const requests: Observable<unknown[]>[] = [];
 
     if (isDocumentOwner) {
-      requests.push(
-        this.requestService
-          .getPendingRequests()
-          .pipe(
-            finalize(() => {})
-          )
-      );
+      requests.push(orEmpty(this.requestService.getPendingRequests(), 'your requests'));
     }
 
     if (isDepartmentAdmin) {
-      requests.push(
-        this.requestService
-          .getPendingDepartmentRequests()
-          .pipe(
-            finalize(() => {})
-          )
-      );
+      requests.push(orEmpty(this.requestService.getPendingDepartmentRequests(), 'department requests'));
     }
 
     if (!token) {
@@ -205,6 +200,13 @@ export class DocumentRequestsComponent implements OnInit {
         next: (results) => {
           const combined = this.combineRequests(results, isDocumentOwner, isDepartmentAdmin);
           this.requests.set(combined);
+          if (failures.length === requests.length) {
+            // Nothing loaded at all, so show the error state rather than an empty list.
+            this.error.set(failures[0]);
+            this.toast.show(failures[0], 'error');
+          } else if (failures.length > 0) {
+            this.toast.show(`Some requests couldn't be loaded: ${failures.join(' ')}`, 'error');
+          }
         },
         error: (err) => {
           const message =
