@@ -111,7 +111,7 @@
       </div>
       <div *ngIf="preview()" class="document-preview">
         <div class="document-preview__header"><strong>{{ preview()?.name }}</strong><button class="btn btn-secondary" type="button" (click)="closePreview()">Close preview</button></div>
-        <iframe [src]="preview()?.url" title="Document preview"></iframe>
+        <iframe [src]="preview()?.frameUrl" title="Document preview"></iframe>
       </div>
     </section>
   </div>

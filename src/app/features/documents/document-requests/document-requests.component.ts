@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
 import { forkJoin } from 'rxjs';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
@@ -51,6 +52,7 @@ export class DocumentRequestsComponent implements OnInit {
   private toast = inject(ToastService);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private sanitizer = inject(DomSanitizer);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -62,7 +64,8 @@ export class DocumentRequestsComponent implements OnInit {
   readonly selectedInstitutionName = signal<string | null>(null);
   readonly requestDetails = signal<Record<number, RequestDocumentsResponse>>({});
   readonly loadingDetails = signal(false);
-  readonly preview = signal<{ name: string; url: string } | null>(null);
+  // url is kept to release the file when the preview closes; frameUrl is what the iframe may load.
+  readonly preview = signal<{ name: string; url: string; frameUrl: SafeResourceUrl } | null>(null);
 
   readonly institutionGroups = computed(() => {
     const groups = new Map<number, { institutionId: number; institutionName: string; requests: CombinedRequest[] }>();
@@ -388,7 +391,13 @@ export class DocumentRequestsComponent implements OnInit {
     this.documentsApi.previewDocument(document.documentId).subscribe({
       next: blob => {
         this.closePreview();
-        this.preview.set({ name: document.documentName ?? document.documentTypeName, url: URL.createObjectURL(blob) });
+        // Angular blocks a plain blob: URL in an iframe, so the preview stayed empty; it has to be marked as trusted.
+        const url = URL.createObjectURL(blob);
+        this.preview.set({
+          name: document.documentName ?? document.documentTypeName,
+          url,
+          frameUrl: this.sanitizer.bypassSecurityTrustResourceUrl(url)
+        });
       },
       error: () => this.toast.show('The document could not be previewed.', 'error')
     });
