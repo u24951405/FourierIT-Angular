@@ -1,146 +1,183 @@
-<div class="document-requests-page">
-  <header class="document-requests-header">
-    <h1>Document Access Requests</h1>
-    <p>Review incoming requests and see who submitted them and who they are for.</p>
+<div class="dr-page">
+  <!-- Header -->
+  <header class="dr-header">
+    <div>
+      <p class="dr-eyebrow">Institution requests</p>
+      <h1>Document Access Requests</h1>
+      <p class="dr-subtitle">Review what institutions are asking for, check the documents, and approve or deny each request.</p>
+    </div>
+    <button class="dr-btn dr-btn--outline" type="button" (click)="loadAllRequests(); loadExtensions()" [disabled]="loading()">Refresh</button>
   </header>
 
+  <!-- At a glance -->
+  <section class="dr-stats" aria-label="Summary">
+    <div class="dr-stat">
+      <span class="dr-stat__value">{{ requests().length }}</span>
+      <span class="dr-stat__label">{{ isViewOnly ? 'Pending requests' : 'Awaiting your decision' }}</span>
+    </div>
+    <div class="dr-stat">
+      <span class="dr-stat__value">{{ institutionGroups().length }}</span>
+      <span class="dr-stat__label">Institutions</span>
+    </div>
+    <div class="dr-stat" [class.dr-stat--attention]="extensions().length > 0">
+      <span class="dr-stat__value">{{ extensions().length }}</span>
+      <span class="dr-stat__label">Asking for more time</span>
+    </div>
+  </section>
+
   <!-- Requests for more time on access already approved -->
-  <section *ngIf="extensions().length" class="extensions" aria-label="Requests for more time">
-    <h2 class="extensions__title">Asking for more time</h2>
-    <p class="extensions__intro">These institutions want to keep access to documents you already shared. Approve to extend their access, or decline to let it end as planned.</p>
-    <article class="extension" *ngFor="let extension of extensions()">
-      <div class="extension__info">
-        <h3 class="extension__name">{{ extension.institutionName }} <span class="extension__id">· request #{{ extension.enquiryRequestId }}</span></h3>
-        <p class="extension__dates">
-          Access ends {{ extension.currentAccessEndsAt | date:'d MMM y, HH:mm' }} · wants it until
-          <strong>{{ extension.extensionRequestedUntil | date:'d MMM y, HH:mm' }}</strong>
-        </p>
-        <p class="extension__reason"><span>Their reason:</span> {{ extension.extensionReason }}</p>
+  <section *ngIf="extensions().length" class="dr-section" aria-labelledby="dr-extensions-title">
+    <div class="dr-section__head">
+      <h2 id="dr-extensions-title">Asking for more time</h2>
+      <p>These institutions want to keep access to documents you already shared. Give more time to extend it, or decline to let it end as planned.</p>
+    </div>
+
+    <article class="dr-extension" *ngFor="let extension of extensions()">
+      <div class="dr-extension__info">
+        <div class="dr-title-line">
+          <span class="dr-avatar dr-avatar--small" aria-hidden="true">{{ initials(extension.institutionName) }}</span>
+          <h3>{{ extension.institutionName }}</h3>
+          <span class="dr-ref">Request #{{ extension.enquiryRequestId }}</span>
+        </div>
+        <dl class="dr-facts">
+          <div><dt>Access ends</dt><dd>{{ extension.currentAccessEndsAt | date:'d MMM y, HH:mm' }}</dd></div>
+          <div><dt>Wants it until</dt><dd><strong>{{ extension.extensionRequestedUntil | date:'d MMM y, HH:mm' }}</strong></dd></div>
+        </dl>
+        <p class="dr-quote"><span>Their reason</span>{{ extension.extensionReason }}</p>
       </div>
-      <div class="extension__decision">
-        <label class="extension__label" [for]="'extension-note-' + extension.enquiryRequestId">Note to the institution (optional)</label>
-        <input [id]="'extension-note-' + extension.enquiryRequestId" type="text" maxlength="500"
+
+      <div class="dr-extension__decision">
+        <label class="dr-label" [for]="'extension-note-' + extension.enquiryRequestId">Note to the institution (optional)</label>
+        <input class="dr-input" [id]="'extension-note-' + extension.enquiryRequestId" type="text" maxlength="500"
                [value]="extensionNote(extension.enquiryRequestId)" (input)="setExtensionNote(extension.enquiryRequestId, $any($event.target).value)">
-        <div class="request-card__actions">
-          <button class="btn btn-approve" type="button" (click)="decideExtension(extension, true)" [disabled]="decidingExtensionId() === extension.enquiryRequestId">Give more time</button>
-          <button class="btn btn-deny" type="button" (click)="decideExtension(extension, false)" [disabled]="decidingExtensionId() === extension.enquiryRequestId">Decline</button>
+        <div class="dr-actions">
+          <button class="dr-btn dr-btn--approve" type="button" (click)="decideExtension(extension, true)" [disabled]="decidingExtensionId() === extension.enquiryRequestId">Give more time</button>
+          <button class="dr-btn dr-btn--deny" type="button" (click)="decideExtension(extension, false)" [disabled]="decidingExtensionId() === extension.enquiryRequestId">Decline</button>
         </div>
       </div>
     </article>
   </section>
 
-  <!-- Loading State -->
-  <div *ngIf="loading()" class="document-requests-loading">
-    <p>Loading document access requests…</p>
-  </div>
+  <!-- Requests -->
+  <section class="dr-section" aria-labelledby="dr-requests-title">
+    <div class="dr-section__head">
+      <h2 id="dr-requests-title">Requests</h2>
+    </div>
 
-  <!-- Error State -->
-  <div *ngIf="!loading() && error()" class="document-requests-error">
-    <p>{{ error() }}</p>
-  </div>
-
-  <!-- Empty State -->
-  <div *ngIf="!loading() && !error() && requests().length === 0" class="document-requests-empty">
-    <p>No pending document access requests. Institutions will submit requests here.</p>
-  </div>
-
-  <!-- Requests List -->
-  <div *ngIf="!loading() && requests().length > 0" class="document-requests-list">
-    <div class="request-card" *ngFor="let request of requests()" [class.request-card--department]="request.requestType === 'department'">
-      
-      <!-- Request Header -->
-      <div class="request-card__header">
-        <div class="request-card__info">
-          <div class="request-card__type-badge" [class.badge--owner]="request.requestType === 'owner'" [class.badge--department]="request.requestType === 'department'">
-            {{ getRequestTypeLabel(request) }}
-          </div>
-          <h3 class="request-card__title">{{ request.institutionName }}</h3>
-          <p class="request-card__subtitle">Request ID #{{ request.enquiryRequestId }}</p>
-        </div>
-        <div class="request-card__status-bar">
-          <span class="request-card__status" [class.status--pending]="request.status === 'Pending' || request.status === 'Department_Pending'">
-            {{ request.status }}
-          </span>
-          <span class="request-card__date">{{ request.requestDate | date:'short' }}</span>
-        </div>
-      </div>
-
-      <!-- Request Body -->
-      <div class="request-card__body">
-        <!-- Sender Information -->
-        <div class="request-card__section">
-          <span class="request-card__label">Submitted By</span>
-          <p class="request-card__value">{{ getSenderLabel(request) }}</p>
-        </div>
-
-        <!-- Recipient Information -->
-        <div class="request-card__section">
-          <span class="request-card__label">Requested For</span>
-          <p class="request-card__value">{{ getRecipientLabel(request) }}</p>
-        </div>
-
-        <!-- Purpose -->
-        <div class="request-card__section">
-          <span class="request-card__label">Purpose</span>
-          <p class="request-card__value">{{ request.purposeNote || 'Not provided' }}</p>
-        </div>
-
-        <!-- Requested Documents -->
-        <div class="request-card__section">
-          <span class="request-card__label">Requested Documents</span>
-          <p class="request-card__value">Approval grants access to all of this owner's documents in the requested types.</p>
-          <div class="request-card__documents">
-            <div class="document-item" *ngFor="let doc of request.documents">
-              <span class="document-item__name">{{ doc.documentTypeName }}</span>
-              <span *ngIf="doc.isMandatory" class="document-item__badge document-item__badge--mandatory">Mandatory</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="request-card__meta">
-        <button class="btn btn-secondary" type="button" (click)="toggleRequestDetails(request)">
-          {{ isRequestExpanded(request) ? 'Hide details' : 'View details' }}
-        </button>
-      </div>
-
-      <div *ngIf="isRequestExpanded(request)" class="request-card__details">
-        <div class="request-card__section">
-          <span class="request-card__label">Request Summary</span>
-          <p class="request-card__value">{{ request.purposeNote || 'No purpose note provided.' }}</p>
-        </div>
-        <div class="request-card__section">
-          <span class="request-card__label">Request Target</span>
-          <p class="request-card__value">{{ getRecipientLabel(request) }}</p>
-        </div>
-        <div class="request-card__section">
-          <span class="request-card__label">Submitted On</span>
-          <p class="request-card__value">{{ request.requestDate | date:'medium' }}</p>
-        </div>
-      </div>
-
-      <!-- Actions (only the recipient decides; the Super Admin views) -->
-      <p *ngIf="isViewOnly" class="request-card__view-only">
-        View only — the {{ request.requestType === 'department' ? 'department' : 'person' }} this request is addressed to decides whether to share.
-      </p>
-      <div class="request-card__actions" *ngIf="!isViewOnly">
-        <button 
-          class="btn btn-approve" 
-          type="button" 
-          (click)="approveRequest(request)"
-          [disabled]="loading()">
-          <span class="btn__icon">✓</span>
-          Approve
-        </button>
-        <button 
-          class="btn btn-deny" 
-          type="button" 
-          (click)="denyRequest(request)"
-          [disabled]="loading()">
-          <span class="btn__icon">✕</span>
-          Deny
-        </button>
+    <div *ngIf="loading()" class="dr-skeleton" role="status" aria-label="Loading document access requests">
+      <div class="dr-skeleton__card" *ngFor="let n of [1, 2]">
+        <span class="dr-skeleton__line dr-skeleton__line--title"></span>
+        <span class="dr-skeleton__line"></span>
+        <span class="dr-skeleton__line dr-skeleton__line--short"></span>
       </div>
     </div>
+
+    <div *ngIf="!loading() && error()" class="dr-state dr-state--error" role="alert">
+      <strong>Requests couldn't be loaded</strong>
+      <p>{{ error() }}</p>
+      <button class="dr-btn dr-btn--outline" type="button" (click)="loadAllRequests()">Try again</button>
+    </div>
+
+    <div *ngIf="!loading() && !error() && requests().length === 0" class="dr-state">
+      <strong>No pending requests</strong>
+      <p>When an institution asks for your documents, the request appears here.</p>
+    </div>
+
+    <ng-container *ngIf="!loading() && requests().length > 0">
+      <article class="dr-card" *ngFor="let group of institutionGroups()">
+        <header class="dr-card__head">
+          <span class="dr-avatar" aria-hidden="true">{{ initials(group.institutionName) }}</span>
+          <div class="dr-card__title">
+            <h3>{{ group.institutionName }}</h3>
+            <p>
+              {{ group.requests.length }} request{{ group.requests.length === 1 ? '' : 's' }}
+              <ng-container *ngIf="group.latestRequestDate"> · latest {{ group.latestRequestDate | date:'d MMM y' }}</ng-container>
+            </p>
+          </div>
+          <button class="dr-btn dr-btn--outline" type="button" (click)="selectInstitution(group)">View documents</button>
+        </header>
+
+        <div class="dr-request" *ngFor="let request of group.requests">
+          <div class="dr-request__main">
+            <div class="dr-title-line">
+              <span class="dr-ref">{{ request.referenceNumber || ('Request #' + request.enquiryRequestId) }}</span>
+              <span class="dr-tag dr-tag--info">{{ forLabel(request) }}</span>
+            </div>
+
+            <dl class="dr-facts">
+              <div><dt>Requested</dt><dd>{{ request.requestDate | date:'d MMM y' }}</dd></div>
+              <div *ngIf="request.submissionDeadline">
+                <dt>Needed by</dt>
+                <dd [class.dr-overdue]="isOverdue(request)">
+                  {{ request.submissionDeadline | date:'d MMM y' }}<ng-container *ngIf="isOverdue(request)"> · overdue</ng-container>
+                </dd>
+              </div>
+            </dl>
+
+            <p class="dr-quote" *ngIf="request.purposeNote"><span>Purpose</span>{{ request.purposeNote }}</p>
+
+            <ul class="dr-chips" aria-label="Requested documents">
+              <li class="dr-chip" *ngFor="let document of request.documents">
+                {{ document.documentTypeName }}
+                <span *ngIf="document.isMandatory" class="dr-chip__required">Required</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="dr-request__actions">
+            <span *ngIf="isViewOnly" class="dr-tag">View only</span>
+            <ng-container *ngIf="!isViewOnly">
+              <button class="dr-btn dr-btn--approve" type="button" (click)="approveRequest(request)" [disabled]="loading()">Approve</button>
+              <button class="dr-btn dr-btn--deny" type="button" (click)="denyRequest(request)" [disabled]="loading()">Deny</button>
+            </ng-container>
+          </div>
+        </div>
+      </article>
+    </ng-container>
+  </section>
+
+  <!-- Requested documents for one institution -->
+  <div *ngIf="selectedInstitutionId() !== null" class="dr-modal-backdrop" (click)="closeInstitution()">
+    <section class="dr-modal" role="dialog" aria-modal="true" aria-labelledby="dr-modal-title" (click)="$event.stopPropagation()">
+      <header class="dr-modal__head">
+        <div>
+          <p class="dr-eyebrow">Requested documents</p>
+          <h2 id="dr-modal-title">{{ selectedInstitutionName() }}</h2>
+        </div>
+        <button class="dr-icon-btn" type="button" (click)="closeInstitution()" aria-label="Close">×</button>
+      </header>
+
+      <p *ngIf="loadingDetails()" class="dr-muted">Loading requested documents…</p>
+      <p *ngIf="!loadingDetails() && selectedDocuments().length === 0" class="dr-muted">No documents requested by this institution.</p>
+
+      <ul class="dr-doc-list" *ngIf="!loadingDetails() && selectedDocuments().length > 0">
+        <li class="dr-doc" *ngFor="let document of selectedDocuments()">
+          <div class="dr-doc__info">
+            <div class="dr-title-line">
+              <strong>{{ document.documentTypeName }}</strong>
+              <span *ngIf="document.isMandatory" class="dr-chip__required">Required</span>
+            </div>
+            <p>{{ document.documentName || 'Not yet uploaded' }}</p>
+            <small *ngIf="document.flagReason" class="dr-doc__note">Flag reason: {{ document.flagReason }}</small>
+            <small *ngIf="document.status === 'Rejected' && document.rejectionReason" class="dr-doc__note">Rejection reason: {{ document.rejectionReason }}</small>
+          </div>
+          <div class="dr-doc__actions">
+            <span class="dr-tag" [ngClass]="'dr-tag--' + statusTone(document.status)">{{ statusLabel(document.status) }}</span>
+            <button *ngIf="document.documentId" class="dr-btn dr-btn--outline dr-btn--small" type="button" (click)="openDocument(document)">View</button>
+            <button *ngIf="canUpload(document.status)" class="dr-btn dr-btn--primary dr-btn--small" type="button" (click)="uploadDocument(document)">
+              {{ document.documentId ? 'Upload replacement' : 'Upload document' }}
+            </button>
+          </div>
+        </li>
+      </ul>
+
+      <div *ngIf="preview()" class="dr-preview">
+        <div class="dr-preview__head">
+          <strong>{{ preview()?.name }}</strong>
+          <button class="dr-btn dr-btn--outline dr-btn--small" type="button" (click)="closePreview()">Close preview</button>
+        </div>
+        <iframe [src]="preview()?.frameUrl" title="Document preview"></iframe>
+      </div>
+    </section>
   </div>
 </div>

@@ -20,6 +20,7 @@ import {
   RouteRequestToOwnerPayload,
   RouteRequestToOwnerResponse,
   PendingAccessExtension,
+  RequestDocumentsResponse,
 } from '../models/institution.models';
 
 @Injectable({ providedIn: 'root' })
@@ -46,6 +47,10 @@ export class DocumentAccessRequestService {
     return this.http.get<PendingDepartmentAccessRequest[]>(`${this.base}/department-access-requests/pending`);
   }
 
+  getRequestDocuments(requestId: number): Observable<RequestDocumentsResponse> {
+    return this.http.get<RequestDocumentsResponse>(`${this.base}/document-access-requests/${requestId}/documents`);
+  }
+
   getInstitutionAccessRequestSummary(token: string): Observable<InstitutionRequestSummary> {
     const params = new HttpParams().set('token', token);
     return this.http.get<InstitutionRequestSummary>(
@@ -69,7 +74,6 @@ export class DocumentAccessRequestService {
     purposeNote: string;
     requestedDocuments: DocumentRequestedType[];
     submissionDeadline?: string | null;
-    referenceNumber?: string;
   }): Observable<{ enquiryRequestId: number; status: string; requestedDocumentTypeIds: number[] }> {
     return this.http.put<{ enquiryRequestId: number; status: string; requestedDocumentTypeIds: number[] }>(
       `${this.base}/institution-access/requests/${requestId}`,

@@ -63,7 +63,6 @@ export interface InstitutionDocumentRequestPayload {
   targetUserId?: string | null;
   purposeNote?: string;
   submissionDeadline?: string | null;
-  referenceNumber?: string;
   requestedDocuments: DocumentRequestedType[];
 }
 
@@ -116,6 +115,25 @@ export interface PendingDocumentAccessRequestDocument {
   ficaRuleId?: number;
 }
 
+export interface RequestDocumentStatus {
+  documentTypeId: number;
+  documentTypeName: string;
+  isMandatory: boolean;
+  status: 'Missing' | 'Uploaded' | 'Flagged' | 'Replacement Under Review' | 'Rejected' | 'Approved / Available';
+  documentId?: number | null;
+  documentName?: string | null;
+  uploadedAt?: string | null;
+  flagReason?: string | null;
+  rejectionReason?: string | null;
+}
+
+export interface RequestDocumentsResponse {
+  enquiryRequestId: number;
+  institutionId: number;
+  institutionName: string;
+  documents: RequestDocumentStatus[];
+}
+
 export interface PendingRequestRecipient {
   type: 'Department' | 'Individual';
   name: string;
@@ -166,6 +184,8 @@ export interface PendingDepartmentAccessRequest {
   status: string;
   purposeNote: string;
   requestDate: string;
+  referenceNumber?: string | null;
+  submissionDeadline?: string | null;
   documents: PendingDocumentAccessRequestDocument[];
   isComplete?: boolean;
   missingCount?: number;
@@ -232,6 +252,7 @@ export interface ApprovedInstitutionDocument {
   documentId: number;
   documentName: string;
   documentTypeName: string;
+  status?: 'Available' | 'Replacement Under Review';
   approvedAt: string;
   expiresAt?: string;
   /** Pending, Approved or Denied when the institution asked for more time on this request. */

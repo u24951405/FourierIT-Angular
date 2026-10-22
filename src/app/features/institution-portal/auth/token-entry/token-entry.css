@@ -3,17 +3,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e8e8e4;
+  background: var(--bg);
   padding: 1.5rem;
 }
 
 .portal-card {
   width: 100%;
   max-width: 380px;
-  background: #fff;
+  background: var(--white);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 8px 40px rgba(15, 31, 48, 0.12);
 }
 
 .portal-card__header {
@@ -21,8 +21,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: #1e2a3a;
-  color: #fff;
+  background: var(--navy);
+  color: var(--white);
 }
 
 .portal-card__brand {
@@ -66,7 +66,7 @@
 .portal-card__encrypted-dot {
   width: 7px;
   height: 7px;
-  background: #4ade80;
+  background: #2e9c6a;
   border-radius: 50%;
 }
 
@@ -83,9 +83,9 @@
   padding: 0.875rem;
   text-align: center;
   font-size: 0.6875rem;
-  color: #9ca3af;
-  background: #f9fafb;
-  border-top: 1px solid #f3f4f6;
+  color: var(--text-light);
+  background: var(--input-bg);
+  border-top: 1px solid var(--border);
 }
 
 .token-validating {
@@ -102,35 +102,35 @@
   justify-content: center;
   width: 52px;
   height: 52px;
-  background: #f1f5f9;
+  background: var(--input-bg);
   border-radius: 50%;
-  color: #1e2a3a;
+  color: var(--text);
   margin-bottom: 0.25rem;
 }
 
 .token-validating__title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #1e2a3a;
+  color: var(--text);
   margin: 0;
 }
 
 .token-validating__subtitle {
   font-size: 0.8125rem;
-  color: #6b7280;
+  color: var(--text-mid);
   margin: 0;
 }
 
 .token-validating__error {
   font-size: 0.8125rem;
-  color: #dc2626;
+  color: var(--error);
   margin: 0;
 }
 
 .validation-steps {
   width: 100%;
-  background: #f8fafc;
-  border: 1px solid #e5e7eb;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.875rem 1rem;
   display: flex;
@@ -143,22 +143,22 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.8rem;
-  color: #9ca3af;
+  color: var(--text-light);
   transition: color 0.3s;
 }
 
 .validation-step--done {
-  color: #374151;
+  color: var(--text);
 }
 
 .validation-step--done svg {
-  color: #10b981;
+  color: #2e9c6a;
 }
 
 .validation-step__pending {
   width: 14px;
   height: 14px;
-  border: 2px solid #d1d5db;
+  border: 2px solid var(--border);
   border-radius: 50%;
   flex-shrink: 0;
 }

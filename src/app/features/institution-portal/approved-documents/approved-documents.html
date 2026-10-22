@@ -46,20 +46,22 @@
               <div class="doc__row">
                 <div class="doc__info">
                   <span class="doc__name">{{ document.documentName }}</span>
-                  <span class="doc__meta">{{ document.documentTypeName }} · approved {{ document.approvedAt | date:'d MMM y' }}</span>
+                  <span class="doc__meta">{{ document.documentTypeName }} · {{ document.status === 'Replacement Under Review' ? 'Replacement Under Review' : 'available' }}</span>
                 </div>
                 <div class="doc__actions">
-                  @if (canView(document)) {
+                  @if (document.status !== 'Replacement Under Review' && canView(document)) {
                     <button type="button" class="btn btn--outline" (click)="view(document)" [disabled]="viewingId() === document.documentId">
                       {{ viewingId() === document.documentId ? 'Opening…' : 'View' }}
                     </button>
                   }
+                  @if (document.status !== 'Replacement Under Review') {
                   <button type="button" class="btn btn--primary" (click)="download(document)" [disabled]="downloadingId() === document.documentId">
                     {{ downloadingId() === document.documentId ? 'Downloading…' : 'Download' }}
                   </button>
                   <button type="button" class="btn btn--outline" (click)="startFlag(document)" [attr.aria-expanded]="flaggingId() === document.documentId">
                     Flag a problem
                   </button>
+                  }
                 </div>
               </div>
 

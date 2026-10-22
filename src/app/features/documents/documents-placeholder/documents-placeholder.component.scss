@@ -10,9 +10,9 @@
   gap: 1rem;
   padding: 1.4rem 1.5rem;
   border-radius: 18px;
-  background: linear-gradient(135deg, #0d2238, #173a5d 55%, #28618b);
-  color: #fff;
-  box-shadow: 0 16px 44px rgba(18, 38, 61, 0.18);
+  background: linear-gradient(135deg, var(--navy), var(--navy) 55%, var(--blue));
+  color: var(--white);
+  box-shadow: 0 16px 44px rgba(15, 31, 48, 0.18);
 }
 
 .documents-placeholder__action,
@@ -21,8 +21,8 @@
   border: 0;
   border-radius: 8px;
   padding: 0.65rem 0.9rem;
-  background: #f1c75b;
-  color: #17212b;
+  background: #b78f00;
+  color: var(--text);
   font-weight: 700;
   cursor: pointer;
 }
@@ -34,8 +34,8 @@
 }
 
 .library-card__actions .danger {
-  background: #fee4e2;
-  color: #b42318;
+  background: #fdf2f2;
+  color: var(--error);
 }
 
 .document-form-backdrop {
@@ -45,7 +45,7 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(13, 34, 56, 0.55);
+  background: rgba(15, 31, 48, 0.55);
 }
 
 .document-form {
@@ -54,8 +54,8 @@
   width: min(100%, 30rem);
   padding: 1.25rem;
   border-radius: var(--radius);
-  background: #fff;
-  box-shadow: 0 20px 60px rgba(13, 34, 56, 0.25);
+  background: var(--white);
+  box-shadow: 0 20px 60px rgba(15, 31, 48, 0.25);
 }
 
 .document-form__header,
@@ -90,7 +90,7 @@
   padding: 0.65rem;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--white);
 }
 
 .document-form__checkbox {
@@ -108,7 +108,7 @@
 }
 
 .document-form__actions button:first-child {
-  background: #eef2f6;
+  background: var(--input-bg);
 }
 
 .document-form__actions button:disabled {
@@ -138,14 +138,14 @@
   padding: 1rem 1.1rem;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--white);
   color: var(--text-mid);
 }
 
 .documents-placeholder__state--error {
-  color: #b42318;
-  background: #fff6f6;
-  border-color: #f4c7c3;
+  color: var(--error);
+  background: #fdf2f2;
+  border-color: #f5c6c6;
 }
 
 .library-grid {
@@ -158,8 +158,8 @@
   padding: 1rem 1.1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  background: var(--white);
+  box-shadow: 0 1px 4px rgba(15, 31, 48, 0.06);
 }
 
 .library-card__header {
@@ -192,7 +192,7 @@
   gap: 0.75rem;
   padding: 0.8rem 0.9rem;
   border-radius: 12px;
-  background: #f8fbff;
+  background: var(--input-bg);
 }
 
 .library-doc strong {

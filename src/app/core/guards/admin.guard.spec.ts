@@ -8,8 +8,12 @@ describe('adminGuard', () => {
   const executeGuard: CanActivateFn = (...guardParameters) =>
     TestBed.runInInjectionContext(() => adminGuard(...guardParameters));
 
+  // Returns the path the guard redirected to, so each test can check where the user ends up.
+  const router = { createUrlTree: (commands: string[]) => commands.join('/') } as unknown as Router;
+
   beforeEach(() => {
     TestBed.configureTestingModule({});
+    TestBed.overrideProvider(Router, { useValue: router });
   });
 
   it('allows Admin and Department Admin users through', () => {
@@ -19,23 +23,28 @@ describe('adminGuard', () => {
     } as unknown as AuthService;
 
     TestBed.overrideProvider(AuthService, { useValue: auth });
-    TestBed.overrideProvider(Router, { useValue: { createUrlTree: () => '/auth/login' } });
 
     expect(executeGuard({} as any, {} as any)).toBe(true);
   });
 
-  it('redirects unauthorised users to login', () => {
+  it('sends signed-out users to login', () => {
+    const auth = { isLoggedIn: () => false } as unknown as AuthService;
+
+    TestBed.overrideProvider(AuthService, { useValue: auth });
+
+    expect(executeGuard({} as any, {} as any) as any).toBe('/auth/login');
+  });
+
+  it('sends signed-in users without access to their own start page', () => {
     const auth = {
       isLoggedIn: () => true,
       hasRole: () => false,
-      isSuperAdmin: () => false
+      isSuperAdmin: () => false,
+      getDefaultAppPath: () => '/my-documents'
     } as unknown as AuthService;
 
-    const router = { createUrlTree: () => '/auth/login' } as unknown as Router;
-
     TestBed.overrideProvider(AuthService, { useValue: auth });
-    TestBed.overrideProvider(Router, { useValue: router });
 
-    expect(executeGuard({} as any, {} as any) as any).toBe('/auth/login');
+    expect(executeGuard({} as any, {} as any) as any).toBe('/my-documents');
   });
 });

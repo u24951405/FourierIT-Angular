@@ -1,14 +1,18 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { finalize } from 'rxjs';
-import { forkJoin } from 'rxjs';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { catchError, finalize, forkJoin, Observable, of } from 'rxjs';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { DocumentsApiService } from '../../../core/services/documents-api.service';
+import { Router } from '@angular/router';
 import {
   PendingAccessExtension,
   PendingDocumentAccessRequest,
   PendingDepartmentAccessRequest,
+  RequestDocumentStatus,
+  RequestDocumentsResponse,
 } from '../../../core/models/institution.models';
 
 interface CombinedRequest {
@@ -26,6 +30,8 @@ interface CombinedRequest {
   status: string;
   purposeNote: string;
   requestDate: string;
+  referenceNumber?: string | null;
+  submissionDeadline?: string | null;
   documents: Array<{
     documentTypeId: number;
     documentTypeName: string;
@@ -43,8 +49,11 @@ interface CombinedRequest {
 })
 export class DocumentRequestsComponent implements OnInit {
   private requestService = inject(DocumentAccessRequestService);
+  private documentsApi = inject(DocumentsApiService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
+  private router = inject(Router);
+  private sanitizer = inject(DomSanitizer);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -52,6 +61,46 @@ export class DocumentRequestsComponent implements OnInit {
   readonly userRoles = signal<string[]>([]);
   readonly departmentId = signal<number | null>(null);
   readonly expandedRequestId = signal<number | null>(null);
+  readonly selectedInstitutionId = signal<number | null>(null);
+  readonly selectedInstitutionName = signal<string | null>(null);
+  readonly requestDetails = signal<Record<number, RequestDocumentsResponse>>({});
+  readonly loadingDetails = signal(false);
+  // url is kept to release the file when the preview closes; frameUrl is what the iframe may load.
+  readonly preview = signal<{ name: string; url: string; frameUrl: SafeResourceUrl } | null>(null);
+
+  readonly institutionGroups = computed(() => {
+    const groups = new Map<number, { institutionId: number; institutionName: string; requests: CombinedRequest[] }>();
+    for (const request of this.requests()) {
+      const group = groups.get(request.institutionId) ?? {
+        institutionId: request.institutionId,
+        institutionName: request.institutionName,
+        requests: [],
+      };
+      group.requests.push(request);
+      groups.set(request.institutionId, group);
+    }
+    return [...groups.values()].map(group => {
+      const details = group.requests.flatMap(request => this.requestDetails()[request.enquiryRequestId]?.documents ?? []);
+      const requestedCount = group.requests.reduce((count, request) => count + request.documents.length, 0);
+      const uploadedCount = details.filter(document => document.status !== 'Missing').length;
+      return {
+        ...group,
+        requestedCount,
+        uploadedCount,
+        missingCount: Math.max(requestedCount - uploadedCount, 0),
+        // Requests are sorted newest first, so the first one is the latest.
+        latestRequestDate: group.requests[0]?.requestDate,
+      };
+    });
+  });
+
+  readonly selectedDocuments = computed<RequestDocumentStatus[]>(() => {
+    const institutionId = this.selectedInstitutionId();
+    if (institutionId == null) return [];
+    return this.requests()
+      .filter(request => request.institutionId === institutionId)
+      .flatMap(request => this.requestDetails()[request.enquiryRequestId]?.documents ?? []);
+  });
   /** Institutions asking for more time on access this person approved. */
   readonly extensions = signal<PendingAccessExtension[]>([]);
   readonly decidingExtensionId = signal<number | null>(null);
@@ -115,26 +164,22 @@ export class DocumentRequestsComponent implements OnInit {
     const isDocumentOwner = this.auth.hasRole('Document Owner') || isSuperAdmin;
     const isDepartmentAdmin = this.auth.hasRole('Department Admin') || isSuperAdmin;
 
-    const requests = [];
+    // Each list loads on its own: if one is refused or fails, the other still shows instead of the whole page failing.
+    const failures: string[] = [];
+    const orEmpty = <T>(source: Observable<T[]>, name: string): Observable<T[]> =>
+      source.pipe(catchError(err => {
+        failures.push(err?.error?.error ?? err?.error?.message ?? `Could not load ${name}.`);
+        return of([] as T[]);
+      }));
+
+    const requests: Observable<unknown[]>[] = [];
 
     if (isDocumentOwner) {
-      requests.push(
-        this.requestService
-          .getPendingRequests()
-          .pipe(
-            finalize(() => {})
-          )
-      );
+      requests.push(orEmpty(this.requestService.getPendingRequests(), 'your requests'));
     }
 
     if (isDepartmentAdmin) {
-      requests.push(
-        this.requestService
-          .getPendingDepartmentRequests()
-          .pipe(
-            finalize(() => {})
-          )
-      );
+      requests.push(orEmpty(this.requestService.getPendingDepartmentRequests(), 'department requests'));
     }
 
     if (!token) {
@@ -155,6 +200,13 @@ export class DocumentRequestsComponent implements OnInit {
         next: (results) => {
           const combined = this.combineRequests(results, isDocumentOwner, isDepartmentAdmin);
           this.requests.set(combined);
+          if (failures.length === requests.length) {
+            // Nothing loaded at all, so show the error state rather than an empty list.
+            this.error.set(failures[0]);
+            this.toast.show(failures[0], 'error');
+          } else if (failures.length > 0) {
+            this.toast.show(`Some requests couldn't be loaded: ${failures.join(' ')}`, 'error');
+          }
         },
         error: (err) => {
           const message =
@@ -190,6 +242,8 @@ export class DocumentRequestsComponent implements OnInit {
           status: req.status,
           purposeNote: req.purposeNote,
           requestDate: req.requestDate,
+          referenceNumber: req.referenceNumber,
+          submissionDeadline: req.submissionDeadline,
           documents: req.documents,
         });
       });
@@ -214,6 +268,8 @@ export class DocumentRequestsComponent implements OnInit {
           status: req.status,
           purposeNote: req.purposeNote,
           requestDate: req.requestDate,
+          referenceNumber: req.referenceNumber,
+          submissionDeadline: req.submissionDeadline,
           documents: req.documents,
         });
       });
@@ -314,5 +370,104 @@ export class DocumentRequestsComponent implements OnInit {
 
   isRequestExpanded(request: CombinedRequest): boolean {
     return this.expandedRequestId() === request.enquiryRequestId;
+  }
+
+  selectInstitution(group: { institutionId: number; institutionName: string; requests: CombinedRequest[] }): void {
+    this.selectedInstitutionId.set(group.institutionId);
+    this.selectedInstitutionName.set(group.institutionName);
+    this.loadingDetails.set(true);
+    const requestIds = [...new Set(group.requests.map(request => request.enquiryRequestId))];
+    forkJoin(requestIds.map(requestId => this.requestService.getRequestDocuments(requestId)))
+      .pipe(finalize(() => this.loadingDetails.set(false)))
+      .subscribe({
+        next: responses => this.requestDetails.update(current => ({
+          ...current,
+          ...Object.fromEntries(responses.map(response => [response.enquiryRequestId, response]))
+        })),
+        error: err => {
+          const message = err?.error?.error ?? err?.error?.message ?? 'Could not load the documents for this institution.';
+          this.toast.show(message, 'error');
+        }
+      });
+  }
+
+  closeInstitution(): void {
+    this.closePreview();
+    this.selectedInstitutionId.set(null);
+    this.selectedInstitutionName.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.selectedInstitutionId() !== null) this.closeInstitution();
+  }
+
+  /** Up to two letters for the institution's badge, e.g. "Absa Corporate Treasury" -> "AC". */
+  initials(name: string): string {
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0].toUpperCase()).join('') || '?';
+  }
+
+  /** Who the request is addressed to, in a few words. */
+  forLabel(request: CombinedRequest): string {
+    return request.requestType === 'owner' ? 'For you' : `For ${request.departmentName || 'your department'}`;
+  }
+
+  isOverdue(request: CombinedRequest): boolean {
+    return !!request.submissionDeadline && new Date(request.submissionDeadline).getTime() < Date.now();
+  }
+
+  /** The colour of a document's status tag in the documents pop-up. */
+  statusTone(status: RequestDocumentStatus['status']): 'success' | 'info' | 'warning' | 'danger' {
+    switch (status) {
+      case 'Approved / Available': return 'success';
+      case 'Uploaded': return 'info';
+      case 'Flagged':
+      case 'Rejected': return 'danger';
+      default: return 'warning'; // Missing, Replacement Under Review
+    }
+  }
+
+  canUpload(status: RequestDocumentStatus['status']): boolean {
+    return status === 'Missing' || status === 'Flagged' || status === 'Rejected' || status === 'Replacement Under Review';
+  }
+
+  statusLabel(status: RequestDocumentStatus['status']): string {
+    return status === 'Missing' ? 'Not yet uploaded' : status;
+  }
+
+  openDocument(document: RequestDocumentStatus): void {
+    if (document.documentId == null) return;
+    this.documentsApi.previewDocument(document.documentId).subscribe({
+      next: blob => {
+        this.closePreview();
+        // Angular blocks a plain blob: URL in an iframe, so the preview stayed empty; it has to be marked as trusted.
+        const url = URL.createObjectURL(blob);
+        this.preview.set({
+          name: document.documentName ?? document.documentTypeName,
+          url,
+          frameUrl: this.sanitizer.bypassSecurityTrustResourceUrl(url)
+        });
+      },
+      error: () => this.toast.show('The document could not be previewed.', 'error')
+    });
+  }
+
+  closePreview(): void {
+    const current = this.preview();
+    if (current) URL.revokeObjectURL(current.url);
+    this.preview.set(null);
+  }
+
+  uploadDocument(document: RequestDocumentStatus): void {
+    const request = this.requests().find(item => item.institutionId === this.selectedInstitutionId());
+    if (!request) return;
+    void this.router.navigate(['/documents/upload'], {
+      queryParams: {
+        requestId: request.enquiryRequestId,
+        institutionId: request.institutionId,
+        documentTypeId: document.documentTypeId,
+        documentId: document.documentId ?? null
+      }
+    });
   }
 }

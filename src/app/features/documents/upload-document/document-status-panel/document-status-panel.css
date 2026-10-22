@@ -13,12 +13,12 @@
 .status-panel__header h2 {
   margin: 0;
   font-size: 1.05rem;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .status-panel__header p {
   margin: 0;
-  color: #64748b;
+  color: var(--text-mid);
   font-size: 0.92rem;
 }
 
@@ -29,8 +29,8 @@
 }
 
 .status-panel__info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 0.9rem 1rem;
   display: flex;
@@ -43,12 +43,12 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--text-mid);
 }
 
 .status-panel__info strong {
   font-size: 1rem;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .status-panel__actions {
@@ -59,7 +59,7 @@
 .status-panel .btn-primary {
   min-width: 220px;
   background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
-  color: #ffffff;
+  color: var(--white);
   border: none;
   border-radius: 10px;
   padding: 0.75rem 1.1rem;
@@ -81,18 +81,18 @@
 .status-panel__error {
   padding: 0.8rem 0.95rem;
   border-radius: 10px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #b91c1c;
+  background: #fdf2f2;
+  border: 1px solid #f5c6c6;
+  color: var(--error);
   font-size: 0.9rem;
 }
 
 .status-panel__success {
   padding: 0.8rem 0.95rem;
   border-radius: 10px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #047857;
+  background: #e6f9f0;
+  border: 1px solid #c8ebd9;
+  color: #2e9c6a;
   font-size: 0.9rem;
 }
 

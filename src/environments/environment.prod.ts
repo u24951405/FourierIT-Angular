@@ -1,4 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://docuvault-001-site1.ktempuri.com/api'
+  // The API serves this app from the same site, so requests go to /api on whatever address it is opened at.
+  apiUrl: '/api',
+  allowDemoInstitutionAccess: false
 };

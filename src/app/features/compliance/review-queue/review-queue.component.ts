@@ -1,17 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, computed, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { ComplianceService } from '../../../core/services/compliance.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { environment } from '../../../../environments/environment';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 interface ReviewQueueItem {
   checkId: number;
   documentId?: number;
   fileName?: string;
   ownerName?: string;
+  ownerUserId?: string;
   departmentName?: string | null;
   document?: {
     fileName?: string;
@@ -20,6 +22,9 @@ interface ReviewQueueItem {
   checkedAt?: string;
   manualReviewReason?: string | null;
   nonComplianceReason?: string | null;
+  institutionName?: string | null;
+  isReplacement?: boolean;
+  originalFlagReason?: string | null;
   /** How long it has been waiting for a decision. */
   waitingDays?: number;
   /** The earliest needed-by date of an institution request waiting on this document. */
@@ -43,6 +48,7 @@ export class ReviewQueueComponent implements OnInit {
   private complianceService = inject(ComplianceService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
+  private sanitizer = inject(DomSanitizer);
 
   readonly pepScanUrl = 'https://www.verifynow.co.za/verifynow?reportType=check-aml-pep';
   readonly canManage = this.auth.hasRole('Compliance Officer') || this.auth.hasRole('Admin');
@@ -53,6 +59,9 @@ export class ReviewQueueComponent implements OnInit {
   readonly processingCheckId = signal<number | null>(null);
   readonly notes = signal<Record<number, string>>({});
   readonly rejectionCategories = signal<Record<number, string>>({});
+  readonly selectedOwnerId = signal<string | null>(null);
+  readonly selectedOwnerName = signal<string | null>(null);
+  readonly preview = signal<{ name: string; url: SafeResourceUrl } | null>(null);
   readonly rejectionCategoryOptions = [
     'Illegible or poor quality',
     'Expired',
@@ -159,6 +168,27 @@ export class ReviewQueueComponent implements OnInit {
       });
   }
 
+  get ownerGroups(): Array<{ ownerId: string; ownerName: string; departmentName: string; count: number }> {
+    const groups = new Map<string, { ownerId: string; ownerName: string; departmentName: string; count: number }>();
+    for (const review of this.filteredReviews) {
+      const ownerId = review.ownerUserId ?? review.ownerName ?? 'unknown';
+      const group = groups.get(ownerId) ?? {
+        ownerId,
+        ownerName: review.ownerName ?? 'Owner unavailable',
+        departmentName: review.departmentName ?? 'Entity not provided',
+        count: 0,
+      };
+      group.count++;
+      groups.set(ownerId, group);
+    }
+    return [...groups.values()].sort((a, b) => a.ownerName.localeCompare(b.ownerName));
+  }
+
+  readonly selectedOwnerReviews = computed(() => {
+    const ownerId = this.selectedOwnerId();
+    return ownerId == null ? [] : this.filteredReviews.filter(review => (review.ownerUserId ?? review.ownerName ?? 'unknown') === ownerId);
+  });
+
   ngOnInit(): void {
     this.loadReviews();
   }
@@ -227,18 +257,33 @@ export class ReviewQueueComponent implements OnInit {
     return review.document?.documentType?.typeName ?? 'Document type unavailable';
   }
 
-  viewDocument(documentId?: number): void {
+  viewDocument(documentId?: number, name = 'Document'): void {
     if (documentId == null) return;
 
     this.complianceService.previewDocument(documentId).subscribe({
       next: blob => {
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        this.closePreview();
+        this.preview.set({ name, url: this.sanitizer.bypassSecurityTrustResourceUrl(URL.createObjectURL(blob)) });
       },
       error: () => {
         this.toast.show('The document could not be loaded.', 'error');
       },
     });
+  }
+
+  selectOwner(group: { ownerId: string; ownerName: string }): void {
+    this.selectedOwnerId.set(group.ownerId);
+    this.selectedOwnerName.set(group.ownerName);
+  }
+
+  closeOwner(): void {
+    this.closePreview();
+    this.selectedOwnerId.set(null);
+    this.selectedOwnerName.set(null);
+  }
+
+  closePreview(): void {
+    this.preview.set(null);
   }
 
   /**

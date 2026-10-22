@@ -19,6 +19,9 @@ const INSTITUTION_SESSION_KEY = 'institution_session';
 const LAST_INSTITUTION_ID_KEY = 'institution_last_id';
 const LAST_ACCESS_TOKEN_KEY = 'institution_last_access_token';
 
+// Opens the portal without the API, for local demos only (see environment.allowDemoInstitutionAccess).
+const DEMO_ACCESS_TOKEN = 'demo-institution-token';
+
 // Max OTP attempts before session lock
 const MAX_OTP_ATTEMPTS = 3;
 
@@ -111,7 +114,13 @@ export class InstitutionAuthService {
     return this.pendingValidation;
   }
 
+  isDemoToken(token: string | null): boolean {
+    return environment.allowDemoInstitutionAccess && token === DEMO_ACCESS_TOKEN;
+  }
+
   initializeDemoAccess(): void {
+    if (!environment.allowDemoInstitutionAccess) return;
+
     this.pendingValidation = {
       valid: true,
       institutionId: 'demo-institution',
@@ -119,7 +128,7 @@ export class InstitutionAuthService {
       institutionCode: 'DEMO-001',
       maskedEmail: 'demo@fourier.local',
     };
-    this.pendingAccessToken = 'demo-institution-token';
+    this.pendingAccessToken = DEMO_ACCESS_TOKEN;
     this.resetAttempts();
 
     this.logAuditEvent({
@@ -131,7 +140,7 @@ export class InstitutionAuthService {
   }
 
   private isDemoSession(): boolean {
-    return this.pendingAccessToken === 'demo-institution-token';
+    return this.isDemoToken(this.pendingAccessToken);
   }
 
   // ─── Step 2: OTP Verification ───────────────────────────────────────────────

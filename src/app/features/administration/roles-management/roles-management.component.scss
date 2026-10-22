@@ -1,6 +1,6 @@
 .page {
   min-height: 100%;
-  background: #e8ecf1;
+  background: var(--bg);
   padding: 24px;
 }
 
@@ -13,8 +13,8 @@
   padding: 24px 28px;
   margin-bottom: 24px;
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(15, 31, 48, 0.06);
 }
 
 .page-header__titles {
@@ -26,12 +26,12 @@
   margin: 0;
   font-size: 1.92rem;
   font-weight: 700;
-  color: #1e3a4c;
+  color: var(--text);
 }
 
 .page-header__titles p {
   margin: 0;
-  color: #6b7280;
+  color: var(--text-mid);
   font-size: 0.98rem;
 }
 
@@ -44,15 +44,15 @@
 .role-card {
   position: relative;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--white);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(15, 31, 48, 0.06);
   padding: 20px;
   transition: box-shadow 0.2s ease;
 }
 
 .role-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(15, 31, 48, 0.1);
 }
 
 .role-card__header {
@@ -75,12 +75,12 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #1e3a4c;
+  color: var(--text);
 }
 
 .role-card__count {
   font-size: 0.96rem;
-  color: #6b7280;
+  color: var(--text-mid);
 }
 
 .role-card__actions {
@@ -95,27 +95,27 @@
   width: 36px;
   height: 36px;
   border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  background: #ffffff;
-  color: #1e3a4c;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text);
   cursor: pointer;
   transition: background 0.2s ease;
 }
 
 .icon-btn:hover {
-  background: #f3f4f6;
+  background: var(--input-bg);
 }
 
 .icon-btn--danger {
-  color: #dc2626;
-  border-color: #fecaca;
+  color: var(--error);
+  border-color: #f5c6c6;
 }
 
 .perm-tag {
   padding: 6px 14px;
   border-radius: 999px;
-  background: #eef3ff;
-  color: #2f4f91;
+  background: var(--input-bg);
+  color: var(--blue);
   font-size: 0.92rem;
   font-weight: 600;
   border: 1px solid rgba(88, 122, 255, 0.16);
@@ -134,7 +134,7 @@
   gap: 10px;
   cursor: pointer;
   font-size: 0.98rem;
-  color: #344165;
+  color: var(--navy);
 }
 
 .perm-check input[type="checkbox"] {
@@ -147,7 +147,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(15, 31, 48, 0.3);
   z-index: 200;
   display: flex;
   align-items: center;
@@ -155,11 +155,11 @@
 }
 
 .modal {
-  background: #ffffff;
+  background: var(--white);
   border-radius: 8px;
   width: 520px;
   max-width: 94vw;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(15, 31, 48, 0.1);
   overflow: hidden;
 }
 
@@ -168,20 +168,20 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
 }
 
 .modal__header h2 {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: #1e3a4c;
+  color: var(--text);
 }
 
 .modal__header p {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: var(--text-mid);
   font-size: 0.96rem;
 }
 
@@ -191,23 +191,23 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
-  background: #ffffff;
+  border-top: 1px solid var(--border);
+  background: var(--white);
 }
 
 .permission-field {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 12px 16px;
   margin-bottom: 14px;
-  background: #ffffff;
+  background: var(--white);
 }
 
 .permission-field legend {
   padding: 0 0;
   font-size: 0.98rem;
   font-weight: 600;
-  color: #1e3a4c;
+  color: var(--text);
 }
 
 .permission-option {
@@ -217,13 +217,13 @@
   cursor: pointer;
   padding: 6px 0;
   font-size: 0.96rem;
-  color: #374151;
+  color: var(--text);
 }
 
 .permission-option input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #1e3a4c;
+  accent-color: var(--text);
   cursor: pointer;
 }
 
@@ -235,7 +235,7 @@
 .permission-loading {
   padding: 12px;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-mid);
   font-size: 0.96rem;
 }
 
@@ -248,30 +248,30 @@
 .field label {
   font-size: 0.96rem;
   font-weight: 600;
-  color: #1e3a4c;
+  color: var(--text);
 }
 
 .field input {
   padding: 10px 12px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 0.96rem;
-  color: #374151;
+  color: var(--text);
   transition: border-color 0.2s ease;
 }
 
 .field input:focus {
   outline: none;
-  border-color: #1e3a4c;
+  border-color: var(--navy);
 }
 
 .field__error {
   font-size: 0.88rem;
-  color: #dc2626;
+  color: var(--error);
 }
 
 .req {
-  color: #dc2626;
+  color: var(--error);
 }
 
 .btn {
@@ -290,12 +290,12 @@
 }
 
 .btn--primary {
-  background: #1e3a4c;
-  color: #ffffff;
+  background: var(--navy);
+  color: var(--white);
 }
 
 .btn--primary:hover {
-  background: #162a38;
+  background: var(--navy);
 }
 
 .btn--primary:disabled {
@@ -304,13 +304,13 @@
 }
 
 .btn--outline {
-  background: #ffffff;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
+  background: var(--white);
+  color: var(--text-mid);
+  border: 1px solid var(--border);
 }
 
 .btn--outline:hover {
-  background: #f9fafb;
+  background: var(--input-bg);
 }
 
 .btn svg {

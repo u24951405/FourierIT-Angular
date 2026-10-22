@@ -56,59 +56,70 @@
     <span>Try a different search term.</span>
   </div>
 
-  <section *ngIf="!loading() && !error() && filteredReviews.length > 0" class="review-list" aria-label="Documents awaiting compliance review">
-    <article class="review-item" *ngFor="let review of filteredReviews" [class.review-item--selected]="isSelected(review.checkId)">
+  <section *ngIf="!loading() && !error() && ownerGroups.length > 0" class="review-list" aria-label="Document owners awaiting compliance review">
+    <article class="review-item" *ngFor="let group of ownerGroups" (click)="selectOwner(group)">
       <div class="review-item__identity">
-        <div class="review-item__tags">
-          <input *ngIf="canManage && review.isClearlyValid" type="checkbox" class="review-item__select"
-                 [checked]="isSelected(review.checkId)" (change)="toggleSelected(review.checkId)"
-                 [attr.aria-label]="'Select ' + getDocumentName(review) + ' for bulk approval'">
-          <span class="review-status">{{ getComplianceStatus(review) }}</span>
-          <span *ngIf="review.isClearlyValid" class="review-tag review-tag--valid" title="Passed every automatic check">Clearly valid</span>
-        </div>
-        <h2>{{ getDocumentName(review) }}</h2>
-        <p>{{ getDocumentType(review) }}</p>
-        <p class="review-owner">{{ review.ownerName || 'Owner unavailable' }}<ng-container *ngIf="review.departmentName"> · {{ review.departmentName }}</ng-container></p>
+        <span class="review-status">Awaiting review</span>
+        <h2>{{ group.ownerName }}</h2>
+        <p>{{ group.departmentName }}</p>
       </div>
-
       <div class="review-item__reason">
-        <span class="review-field-label">Review reason</span>
-        <p>{{ review.manualReviewReason || review.nonComplianceReason || 'Manual review requested.' }}</p>
-        <ul class="review-concerns" *ngIf="review.concerns?.length">
-          <ng-container *ngFor="let concern of review.concerns">
-            <!-- The review reason is already shown above; list only what it doesn't say. -->
-            <li *ngIf="concern !== (review.manualReviewReason || review.nonComplianceReason)">{{ concern }}</li>
-          </ng-container>
-        </ul>
-        <span class="review-checked">{{ waitingLabel(review) }}</span>
-        <span *ngIf="review.neededBy" class="review-needed" [class.review-needed--overdue]="isOverdue(review)">
-          {{ isOverdue(review) ? 'Overdue: ' : '' }}{{ review.neededByInstitution || 'An institution' }} needs it by {{ review.neededBy | date:'d MMM y' }}
-        </span>
+        <span class="review-field-label">Documents awaiting decision</span>
+        <strong>{{ group.count }}</strong>
       </div>
-
-      <div class="review-item__decision" *ngIf="canManage">
-        <label class="review-field-label" [for]="'review-category-' + review.checkId">Rejection reason</label>
-        <select
-          class="review-select"
-          [id]="'review-category-' + review.checkId"
-          [ngModel]="getRejectionCategory(review.checkId)"
-          (ngModelChange)="setRejectionCategory(review.checkId, $event)">
-          <option value="">Required to reject…</option>
-          <option *ngFor="let option of rejectionCategoryOptions" [value]="option">{{ option }}</option>
-        </select>
-        <label class="review-field-label" [for]="'review-notes-' + review.checkId">Decision notes</label>
-        <textarea
-          [id]="'review-notes-' + review.checkId"
-          rows="2"
-          [ngModel]="getNotes(review.checkId)"
-          (ngModelChange)="setNotes(review.checkId, $event)"
-          [placeholder]="getRejectionCategory(review.checkId) === 'Other' ? 'Explain what the owner needs to fix (required)' : 'Optional: shown to the owner with the decision'"></textarea>
-        <div class="review-item__buttons">
-          <button class="review-button review-button--view" type="button" *ngIf="review.documentId != null" (click)="viewDocument(review.documentId)">View</button>
-          <button class="review-button review-button--approve" type="button" (click)="approve(review)" [disabled]="processingCheckId() !== null">Approve</button>
-          <button class="review-button review-button--reject" type="button" (click)="reject(review)" [disabled]="processingCheckId() !== null || !canReject(review.checkId)" [title]="canReject(review.checkId) ? '' : 'Choose a rejection reason first'">Reject</button>
-        </div>
-      </div>
+      <button class="review-button review-button--view" type="button" (click)="$event.stopPropagation(); selectOwner(group)">View documents</button>
     </article>
   </section>
+
+  <div *ngIf="selectedOwnerId() !== null" class="document-modal-backdrop" (click)="closeOwner()">
+    <section class="document-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+      <header class="document-modal__header">
+        <div><span class="review-field-label">Document owner</span><h2>{{ selectedOwnerName() }}</h2></div>
+        <button class="review-button review-button--quiet" type="button" (click)="closeOwner()">Close</button>
+      </header>
+      <p *ngIf="selectedOwnerReviews().length === 0">No documents awaiting review.</p>
+      <article class="review-item" *ngFor="let review of selectedOwnerReviews()" [class.review-item--selected]="isSelected(review.checkId)">
+        <div class="review-item__identity">
+          <div class="review-item__tags">
+            <input *ngIf="canManage && review.isClearlyValid" type="checkbox" class="review-item__select"
+                   [checked]="isSelected(review.checkId)" (change)="toggleSelected(review.checkId)"
+                   [attr.aria-label]="'Select ' + getDocumentName(review) + ' for bulk approval'">
+            <span class="review-status">{{ getComplianceStatus(review) }}</span>
+            <span *ngIf="review.isClearlyValid" class="review-tag review-tag--valid" title="Passed every automatic check">Clearly valid</span>
+          </div>
+          <h2>{{ getDocumentName(review) }}</h2>
+          <p>{{ getDocumentType(review) }} · {{ review.institutionName || 'Institution not provided' }}</p>
+          <p *ngIf="review.isReplacement" class="review-owner">Replacement upload · Flag: {{ review.originalFlagReason || 'Reason unavailable' }}</p>
+        </div>
+        <div class="review-item__reason">
+          <span class="review-field-label">Review reason</span>
+          <p>{{ review.manualReviewReason || review.nonComplianceReason || 'Manual review requested.' }}</p>
+          <ul class="review-concerns" *ngIf="review.concerns?.length">
+            <ng-container *ngFor="let concern of review.concerns">
+              <!-- The review reason is already shown above; list only what it doesn't say. -->
+              <li *ngIf="concern !== (review.manualReviewReason || review.nonComplianceReason)">{{ concern }}</li>
+            </ng-container>
+          </ul>
+          <span class="review-checked">{{ waitingLabel(review) }}</span>
+          <span *ngIf="review.neededBy" class="review-needed" [class.review-needed--overdue]="isOverdue(review)">
+            {{ isOverdue(review) ? 'Overdue: ' : '' }}{{ review.neededByInstitution || 'An institution' }} needs it by {{ review.neededBy | date:'d MMM y' }}
+          </span>
+        </div>
+        <div class="review-item__decision" *ngIf="canManage">
+          <label class="review-field-label" [for]="'review-category-' + review.checkId">Rejection reason</label>
+          <select class="review-select" [id]="'review-category-' + review.checkId" [ngModel]="getRejectionCategory(review.checkId)" (ngModelChange)="setRejectionCategory(review.checkId, $event)">
+            <option value="">Required to reject…</option>
+            <option *ngFor="let option of rejectionCategoryOptions" [value]="option">{{ option }}</option>
+          </select>
+          <textarea rows="2" [ngModel]="getNotes(review.checkId)" (ngModelChange)="setNotes(review.checkId, $event)" [placeholder]="getRejectionCategory(review.checkId) === 'Other' ? 'Explain what the owner needs to fix (required)' : 'Optional decision notes'"></textarea>
+          <div class="review-item__buttons">
+            <button class="review-button review-button--view" type="button" *ngIf="review.documentId != null" (click)="viewDocument(review.documentId, getDocumentName(review))">View</button>
+            <button class="review-button review-button--approve" type="button" (click)="approve(review)" [disabled]="processingCheckId() !== null">Approve</button>
+            <button class="review-button review-button--reject" type="button" (click)="reject(review)" [disabled]="processingCheckId() !== null || !canReject(review.checkId)">Reject</button>
+          </div>
+        </div>
+      </article>
+      <div *ngIf="preview()" class="document-preview"><div class="document-preview__header"><strong>{{ preview()?.name }}</strong><button class="review-button review-button--quiet" type="button" (click)="closePreview()">Close preview</button></div><iframe [src]="preview()?.url" title="Document preview"></iframe></div>
+    </section>
+  </div>
 </main>

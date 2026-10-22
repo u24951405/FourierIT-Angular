@@ -6,10 +6,10 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 32px 28px 60px;
-  color: #0f172a;
+  color: var(--text);
   background:
     radial-gradient(circle at top right, rgba(59, 130, 246, 0.12), transparent 28%),
-    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+    linear-gradient(180deg, var(--input-bg) 0%, var(--bg) 100%);
 }
 
 .help-page__header {
@@ -21,8 +21,8 @@
   padding: 28px 30px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 22px;
-  background: linear-gradient(135deg, #0f172a 0%, #123b5d 44%, #1f5f96 100%);
-  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy) 44%, var(--blue) 100%);
+  box-shadow: 0 18px 42px rgba(15, 31, 48, 0.12);
 }
 
 .help-page__eyebrow,
@@ -37,12 +37,12 @@
 
 .help-page__eyebrow,
 .help-panel__eyebrow {
-  color: #dfeefb;
+  color: var(--blue);
 }
 
 .help-page__header h1 {
   margin: 0;
-  color: #fff;
+  color: var(--white);
   font-size: clamp(2.2rem, 3vw, 3.5rem);
   letter-spacing: -0.045em;
 }
@@ -62,8 +62,8 @@
   padding: 18px 18px 16px;
   border: 1px solid rgba(191, 219, 254, 0.45);
   border-radius: 16px;
-  background: rgba(15, 23, 42, 0.12);
-  color: #eff7ff;
+  background: rgba(15, 31, 48, 0.12);
+  color: var(--blue);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -91,26 +91,26 @@
   align-items: center;
   margin: 0 0 24px;
   padding: 22px 24px;
-  border: 1px solid #dfeaf4;
+  border: 1px solid var(--border);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 12px 24px rgba(15, 31, 48, 0.04);
 }
 
 .help-video h2 {
   margin: 0 0 10px;
-  color: #10233b;
+  color: var(--text);
 }
 
 .help-video p {
   margin: 0;
-  color: #475569;
+  color: var(--text-mid);
   line-height: 1.7;
 }
 
 .help-video__eyebrow {
   margin-bottom: 8px !important;
-  color: #1d4ed8;
+  color: var(--blue);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -123,8 +123,8 @@
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border-radius: 12px;
-  background: #0f172a;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  background: var(--navy);
+  box-shadow: 0 12px 24px rgba(15, 31, 48, 0.12);
 }
 
 .help-video__frame iframe {
@@ -143,34 +143,34 @@
 
 .help-overview__card {
   padding: 22px 20px 18px;
-  border: 1px solid #dfeaf4;
+  border: 1px solid var(--border);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 10px 24px rgba(15, 31, 48, 0.04);
 }
 
 .help-overview__label {
-  color: #1d4ed8;
+  color: var(--blue);
 }
 
 .help-overview__card h2 {
   margin: 0 0 10px;
   font-size: 1.28rem;
-  color: #10233b;
+  color: var(--text);
 }
 
 .help-overview__card p {
   margin: 0;
-  color: #475569;
+  color: var(--text-mid);
   line-height: 1.65;
 }
 
 .help-panel {
   padding: 22px 20px 18px;
-  border: 1px solid #dfeaf4;
+  border: 1px solid var(--border);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 12px 28px rgba(15, 31, 48, 0.04);
 }
 
 .help-panel__header {
@@ -183,13 +183,13 @@
 
 .help-panel__header h2 {
   margin: 0;
-  color: #10233b;
+  color: var(--text);
   font-size: clamp(1.4rem, 2vw, 1.9rem);
 }
 
 .help-panel__header p {
   margin: 0;
-  color: #475569;
+  color: var(--text-mid);
 }
 
 .help-search {
@@ -200,7 +200,7 @@
 
 .help-search label {
   font-weight: 700;
-  color: #10233b;
+  color: var(--text);
 }
 
 .help-search__controls {
@@ -212,24 +212,24 @@
   flex: 1;
   min-width: 0;
   padding: 12px 14px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--white);
   font: inherit;
-  color: #0f172a;
+  color: var(--text);
 }
 
 .help-search input:focus {
   outline: 2px solid rgba(59, 130, 246, 0.2);
-  border-color: #93c5fd;
+  border-color: var(--blue);
 }
 
 .help-search button {
   padding: 11px 18px;
   border: 0;
   border-radius: 10px;
-  background: linear-gradient(135deg, #123b5d 0%, #2a80c4 100%);
-  color: #fff;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+  color: var(--white);
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.15s ease, filter 0.15s ease;
@@ -241,12 +241,12 @@
 }
 
 .help-search__clear {
-  background: #64748b !important;
+  background: var(--blue-muted) !important;
 }
 
 .help-search__status {
   margin: -4px 0 18px;
-  color: #475569;
+  color: var(--text-mid);
 }
 
 .help-page__toc {
@@ -260,10 +260,10 @@
   align-items: center;
   min-height: 38px;
   padding: 8px 12px;
-  border: 1px solid #d8e9f8;
+  border: 1px solid var(--border);
   border-radius: 999px;
-  background: #edf6ff;
-  color: #123b5d;
+  background: var(--input-bg);
+  color: var(--text);
   text-decoration: none;
   font-size: 0.84rem;
   font-weight: 700;
@@ -271,8 +271,8 @@
 }
 
 .help-page__toc a:hover {
-  background: #dfeffc;
-  border-color: #bfdaf7;
+  background: var(--input-bg);
+  border-color: var(--border);
   transform: translateY(-1px);
 }
 
@@ -283,30 +283,30 @@
 }
 
 .help-section {
-  background: #fff;
-  border: 1px solid #dfeaf4;
-  border-left: 5px solid #2d7ab6;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--blue);
   border-radius: 18px;
   padding: 24px 24px 18px;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 12px 24px rgba(15, 31, 48, 0.04);
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .help-section--highlighted {
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12), 0 18px 40px rgba(37, 99, 235, 0.1);
-  border-color: #bfdbfe;
+  border-color: var(--border);
 }
 
 .help-section h2 {
   margin-top: 0;
   margin-bottom: 12px;
   font-size: clamp(1.35rem, 1.8vw, 1.8rem);
-  color: #10233b;
+  color: var(--text);
 }
 
 .help-section p,
 .help-section li {
-  color: #334155;
+  color: var(--text);
   line-height: 1.7;
 }
 
@@ -318,7 +318,7 @@
 .help-section__toplink {
   display: inline-block;
   margin-top: 18px;
-  color: #1d4ed8;
+  color: var(--blue);
   font-weight: 700;
   text-decoration: none;
 }

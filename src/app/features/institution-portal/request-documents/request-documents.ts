@@ -7,6 +7,7 @@ import { InstitutionAuthService } from '../auth/institution-auth';
 import { DocumentAccessRequestService } from '../../../core/services/document-access-request.service';
 import {
   InstitutionDocumentRequestPayload,
+  InstitutionDocumentRequestResponse,
   InstitutionRecipientDocumentType,
 } from '../../../core/models/institution.models';
 
@@ -149,7 +150,6 @@ export class RequestDocuments implements OnInit {
       !!this.wizard.selectedRecipientId &&
       this.selectedCount > 0 &&
       !!this.wizard.submissionDeadline &&
-      !!this.wizard.referenceNumber &&
       !!this.wizard.justification
     );
   }
@@ -424,10 +424,6 @@ export class RequestDocuments implements OnInit {
     this.wizard.submissionDeadline = value;
   }
 
-  onRefChange(value: string): void {
-    this.wizard.referenceNumber = value;
-  }
-
   onJustificationChange(value: string): void {
     this.wizard.justification = value;
   }
@@ -460,7 +456,6 @@ export class RequestDocuments implements OnInit {
       requestType: this.wizard.requestType!,
       purposeNote: this.wizard.justification.trim(),
       submissionDeadline: this.wizard.submissionDeadline || null,
-      referenceNumber: this.wizard.referenceNumber.trim(),
       requestedDocuments: this.wizard.selectedDocumentTypeIds.map((documentTypeId) => ({
         documentTypeId,
         isMandatory: this.isDocumentMandatory(documentTypeId),
@@ -488,7 +483,6 @@ export class RequestDocuments implements OnInit {
           purposeNote: payload.purposeNote ?? '',
           requestedDocuments: payload.requestedDocuments,
           submissionDeadline: payload.submissionDeadline,
-          referenceNumber: payload.referenceNumber,
         })
       : this.requestService.createRequest(sessionToken ?? '', payload);
 
@@ -502,6 +496,10 @@ export class RequestDocuments implements OnInit {
           try {
             console.debug('Document request created', response);
             this.wizard.submittedRequestId = response?.enquiryRequestId?.toString() ?? null;
+            // The system generates the reference when a request is created; an edited request keeps the one it has.
+            if (!this.editingRequestId) {
+              this.wizard.referenceNumber = (response as InstitutionDocumentRequestResponse)?.referenceNumber ?? '';
+            }
             this.currentStep = 5;
             this.submitError = null;
             this.submitting = false;
@@ -554,8 +552,9 @@ export class RequestDocuments implements OnInit {
   }
 
   copyRequestId(): void {
-    if (this.wizard.submittedRequestId) {
-      navigator.clipboard.writeText(this.wizard.submittedRequestId);
+    const value = this.wizard.referenceNumber || this.wizard.submittedRequestId;
+    if (value) {
+      navigator.clipboard.writeText(value);
     }
   }
 
