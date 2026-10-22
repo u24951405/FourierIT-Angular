@@ -122,12 +122,37 @@
                 <span *ngIf="document.isMandatory" class="dr-chip__required">Required</span>
               </li>
             </ul>
+
+            <!-- A department request goes to one member, who uploads anything missing and decides. -->
+            <div *ngIf="assigningRequestId() === request.enquiryRequestId" class="dr-assign">
+              <p *ngIf="loadingOwners()" class="dr-muted">Loading department members…</p>
+              <p *ngIf="!loadingOwners() && !owners().length" class="dr-muted">No one in this department can be assigned yet.</p>
+              <ng-container *ngIf="!loadingOwners() && owners().length">
+                <label class="dr-label" [for]="'assign-owner-' + request.enquiryRequestId">Who should handle it?</label>
+                <select class="dr-input" [id]="'assign-owner-' + request.enquiryRequestId"
+                        [value]="selectedOwnerId()" (change)="selectedOwnerId.set($any($event.target).value)">
+                  <option value="" disabled>Choose a department member</option>
+                  <option *ngFor="let owner of owners()" [value]="owner.userId">
+                    {{ owner.displayName }} · has {{ owner.uploadedTypes }} of {{ owner.requestedTypes }} documents
+                  </option>
+                </select>
+                <label class="dr-label" [for]="'assign-note-' + request.enquiryRequestId">Note to them (optional)</label>
+                <input class="dr-input" [id]="'assign-note-' + request.enquiryRequestId" type="text" maxlength="500"
+                       [value]="assignNote()" (input)="assignNote.set($any($event.target).value)">
+                <div class="dr-actions">
+                  <button class="dr-btn dr-btn--approve" type="button" (click)="assignRequest(request)" [disabled]="loading() || !selectedOwnerId()">Assign</button>
+                  <button class="dr-btn dr-btn--outline" type="button" (click)="cancelAssign()">Cancel</button>
+                </div>
+              </ng-container>
+            </div>
           </div>
 
           <div class="dr-request__actions">
             <span *ngIf="isViewOnly" class="dr-tag">View only</span>
             <ng-container *ngIf="!isViewOnly">
-              <button class="dr-btn dr-btn--approve" type="button" (click)="approveRequest(request)" [disabled]="loading()">Approve</button>
+              <button *ngIf="request.requestType === 'department'" class="dr-btn dr-btn--approve" type="button"
+                      (click)="openAssign(request)" [disabled]="loading() || assigningRequestId() === request.enquiryRequestId">Assign to owner</button>
+              <button *ngIf="request.requestType !== 'department'" class="dr-btn dr-btn--approve" type="button" (click)="approveRequest(request)" [disabled]="loading()">Approve</button>
               <button class="dr-btn dr-btn--deny" type="button" (click)="denyRequest(request)" [disabled]="loading()">Deny</button>
             </ng-container>
           </div>

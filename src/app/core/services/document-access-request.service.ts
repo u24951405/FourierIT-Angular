@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import {
   ApproveRequestResponse,
   ApprovedInstitutionDocument,
+  AssignableOwner,
   DenyRequestPayload,
   DenyRequestResponse,
   DocumentRequestedType,
@@ -116,6 +117,12 @@ export class DocumentAccessRequestService {
     return this.http.get<InstitutionRecipientDocumentType[] | { documentTypes?: InstitutionRecipientDocumentType[]; warning?: string }>(
       `${this.base}/institution-access/requests/document-types`,
       { params }
+    );
+  }
+
+  getAssignableOwners(requestId: number): Observable<AssignableOwner[]> {
+    return this.http.get<AssignableOwner[]>(
+      `${this.base}/department-access-requests/${requestId}/owners`
     );
   }
 
