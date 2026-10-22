@@ -184,6 +184,8 @@ export interface PendingDepartmentAccessRequest {
   status: string;
   purposeNote: string;
   requestDate: string;
+  referenceNumber?: string | null;
+  submissionDeadline?: string | null;
   documents: PendingDocumentAccessRequestDocument[];
   isComplete?: boolean;
   missingCount?: number;

@@ -1,4 +1,4 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, HostListener, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { finalize } from 'rxjs';
@@ -31,6 +31,8 @@ interface CombinedRequest {
   status: string;
   purposeNote: string;
   requestDate: string;
+  referenceNumber?: string | null;
+  submissionDeadline?: string | null;
   documents: Array<{
     documentTypeId: number;
     documentTypeName: string;
@@ -82,7 +84,14 @@ export class DocumentRequestsComponent implements OnInit {
       const details = group.requests.flatMap(request => this.requestDetails()[request.enquiryRequestId]?.documents ?? []);
       const requestedCount = group.requests.reduce((count, request) => count + request.documents.length, 0);
       const uploadedCount = details.filter(document => document.status !== 'Missing').length;
-      return { ...group, requestedCount, uploadedCount, missingCount: Math.max(requestedCount - uploadedCount, 0) };
+      return {
+        ...group,
+        requestedCount,
+        uploadedCount,
+        missingCount: Math.max(requestedCount - uploadedCount, 0),
+        // Requests are sorted newest first, so the first one is the latest.
+        latestRequestDate: group.requests[0]?.requestDate,
+      };
     });
   });
 
@@ -231,6 +240,8 @@ export class DocumentRequestsComponent implements OnInit {
           status: req.status,
           purposeNote: req.purposeNote,
           requestDate: req.requestDate,
+          referenceNumber: req.referenceNumber,
+          submissionDeadline: req.submissionDeadline,
           documents: req.documents,
         });
       });
@@ -255,6 +266,8 @@ export class DocumentRequestsComponent implements OnInit {
           status: req.status,
           purposeNote: req.purposeNote,
           requestDate: req.requestDate,
+          referenceNumber: req.referenceNumber,
+          submissionDeadline: req.submissionDeadline,
           documents: req.documents,
         });
       });
@@ -380,6 +393,40 @@ export class DocumentRequestsComponent implements OnInit {
     this.closePreview();
     this.selectedInstitutionId.set(null);
     this.selectedInstitutionName.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.selectedInstitutionId() !== null) this.closeInstitution();
+  }
+
+  /** Up to two letters for the institution's badge, e.g. "Absa Corporate Treasury" -> "AC". */
+  initials(name: string): string {
+    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0].toUpperCase()).join('') || '?';
+  }
+
+  /** Who the request is addressed to, in a few words. */
+  forLabel(request: CombinedRequest): string {
+    return request.requestType === 'owner' ? 'For you' : `For ${request.departmentName || 'your department'}`;
+  }
+
+  isOverdue(request: CombinedRequest): boolean {
+    return !!request.submissionDeadline && new Date(request.submissionDeadline).getTime() < Date.now();
+  }
+
+  /** The colour of a document's status tag in the documents pop-up. */
+  statusTone(status: RequestDocumentStatus['status']): 'success' | 'info' | 'warning' | 'danger' {
+    switch (status) {
+      case 'Approved / Available': return 'success';
+      case 'Uploaded': return 'info';
+      case 'Flagged':
+      case 'Rejected': return 'danger';
+      default: return 'warning'; // Missing, Replacement Under Review
+    }
+  }
+
+  canUpload(status: RequestDocumentStatus['status']): boolean {
+    return status === 'Missing' || status === 'Flagged' || status === 'Rejected' || status === 'Replacement Under Review';
   }
 
   statusLabel(status: RequestDocumentStatus['status']): string {
